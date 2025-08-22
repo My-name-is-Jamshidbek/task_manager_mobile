@@ -1,0 +1,122 @@
+{
+  "app": {
+    "title": "Vazifalar Boshqaruvchisi",
+    "version": "Versiya 1.0.0"
+  },
+  "navigation": {
+    "home": "Bosh sahifa",
+    "tasks": "Vazifalar",
+    "profile": "Profil",
+    "settings": "Sozlamalar"
+  },
+  "auth": {
+    "login": "Kirish",
+    "register": "Ro'yxatdan o'tish",
+    "logout": "Chiqish",
+    "email": "Elektron pochta",
+    "password": "Parol",
+    "confirmPassword": "Parolni tasdiqlang",
+    "forgotPassword": "Parolni unutdingizmi?",
+    "loginButton": "Kirish",
+    "registerButton": "Ro'yxatdan o'tish",
+    "orContinueWith": "Yoki davom eting",
+    "alreadyHaveAccount": "Hisobingiz bormi?",
+    "dontHaveAccount": "Hisobingiz yo'qmi?"
+  },
+  "tasks": {
+    "title": "Vazifalar",
+    "addTask": "Vazifa qo'shish",
+    "editTask": "Vazifani tahrirlash",
+    "deleteTask": "Vazifani o'chirish",
+    "taskTitle": "Vazifa nomi",
+    "taskDescription": "Vazifa tavsifi",
+    "dueDate": "Tugash sanasi",
+    "priority": "Muhimlik",
+    "category": "Kategoriya",
+    "status": "Holat",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "delete": "O'chirish",
+    "markComplete": "Bajarildi deb belgilash",
+    "markIncomplete": "Bajarilmagan deb belgilash",
+    "noTasks": "Vazifalar topilmadi",
+    "createFirstTask": "Birinchi vazifangizni yarating"
+  },
+  "priority": {
+    "low": "Past",
+    "medium": "O'rta",
+    "high": "Yuqori",
+    "urgent": "Shoshilinch"
+  },
+  "status": {
+    "pending": "Kutilmoqda",
+    "inProgress": "Jarayonda",
+    "completed": "Bajarildi",
+    "cancelled": "Bekor qilindi"
+  },
+  "categories": {
+    "work": "Ish",
+    "personal": "Shaxsiy",
+    "shopping": "Xarid",
+    "health": "Sog'liq",
+    "education": "Ta'lim",
+    "finance": "Moliya"
+  },
+  "profile": {
+    "title": "Profil",
+    "editProfile": "Profilni tahrirlash",
+    "firstName": "Ism",
+    "lastName": "Familiya",
+    "phoneNumber": "Telefon raqami",
+    "dateOfBirth": "Tug'ilgan sana",
+    "updateProfile": "Profilni yangilash"
+  },
+  "settings": {
+    "title": "Sozlamalar",
+    "language": "Til",
+    "theme": "Mavzu",
+    "notifications": "Bildirishnomalar",
+    "privacy": "Maxfiylik",
+    "about": "Haqida",
+    "version": "Versiya"
+  },
+  "common": {
+    "yes": "Ha",
+    "no": "Yo'q",
+    "ok": "OK",
+    "cancel": "Bekor qilish",
+    "save": "Saqlash",
+    "edit": "Tahrirlash",
+    "delete": "O'chirish",
+    "add": "Qo'shish",
+    "update": "Yangilash",
+    "create": "Yaratish",
+    "search": "Qidirish",
+    "filter": "Filtrlash",
+    "sort": "Saralash",
+    "loading": "Yuklanmoqda...",
+    "error": "Xato",
+    "success": "Muvaffaqiyat",
+    "warning": "Ogohlantirish",
+    "info": "Ma'lumot"
+  },
+  "validation": {
+    "required": "Bu maydon to'ldirilishi shart",
+    "emailInvalid": "To'g'ri elektron pochta manzilini kiriting",
+    "passwordMinLength": "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
+    "passwordsNotMatch": "Parollar mos kelmaydi",
+    "phoneInvalid": "To'g'ri telefon raqamini kiriting"
+  },
+  "messages": {
+    "taskCreated": "Vazifa muvaffaqiyatli yaratildi",
+    "taskUpdated": "Vazifa muvaffaqiyatli yangilandi",
+    "taskDeleted": "Vazifa muvaffaqiyatli o'chirildi",
+    "profileUpdated": "Profil muvaffaqiyatli yangilandi",
+    "loginSuccessful": "Kirish muvaffaqiyatli",
+    "logoutSuccessful": "Chiqish muvaffaqiyatli",
+    "registrationSuccessful": "Ro'yxatdan o'tish muvaffaqiyatli",
+    "networkError": "Tarmoq xatosi. Ulanishingizni tekshiring.",
+    "serverError": "Server xatosi. Keyinroq qayta urinib ko'ring.",
+    "unexpectedError": "Kutilmagan xato yuz berdi"
+  }
+}

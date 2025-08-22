@@ -1,0 +1,122 @@
+{
+  "app": {
+    "title": "Менеджер Задач",
+    "version": "Версия 1.0.0"
+  },
+  "navigation": {
+    "home": "Главная",
+    "tasks": "Задачи",
+    "profile": "Профиль",
+    "settings": "Настройки"
+  },
+  "auth": {
+    "login": "Вход",
+    "register": "Регистрация",
+    "logout": "Выход",
+    "email": "Электронная почта",
+    "password": "Пароль",
+    "confirmPassword": "Подтвердите пароль",
+    "forgotPassword": "Забыли пароль?",
+    "loginButton": "Войти",
+    "registerButton": "Зарегистрироваться",
+    "orContinueWith": "Или продолжить с",
+    "alreadyHaveAccount": "Уже есть аккаунт?",
+    "dontHaveAccount": "Нет аккаунта?"
+  },
+  "tasks": {
+    "title": "Задачи",
+    "addTask": "Добавить задачу",
+    "editTask": "Редактировать задачу",
+    "deleteTask": "Удалить задачу",
+    "taskTitle": "Название задачи",
+    "taskDescription": "Описание задачи",
+    "dueDate": "Срок выполнения",
+    "priority": "Приоритет",
+    "category": "Категория",
+    "status": "Статус",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "markComplete": "Отметить как выполненную",
+    "markIncomplete": "Отметить как невыполненную",
+    "noTasks": "Задачи не найдены",
+    "createFirstTask": "Создайте вашу первую задачу"
+  },
+  "priority": {
+    "low": "Низкий",
+    "medium": "Средний",
+    "high": "Высокий",
+    "urgent": "Срочный"
+  },
+  "status": {
+    "pending": "Ожидание",
+    "inProgress": "В процессе",
+    "completed": "Выполнено",
+    "cancelled": "Отменено"
+  },
+  "categories": {
+    "work": "Работа",
+    "personal": "Личное",
+    "shopping": "Покупки",
+    "health": "Здоровье",
+    "education": "Образование",
+    "finance": "Финансы"
+  },
+  "profile": {
+    "title": "Профиль",
+    "editProfile": "Редактировать профиль",
+    "firstName": "Имя",
+    "lastName": "Фамилия",
+    "phoneNumber": "Номер телефона",
+    "dateOfBirth": "Дата рождения",
+    "updateProfile": "Обновить профиль"
+  },
+  "settings": {
+    "title": "Настройки",
+    "language": "Язык",
+    "theme": "Тема",
+    "notifications": "Уведомления",
+    "privacy": "Конфиденциальность",
+    "about": "О приложении",
+    "version": "Версия"
+  },
+  "common": {
+    "yes": "Да",
+    "no": "Нет",
+    "ok": "OK",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "edit": "Редактировать",
+    "delete": "Удалить",
+    "add": "Добавить",
+    "update": "Обновить",
+    "create": "Создать",
+    "search": "Поиск",
+    "filter": "Фильтр",
+    "sort": "Сортировка",
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "success": "Успех",
+    "warning": "Предупреждение",
+    "info": "Информация"
+  },
+  "validation": {
+    "required": "Это поле обязательно",
+    "emailInvalid": "Введите действительный email",
+    "passwordMinLength": "Пароль должен содержать минимум 8 символов",
+    "passwordsNotMatch": "Пароли не совпадают",
+    "phoneInvalid": "Введите действительный номер телефона"
+  },
+  "messages": {
+    "taskCreated": "Задача успешно создана",
+    "taskUpdated": "Задача успешно обновлена",
+    "taskDeleted": "Задача успешно удалена",
+    "profileUpdated": "Профиль успешно обновлен",
+    "loginSuccessful": "Вход выполнен успешно",
+    "logoutSuccessful": "Выход выполнен успешно",
+    "registrationSuccessful": "Регистрация выполнена успешно",
+    "networkError": "Ошибка сети. Проверьте подключение.",
+    "serverError": "Ошибка сервера. Попробуйте позже.",
+    "unexpectedError": "Произошла неожиданная ошибка"
+  }
+}
