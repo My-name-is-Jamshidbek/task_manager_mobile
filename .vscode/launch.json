@@ -1,0 +1,78 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Flutter (Debug)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "Flutter (Profile)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "Flutter (Release)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "Flutter Android Debug",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": ["-d", "android"]
+        },
+        {
+            "name": "Flutter iOS Debug (iPhone 16 Plus)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": ["-d", "661D33FB-98A0-4370-BCF7-3147E1D18443"]
+        },
+        {
+            "name": "Flutter iOS Debug (Auto-detect)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": ["-d", "iphone"]
+        },
+        {
+            "name": "Flutter Android Profile",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "profile",
+            "args": ["-d", "android"]
+        },
+        {
+            "name": "Flutter iOS Profile",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "profile",
+            "args": ["-d", "iphone"]
+        },
+        {
+            "name": "Flutter Android Release",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "release",
+            "args": ["-d", "android"]
+        },
+        {
+            "name": "Flutter iOS Release",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "release",
+            "args": ["-d", "iphone"]
+        }
+    ]
+}

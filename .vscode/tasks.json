@@ -1,0 +1,127 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Flutter: Clean",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["clean"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Flutter: Get Dependencies",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["pub", "get"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Flutter: Build APK",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["build", "apk"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Flutter: Build iOS",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["build", "ios"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Flutter: Run Android",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["run"],
+            "options": {
+                "env": {
+                    "FLUTTER_DEVICE_ID": "android"
+                }
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Flutter: Run iOS Simulator",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["run", "-d", "661D33FB-98A0-4370-BCF7-3147E1D18443"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Flutter: Run iOS (Auto-detect)",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["run", "-d", "iphone"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Flutter: Doctor",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["doctor"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Flutter: List Devices",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["devices"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        }
+    ]
+}
