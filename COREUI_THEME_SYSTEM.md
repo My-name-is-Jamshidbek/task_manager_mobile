@@ -14,6 +14,7 @@ The Flutter Task Manager now uses **CoreUI v5.3 Design System** - a professional
 ## 🌈 CoreUI Brand Colors
 
 ### **Primary Brand Colors**
+
 ```dart
 // CoreUI Official Brand Colors
 static const Color primary = Color(0xFF5856D6);     // #5856d6 - Brand Primary
@@ -27,6 +28,7 @@ static const Color dark = Color(0xFF212631);        // #212631 - Brand Dark
 ```
 
 ### **CoreUI Gray Scale**
+
 ```dart
 // Bootstrap 5 compatible gray scale
 static const Color gray100 = Color(0xFFF8F9FA);     // #f8f9fa
@@ -43,10 +45,11 @@ static const Color gray900 = Color(0xFF212529);     // #212529
 ## 📐 CoreUI Design Tokens
 
 ### **Bootstrap 5 Spacing System**
+
 ```dart
 // Based on 0.25rem (4px) increments
 static const double space1 = 4.0;    // 0.25rem
-static const double space2 = 8.0;    // 0.5rem  
+static const double space2 = 8.0;    // 0.5rem
 static const double space3 = 12.0;   // 0.75rem
 static const double space4 = 16.0;   // 1rem
 static const double space5 = 20.0;   // 1.25rem
@@ -57,10 +60,11 @@ static const double space12 = 48.0;  // 3rem
 ```
 
 ### **Bootstrap 5 Typography**
+
 ```dart
 // CoreUI/Bootstrap heading scale
 static const double fontSizeH1 = 40.0;  // 2.5rem
-static const double fontSizeH2 = 32.0;  // 2rem  
+static const double fontSizeH2 = 32.0;  // 2rem
 static const double fontSizeH3 = 28.0;  // 1.75rem
 static const double fontSizeH4 = 24.0;  // 1.5rem
 static const double fontSizeH5 = 20.0;  // 1.25rem
@@ -68,6 +72,7 @@ static const double fontSizeH6 = 16.0;  // 1rem
 ```
 
 ### **Bootstrap 5 Border Radius**
+
 ```dart
 static const double radiusSM = 2.0;   // 0.125rem
 static const double radiusMD = 4.0;   // 0.25rem
@@ -76,9 +81,10 @@ static const double radiusXL = 8.0;   // 0.5rem
 ```
 
 ### **Bootstrap 5 Breakpoints**
+
 ```dart
 static const double breakpointSM = 576.0;   // ≥576px
-static const double breakpointMD = 768.0;   // ≥768px  
+static const double breakpointMD = 768.0;   // ≥768px
 static const double breakpointLG = 992.0;   // ≥992px
 static const double breakpointXL = 1200.0;  // ≥1200px
 static const double breakpoint2XL = 1400.0; // ≥1400px
@@ -87,10 +93,11 @@ static const double breakpoint2XL = 1400.0; // ≥1400px
 ## 🎨 Theme Configuration
 
 ### **Theme Colors (Updated for CoreUI)**
+
 ```dart
-enum AppThemeColor { 
+enum AppThemeColor {
   primary,   // CoreUI Primary Purple (#5856d6)
-  secondary, // CoreUI Secondary Gray (#6b7785)  
+  secondary, // CoreUI Secondary Gray (#6b7785)
   success,   // CoreUI Success Green (#1b9e3e)
   danger,    // CoreUI Danger Red (#e55353)
   warning,   // CoreUI Warning Yellow (#f9b115)
@@ -99,10 +106,11 @@ enum AppThemeColor {
 ```
 
 ### **Theme Modes**
+
 ```dart
-enum AppThemeMode { 
+enum AppThemeMode {
   light,    // Always light theme
-  dark,     // Always dark theme  
+  dark,     // Always dark theme
   system,   // Follow system setting
 }
 ```
@@ -110,6 +118,7 @@ enum AppThemeMode {
 ## 🎯 Usage Examples
 
 ### **1. Using CoreUI Colors**
+
 ```dart
 // Primary brand colors
 Container(
@@ -131,6 +140,7 @@ Container(
 ```
 
 ### **2. Using CoreUI Spacing**
+
 ```dart
 // Bootstrap-compatible spacing
 Padding(
@@ -146,6 +156,7 @@ Padding(
 ```
 
 ### **3. Using CoreUI Typography**
+
 ```dart
 // CoreUI heading styles
 Text(
@@ -166,10 +177,11 @@ Text(
 ```
 
 ### **4. Responsive Design with CoreUI Breakpoints**
+
 ```dart
 Widget build(BuildContext context) {
   final screenWidth = MediaQuery.of(context).size.width;
-  
+
   // Use CoreUI breakpoints
   if (AppThemeConstants.isMobile(screenWidth)) {
     return MobileLayout();
@@ -182,6 +194,7 @@ Widget build(BuildContext context) {
 ```
 
 ### **5. Theme Switching**
+
 ```dart
 // Switch to CoreUI success theme
 context.read<ThemeService>().setThemeColor(AppThemeColor.success);
@@ -198,12 +211,14 @@ print('Current mode: ${themeService.currentThemeModeName}');
 ## 🧪 Testing CoreUI Theme
 
 ### **Run CoreUI Demo**
+
 ```bash
 # Run the CoreUI demo app
 flutter run lib/coreui_demo.dart
 ```
 
 ### **Demo Features**
+
 - ✅ **Colors Page**: View all CoreUI brand colors and gray scale
 - ✅ **Components Page**: See CoreUI-styled buttons, cards, forms, lists
 - ✅ **Typography Page**: Browse CoreUI heading and text styles
@@ -213,6 +228,7 @@ flutter run lib/coreui_demo.dart
 ## 🎨 CoreUI Component Examples
 
 ### **CoreUI Button Styles**
+
 ```dart
 // Primary button (CoreUI styled)
 ElevatedButton(
@@ -234,6 +250,7 @@ TextButton(
 ```
 
 ### **CoreUI Card Component**
+
 ```dart
 Card(
   child: Padding(
@@ -264,6 +281,7 @@ Card(
 ```
 
 ### **CoreUI Form Elements**
+
 ```dart
 TextField(
   decoration: InputDecoration(
@@ -276,6 +294,7 @@ TextField(
 ```
 
 ### **CoreUI Status Chips**
+
 ```dart
 // Success status
 Chip(
@@ -284,7 +303,7 @@ Chip(
   labelStyle: TextStyle(color: AppThemeConstants.success),
 )
 
-// Warning status  
+// Warning status
 Chip(
   label: Text('Pending'),
   backgroundColor: AppThemeConstants.warning.withOpacity(0.1),
@@ -302,43 +321,49 @@ Chip(
 ## 📊 Color Variations
 
 ### **Automatic Color Variations**
+
 ```dart
 // Get lighter/darker variations
 Color primaryLight = AppThemeConstants.getColorVariation(
-  AppThemeConstants.primary, 
+  AppThemeConstants.primary,
   'light'
 );
 
 Color primaryDark = AppThemeConstants.getColorVariation(
-  AppThemeConstants.primary, 
+  AppThemeConstants.primary,
   'dark'
 );
 ```
 
 ### **Available Variations**
+
 - ✅ **light**: 20% lighter version
-- ✅ **dark**: 20% darker version  
+- ✅ **dark**: 20% darker version
 - ✅ **lighter**: 40% lighter version
 - ✅ **darker**: 40% darker version
 
 ## 🎯 CoreUI Benefits
 
 ### **✅ Professional Design**
+
 - Industry-standard CoreUI design system
 - Bootstrap 5 compatibility
 - Consistent with web CoreUI themes
 
 ### **✅ Accessibility**
+
 - WCAG-compliant color contrasts
 - Semantic color usage
 - Screen reader friendly
 
 ### **✅ Developer Experience**
+
 - Easy to implement and customize
 - Consistent naming conventions
 - Comprehensive documentation
 
 ### **✅ Responsive Design**
+
 - Bootstrap 5 breakpoint system
 - Mobile-first approach
 - Adaptive components
@@ -356,16 +381,18 @@ The CoreUI theme system provides a solid foundation for creating professional, e
 ## 📱 Quick Reference
 
 ### **Most Used Colors**
+
 ```dart
 AppThemeConstants.primary    // #5856d6 - Main brand color
 AppThemeConstants.success    // #1b9e3e - Success/completed
-AppThemeConstants.warning    // #f9b115 - Warning/pending  
+AppThemeConstants.warning    // #f9b115 - Warning/pending
 AppThemeConstants.danger     // #e55353 - Error/urgent
 AppThemeConstants.info       // #3399ff - Information
 AppThemeConstants.gray600    // #6c757d - Text secondary
 ```
 
 ### **Most Used Spacing**
+
 ```dart
 AppThemeConstants.space2     // 8px  - Small gaps
 AppThemeConstants.space3     // 12px - Medium gaps
@@ -374,9 +401,10 @@ AppThemeConstants.space6     // 24px - Section spacing
 ```
 
 ### **Most Used Typography**
+
 ```dart
 AppThemeConstants.fontSizeH4     // 24px - Page titles
-AppThemeConstants.fontSizeH5     // 20px - Section titles  
+AppThemeConstants.fontSizeH5     // 20px - Section titles
 AppThemeConstants.fontSizeLG     // 16px - Body text
 AppThemeConstants.fontSizeMD     // 14px - Secondary text
 ```

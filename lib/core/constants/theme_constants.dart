@@ -13,7 +13,7 @@ class AppThemeConstants {
   /// HEX: #5856d6 | RGB: rgb(88, 86, 214)
   static const Color primary = Color(0xFF5856D6);
 
-  /// Brand Secondary Color - CoreUI Secondary  
+  /// Brand Secondary Color - CoreUI Secondary
   /// HEX: #6b7785 | RGB: rgb(107, 119, 133)
   static const Color secondary = Color(0xFF6B7785);
 
@@ -353,7 +353,7 @@ class AppThemeConstants {
   static const Color lightOnSurfaceVariant = gray600;
   static const Color lightOnBackground = gray900;
 
-  // Dark Theme Surface Colors  
+  // Dark Theme Surface Colors
   static const Color darkSurface = gray800;
   static const Color darkSurfaceVariant = gray700;
   static const Color darkBackground = gray900;

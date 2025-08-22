@@ -10,21 +10,12 @@ library;
 import 'package:flutter/material.dart';
 import 'demo/demo_widgets.dart';
 import 'core/theme/theme_service.dart';
-import 'core/localization/localization_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final themeService = ThemeService();
-  final localizationService = LocalizationService();
-
   await themeService.initialize();
-  await localizationService.initialize();
 
-  runApp(
-    CoreUIDemo(
-      themeService: themeService,
-      localizationService: localizationService,
-    ),
-  );
+  runApp(CoreUIDemo(themeService: themeService));
 }

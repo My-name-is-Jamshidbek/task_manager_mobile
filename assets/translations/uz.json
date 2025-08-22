@@ -3,6 +3,147 @@
     "title": "Vazifalar Boshqaruvchisi",
     "version": "Versiya 1.0.0"
   },
+  "demo": {
+    "title": "CoreUI Mavzu Demo",
+    "subtitle": "Mavzu Tizimi Ko'rgazmasi",
+    "components": "Komponentlar",
+    "colors": "Ranglar",
+    "typography": "Tipografiya",
+    "themeSettings": "Mavzu Sozlamalari",
+    "languageSettings": "Til Sozlamalari",
+    "buttons": "Tugmalar",
+    "cards": "Kartalar",
+    "formElements": "Forma Elementlari",
+    "listItems": "Ro'yxat Elementlari",
+    "additionalComponents": "Qo'shimcha Komponentlar",
+    "progressIndicators": "Jarayon Ko'rsatkichlari",
+    "chips": "Chiplar",
+    "badges": "Belgiler",
+    "controls": "Boshqaruv Elementlari",
+    "brandColors": "CoreUI Brend Ranglari",
+    "grayScaleColors": "Kulrang Shkalasi Ranglari",
+    "priorityColors": "Muhimlik Ranglari",
+    "headings": "Sarlavhalar",
+    "bodyText": "Asosiy Matn",
+    "labels": "Yorliqlar",
+    "themeMode": "Mavzu Rejimi",
+    "primaryColor": "Asosiy Rang",
+    "language": "Til",
+    "sampleCard": "Namuna Karta",
+    "sampleInput": "Namuna Kiritish",
+    "password": "Parol",
+    "email": "Elektron pochta",
+    "search": "Qidirish",
+    "multilineText": "Ko'p qatorli matn",
+    "completeProject": "Loyihani yakunlash",
+    "teamMeeting": "Jamoa yig'ilishi",
+    "dueTomorrow": "Ertaga tugaydi",
+    "dueToday": "Bugun tugaydi",
+    "high": "Yuqori",
+    "medium": "O'rta",
+    "low": "Past",
+    "primary": "Asosiy",
+    "outlined": "Chiziqli",
+    "text": "Matn",
+    "withIcon": "Belgi bilan",
+    "action": "Harakat",
+    "cancel": "Bekor qilish",
+    "done": "Tayyor",
+    "reset": "Qayta tiklash",
+    "enterSomeText": "Biror matn kiriting",
+    "enterPassword": "Parol kiriting",
+    "searchSomething": "Nimanidir qidiring...",
+    "enterMultipleLines": "Ko'p qatorli matn kiriting...",
+    "cardDescription": "Bu CoreUI dizayn tizimidan foydalangan holda to'g'ri bo'shliq va tipografiya bilan yaratilgan namuna karta.",
+    "headingExamples": {
+      "h1": "Sarlavha 1 - Katta Ko'rsatish",
+      "h2": "Sarlavha 2 - O'rta Ko'rsatish",
+      "h3": "Sarlavha 3 - Kichik Ko'rsatish",
+      "h4": "Sarlavha 4 - Katta Bosh",
+      "h5": "Sarlavha 5 - O'rta Bosh",
+      "h6": "Sarlavha 6 - Kichik Bosh"
+    },
+    "bodyTextExamples": {
+      "large": "Katta Matn - Bu muhim kontent uchun ajoyib o'qilishi ta'minlaydigan katta asosiy matn.",
+      "medium": "O'rta Matn - Bu ilovada ko'pchilik kontent uchun ishlatiladigan standart asosiy matn.",
+      "small": "Kichik Matn - Bu ikkinchi darajali ma'lumot va izohlar uchun ishlatiladigan kichik asosiy matn."
+    },
+    "labelExamples": {
+      "large": "Katta Yorliq - Tugma matni va muhim yorliqlar uchun ishlatiladi",
+      "medium": "O'rta Yorliq - Forma yorliqlari va ikkinchi darajali tugmalar uchun ishlatiladi",
+      "small": "Kichik Yorliq - Izohlar va kichik UI elementlari uchun ishlatiladi"
+    },
+    "themeModes": {
+      "light": "Yorug'",
+      "dark": "Qorong'u",
+      "system": "Tizim"
+    },
+    "themeColors": {
+      "primary": {
+        "label": "CoreUI Asosiy",
+        "description": "Klassik CoreUI Binafsha"
+      },
+      "secondary": {
+        "label": "CoreUI Ikkinchi",
+        "description": "Professional Kulrang"
+      },
+      "success": {
+        "label": "CoreUI Muvaffaqiyat",
+        "description": "Yangi Yashil"
+      },
+      "danger": {
+        "label": "CoreUI Xavf",
+        "description": "Ogohlantirish Qizil"
+      },
+      "warning": {
+        "label": "CoreUI Ogohlantirish",
+        "description": "E'tibor Sariq"
+      },
+      "info": {
+        "label": "CoreUI Ma'lumot",
+        "description": "Ma'lumotli Ko'k"
+      }
+    },
+    "colorNames": {
+      "primary": "Asosiy",
+      "secondary": "Ikkinchi",
+      "success": "Muvaffaqiyat",
+      "danger": "Xavf",
+      "warning": "Ogohlantirish",
+      "info": "Ma'lumot",
+      "light": "Yorug'",
+      "dark": "Qorong'u",
+      "gray100": "Kulrang 100",
+      "gray200": "Kulrang 200",
+      "gray300": "Kulrang 300",
+      "gray400": "Kulrang 400",
+      "gray500": "Kulrang 500",
+      "gray600": "Kulrang 600",
+      "gray700": "Kulrang 700",
+      "gray800": "Kulrang 800",
+      "gray900": "Kulrang 900",
+      "priorityHigh": "Yuqori Muhimlik",
+      "priorityMedium": "O'rta Muhimlik",
+      "priorityLow": "Past Muhimlik"
+    },
+    "languages": {
+      "english": "Ingliz",
+      "uzbek": "O'zbek",
+      "russian": "Rus",
+      "currentLanguage": "Joriy Til"
+    },
+    "settings": "Sozlamalar",
+    "settingsDescription": "Mavzu va til sozlamalari bilan demo tajribangizni sozlang.",
+    "languageDescription": "Demo interfeysi uchun kerakli tilni tanlang.",
+    "additionalSettings": "Qo'shimcha Sozlamalar",
+    "animations": "Animatsiyalar",
+    "animationsDescription": "UI animatsiyalarni yoqish yoki o'chirish",
+    "developerMode": "Dasturchi Rejimi",
+    "developerModeDescription": "Qo'shimcha debugging ma'lumotlarini ko'rsatish",
+    "about": "Haqida",
+    "aboutDescription": "CoreUI Demo v1.0.0",
+    "aboutContent": "Ko'p tilli va mavzu qo'llab-quvvatlash bilan CoreUI dizayn tizimini namoyish qiluvchi keng qamrovli demo."
+  },
   "navigation": {
     "home": "Bosh sahifa",
     "tasks": "Vazifalar",

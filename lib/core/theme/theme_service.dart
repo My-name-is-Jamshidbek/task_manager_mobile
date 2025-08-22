@@ -5,13 +5,13 @@ import '../constants/theme_constants.dart';
 enum AppThemeMode { light, dark, system }
 
 /// CoreUI Theme Color Variants
-enum AppThemeColor { 
-  primary,   // CoreUI Primary (#5856d6)
-  secondary, // CoreUI Secondary (#6b7785)  
-  success,   // CoreUI Success (#1b9e3e)
-  danger,    // CoreUI Danger (#e55353)
-  warning,   // CoreUI Warning (#f9b115)
-  info,      // CoreUI Info (#3399ff)
+enum AppThemeColor {
+  primary, // CoreUI Primary (#5856d6)
+  secondary, // CoreUI Secondary (#6b7785)
+  success, // CoreUI Success (#1b9e3e)
+  danger, // CoreUI Danger (#e55353)
+  warning, // CoreUI Warning (#f9b115)
+  info, // CoreUI Info (#3399ff)
 }
 
 class ThemeService extends ChangeNotifier {
@@ -47,7 +47,8 @@ class ThemeService extends ChangeNotifier {
       case AppThemeMode.light:
         return false;
       case AppThemeMode.system:
-        return WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+        return WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+            Brightness.dark;
     }
   }
 
@@ -173,7 +174,9 @@ class ThemeService extends ChangeNotifier {
       cardTheme: CardThemeData(
         elevation: AppThemeConstants.cardElevation,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppThemeConstants.cardBorderRadius),
+          borderRadius: BorderRadius.circular(
+            AppThemeConstants.cardBorderRadius,
+          ),
         ),
         color: AppThemeConstants.lightSurface,
         surfaceTintColor: primaryColor,
@@ -304,7 +307,9 @@ class ThemeService extends ChangeNotifier {
         backgroundColor: AppThemeConstants.lightSurface,
         elevation: AppThemeConstants.dialogElevation,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppThemeConstants.dialogBorderRadius),
+          borderRadius: BorderRadius.circular(
+            AppThemeConstants.dialogBorderRadius,
+          ),
         ),
         titleTextStyle: TextStyle(
           fontSize: AppThemeConstants.fontSizeH5,
@@ -326,7 +331,9 @@ class ThemeService extends ChangeNotifier {
           fontFamily: AppThemeConstants.primaryFontFamily,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppThemeConstants.snackBarBorderRadius),
+          borderRadius: BorderRadius.circular(
+            AppThemeConstants.snackBarBorderRadius,
+          ),
         ),
         behavior: SnackBarBehavior.floating,
         elevation: AppThemeConstants.elevationMD,
@@ -524,7 +531,9 @@ class ThemeService extends ChangeNotifier {
       cardTheme: CardThemeData(
         elevation: AppThemeConstants.cardElevation,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppThemeConstants.cardBorderRadius),
+          borderRadius: BorderRadius.circular(
+            AppThemeConstants.cardBorderRadius,
+          ),
         ),
         color: AppThemeConstants.darkSurface,
         surfaceTintColor: primaryColor,
@@ -759,7 +768,9 @@ class ThemeService extends ChangeNotifier {
         backgroundColor: AppThemeConstants.darkSurface,
         elevation: AppThemeConstants.dialogElevation,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppThemeConstants.dialogBorderRadius),
+          borderRadius: BorderRadius.circular(
+            AppThemeConstants.dialogBorderRadius,
+          ),
         ),
       ),
 
@@ -772,7 +783,9 @@ class ThemeService extends ChangeNotifier {
           inherit: true,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppThemeConstants.snackBarBorderRadius),
+          borderRadius: BorderRadius.circular(
+            AppThemeConstants.snackBarBorderRadius,
+          ),
         ),
         behavior: SnackBarBehavior.floating,
       ),

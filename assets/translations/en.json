@@ -3,6 +3,147 @@
     "title": "Task Manager",
     "version": "Version 1.0.0"
   },
+  "demo": {
+    "title": "CoreUI Theme Demo",
+    "subtitle": "Theme System Showcase",
+    "components": "Components",
+    "colors": "Colors",
+    "typography": "Typography",
+    "themeSettings": "Theme Settings",
+    "languageSettings": "Language Settings",
+    "buttons": "Buttons",
+    "cards": "Cards",
+    "formElements": "Form Elements",
+    "listItems": "List Items",
+    "additionalComponents": "Additional Components",
+    "progressIndicators": "Progress Indicators",
+    "chips": "Chips",
+    "badges": "Badges",
+    "controls": "Controls",
+    "brandColors": "CoreUI Brand Colors",
+    "grayScaleColors": "Gray Scale Colors",
+    "priorityColors": "Priority Colors",
+    "headings": "Headings",
+    "bodyText": "Body Text",
+    "labels": "Labels",
+    "themeMode": "Theme Mode",
+    "primaryColor": "Primary Color",
+    "language": "Language",
+    "sampleCard": "Sample Card",
+    "sampleInput": "Sample Input",
+    "password": "Password",
+    "email": "Email",
+    "search": "Search",
+    "multilineText": "Multi-line Text",
+    "completeProject": "Complete project",
+    "teamMeeting": "Team meeting",
+    "dueTomorrow": "Due tomorrow",
+    "dueToday": "Due today",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "primary": "Primary",
+    "outlined": "Outlined",
+    "text": "Text",
+    "withIcon": "With Icon",
+    "action": "Action",
+    "cancel": "Cancel",
+    "done": "Done",
+    "reset": "Reset",
+    "enterSomeText": "Enter some text",
+    "enterPassword": "Enter password",
+    "searchSomething": "Search something...",
+    "enterMultipleLines": "Enter multiple lines of text...",
+    "cardDescription": "This is a sample card using CoreUI design system with proper spacing and typography.",
+    "headingExamples": {
+      "h1": "Heading 1 - Display Large",
+      "h2": "Heading 2 - Display Medium", 
+      "h3": "Heading 3 - Display Small",
+      "h4": "Heading 4 - Headline Large",
+      "h5": "Heading 5 - Headline Medium",
+      "h6": "Heading 6 - Headline Small"
+    },
+    "bodyTextExamples": {
+      "large": "Body Large - This is large body text that provides excellent readability for important content.",
+      "medium": "Body Medium - This is the standard body text used for most content in the application.",
+      "small": "Body Small - This is small body text used for secondary information and captions."
+    },
+    "labelExamples": {
+      "large": "Label Large - Used for button text and important labels",
+      "medium": "Label Medium - Used for form labels and secondary buttons",
+      "small": "Label Small - Used for captions and small UI elements"
+    },
+    "themeModes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "themeColors": {
+      "primary": {
+        "label": "CoreUI Primary",
+        "description": "Classic CoreUI Purple"
+      },
+      "secondary": {
+        "label": "CoreUI Secondary", 
+        "description": "Professional Gray"
+      },
+      "success": {
+        "label": "CoreUI Success",
+        "description": "Fresh Green"
+      },
+      "danger": {
+        "label": "CoreUI Danger",
+        "description": "Alert Red"
+      },
+      "warning": {
+        "label": "CoreUI Warning",
+        "description": "Attention Orange"
+      },
+      "info": {
+        "label": "CoreUI Info",
+        "description": "Informative Blue"
+      }
+    },
+    "colorNames": {
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "success": "Success", 
+      "danger": "Danger",
+      "warning": "Warning",
+      "info": "Info",
+      "light": "Light",
+      "dark": "Dark",
+      "gray100": "Gray 100",
+      "gray200": "Gray 200",
+      "gray300": "Gray 300",
+      "gray400": "Gray 400",
+      "gray500": "Gray 500",
+      "gray600": "Gray 600",
+      "gray700": "Gray 700",
+      "gray800": "Gray 800",
+      "gray900": "Gray 900",
+      "priorityHigh": "High Priority",
+      "priorityMedium": "Medium Priority",
+      "priorityLow": "Low Priority"
+    },
+    "languages": {
+      "english": "English",
+      "uzbek": "Uzbek",
+      "russian": "Russian",
+      "currentLanguage": "Current Language"
+    },
+    "settings": "Settings",
+    "settingsDescription": "Customize your demo experience with theme and language preferences.",
+    "languageDescription": "Choose your preferred language for the demo interface.",
+    "additionalSettings": "Additional Settings",
+    "animations": "Animations",
+    "animationsDescription": "Enable or disable UI animations",
+    "developerMode": "Developer Mode",
+    "developerModeDescription": "Show additional debugging information",
+    "about": "About",
+    "aboutDescription": "CoreUI Demo v1.0.0",
+    "aboutContent": "A comprehensive demo showcasing CoreUI design system with multi-language and theme support."
+  },
   "navigation": {
     "home": "Home",
     "tasks": "Tasks",
