@@ -31,7 +31,8 @@ class CoreUIDemo extends StatelessWidget {
             theme: themeService.lightTheme,
             darkTheme: themeService.darkTheme,
             themeMode: themeService.flutterThemeMode,
-            themeAnimationDuration: const Duration(milliseconds: 200),
+            // Disable theme transition animations to avoid interpolation errors
+            themeAnimationDuration: Duration.zero,
             locale: localizationService.currentLocale,
             localizationsDelegates: const [
               AppLocalizationsDelegate(),
