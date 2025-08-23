@@ -147,6 +147,7 @@
   "navigation": {
     "home": "Главная",
     "tasks": "Задачи",
+    "projects": "Проекты",
     "profile": "Профиль",
     "settings": "Настройки"
   },

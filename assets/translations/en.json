@@ -147,6 +147,7 @@
   "navigation": {
     "home": "Home",
     "tasks": "Tasks",
+    "projects": "Projects",
     "profile": "Profile",
     "settings": "Settings"
   },

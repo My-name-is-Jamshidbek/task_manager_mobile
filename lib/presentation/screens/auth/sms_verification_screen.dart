@@ -5,6 +5,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../widgets/auth_app_bar.dart';
 import '../../widgets/login_submit_button.dart';
 import '../../widgets/pin_code_field.dart';
+import '../main/main_screen.dart';
 
 class SmsVerificationScreen extends StatefulWidget {
   final String phone; // formatted phone passed from previous screen
@@ -59,11 +60,15 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
       return;
     }
     setState(() => _submitting = true);
-    await Future.delayed(const Duration(milliseconds: 900));
+    // Simulate verification process & wait 5 seconds before navigating to main screen
+    await Future.delayed(const Duration(seconds: 5));
     if (!mounted) return;
     setState(() => _submitting = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${loc.translate('auth.verify')} ${loc.translate('common.ok')}')),
+    
+    // Navigate to main screen and clear the auth stack
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const MainScreen()),
+      (route) => false,
     );
   }
 
