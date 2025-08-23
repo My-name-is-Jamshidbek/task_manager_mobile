@@ -47,7 +47,10 @@ class DemoPrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: isEnabled ? () {} : null,
-      child: const Text('Primary'),
+      child: Text(
+        'Primary',
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(inherit: true),
+      ),
     );
   }
 }
@@ -67,7 +70,10 @@ class DemoOutlinedButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton(
       onPressed: isEnabled ? () {} : null,
-      child: const Text('Outlined'),
+      child: Text(
+        'Outlined',
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(inherit: true),
+      ),
     );
   }
 }
@@ -87,7 +93,10 @@ class DemoTextButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextButton(
       onPressed: isEnabled ? () {} : null,
-      child: const Text('Text'),
+      child: Text(
+        'Text',
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(inherit: true),
+      ),
     );
   }
 }
@@ -108,7 +117,10 @@ class DemoIconButton extends StatelessWidget {
     return ElevatedButton.icon(
       onPressed: isEnabled ? () {} : null,
       icon: const Icon(Icons.check),
-      label: const Text('With Icon'),
+      label: Text(
+        'With Icon',
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(inherit: true),
+      ),
     );
   }
 }
