@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'dart:io';
 
 class Logger {
   static const String _tag = 'TaskManager';
@@ -14,6 +15,7 @@ class Logger {
 
   static void enable() {
     _isEnabled = true;
+    info('🟢 Logger enabled');
   }
 
   static void disable() {
@@ -58,6 +60,9 @@ class Logger {
     final String levelString = _getLevelString(level);
     final String logMessage = '[$tag] $levelString: $message';
 
+    // Use both print and developer.log for maximum visibility
+    print(logMessage);
+    
     switch (level) {
       case _levelInfo:
         developer.log(logMessage, name: tag, level: 800);
@@ -73,6 +78,12 @@ class Logger {
           error: error,
           stackTrace: stackTrace,
         );
+        if (error != null) {
+          print('[$tag] ERROR Details: $error');
+        }
+        if (stackTrace != null) {
+          print('[$tag] Stack Trace: $stackTrace');
+        }
         break;
       case _levelDebug:
         developer.log(logMessage, name: tag, level: 700);

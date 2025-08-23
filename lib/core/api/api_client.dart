@@ -41,14 +41,25 @@ class ApiClient {
     Map<String, String>? queryParams,
     T Function(Map<String, dynamic>)? fromJson,
   }) async {
+    final String requestId = _generateRequestId();
     try {
       final uri = _buildUri(endpoint, queryParams);
-      Logger.info('GET: $uri');
+      
+      Logger.info('🚀 [$requestId] GET Request Started');
+      Logger.info('📍 [$requestId] URL: $uri');
+      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(_headers)}');
+      if (queryParams != null && queryParams.isNotEmpty) {
+        Logger.info('🔍 [$requestId] Query Params: $queryParams');
+      }
 
+      final stopwatch = Stopwatch()..start();
       final response = await _client.get(uri, headers: _headers);
-      return _handleResponse<T>(response, fromJson);
-    } catch (e) {
-      Logger.error('GET Error: $e');
+      stopwatch.stop();
+
+      Logger.info('⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms');
+      return _handleResponse<T>(response, fromJson, requestId);
+    } catch (e, stackTrace) {
+      Logger.error('❌ [$requestId] GET Request Failed', 'ApiClient', e, stackTrace);
       return ApiResponse.error('Network error: $e');
     }
   }
@@ -57,22 +68,37 @@ class ApiClient {
   Future<ApiResponse<T>> post<T>(
     String endpoint, {
     Map<String, dynamic>? body,
+    Map<String, String>? headers,
     T Function(Map<String, dynamic>)? fromJson,
   }) async {
+    final String requestId = _generateRequestId();
     try {
       final uri = _buildUri(endpoint);
       final jsonBody = body != null ? jsonEncode(body) : null;
-      Logger.info('POST: $uri');
-      Logger.info('Body: $jsonBody');
+      
+      // Merge custom headers with default headers
+      final finalHeaders = {..._headers};
+      if (headers != null) {
+        finalHeaders.addAll(headers);
+      }
 
+      Logger.info('🚀 [$requestId] POST Request Started');
+      Logger.info('📍 [$requestId] URL: $uri');
+      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(finalHeaders)}');
+      Logger.info('📦 [$requestId] Request Body: ${_sanitizeBody(body)}');
+
+      final stopwatch = Stopwatch()..start();
       final response = await _client.post(
         uri,
-        headers: _headers,
+        headers: finalHeaders,
         body: jsonBody,
       );
-      return _handleResponse<T>(response, fromJson);
-    } catch (e) {
-      Logger.error('POST Error: $e');
+      stopwatch.stop();
+
+      Logger.info('⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms');
+      return _handleResponse<T>(response, fromJson, requestId);
+    } catch (e, stackTrace) {
+      Logger.error('❌ [$requestId] POST Request Failed', 'ApiClient', e, stackTrace);
       return ApiResponse.error('Network error: $e');
     }
   }
@@ -83,19 +109,28 @@ class ApiClient {
     Map<String, dynamic>? body,
     T Function(Map<String, dynamic>)? fromJson,
   }) async {
+    final String requestId = _generateRequestId();
     try {
       final uri = _buildUri(endpoint);
       final jsonBody = body != null ? jsonEncode(body) : null;
-      Logger.info('PUT: $uri');
+      
+      Logger.info('🚀 [$requestId] PUT Request Started');
+      Logger.info('📍 [$requestId] URL: $uri');
+      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(_headers)}');
+      Logger.info('📦 [$requestId] Request Body: ${_sanitizeBody(body)}');
 
+      final stopwatch = Stopwatch()..start();
       final response = await _client.put(
         uri,
         headers: _headers,
         body: jsonBody,
       );
-      return _handleResponse<T>(response, fromJson);
-    } catch (e) {
-      Logger.error('PUT Error: $e');
+      stopwatch.stop();
+
+      Logger.info('⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms');
+      return _handleResponse<T>(response, fromJson, requestId);
+    } catch (e, stackTrace) {
+      Logger.error('❌ [$requestId] PUT Request Failed', 'ApiClient', e, stackTrace);
       return ApiResponse.error('Network error: $e');
     }
   }
@@ -105,14 +140,22 @@ class ApiClient {
     String endpoint, {
     T Function(Map<String, dynamic>)? fromJson,
   }) async {
+    final String requestId = _generateRequestId();
     try {
       final uri = _buildUri(endpoint);
-      Logger.info('DELETE: $uri');
+      
+      Logger.info('🚀 [$requestId] DELETE Request Started');
+      Logger.info('📍 [$requestId] URL: $uri');
+      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(_headers)}');
 
+      final stopwatch = Stopwatch()..start();
       final response = await _client.delete(uri, headers: _headers);
-      return _handleResponse<T>(response, fromJson);
-    } catch (e) {
-      Logger.error('DELETE Error: $e');
+      stopwatch.stop();
+
+      Logger.info('⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms');
+      return _handleResponse<T>(response, fromJson, requestId);
+    } catch (e, stackTrace) {
+      Logger.error('❌ [$requestId] DELETE Request Failed', 'ApiClient', e, stackTrace);
       return ApiResponse.error('Network error: $e');
     }
   }
@@ -124,37 +167,90 @@ class ApiClient {
     ).replace(queryParameters: queryParams);
   }
 
+  // Generate unique request ID for tracking
+  String _generateRequestId() {
+    return 'REQ_${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}';
+  }
+
+  // Sanitize headers for logging (hide sensitive data)
+  Map<String, String> _sanitizeHeaders(Map<String, String> headers) {
+    final sanitized = Map<String, String>.from(headers);
+    if (sanitized.containsKey('Authorization')) {
+      final auth = sanitized['Authorization']!;
+      if (auth.length > 20) {
+        sanitized['Authorization'] = '${auth.substring(0, 20)}...';
+      }
+    }
+    return sanitized;
+  }
+
+  // Sanitize request body for logging (hide sensitive data)
+  String _sanitizeBody(Map<String, dynamic>? body) {
+    if (body == null) return 'null';
+    
+    final sanitized = Map<String, dynamic>.from(body);
+    
+    // Hide sensitive fields
+    const sensitiveFields = ['password', 'token', 'secret', 'key'];
+    for (final field in sensitiveFields) {
+      if (sanitized.containsKey(field)) {
+        final value = sanitized[field].toString();
+        sanitized[field] = value.length > 4 
+            ? '${value.substring(0, 4)}***' 
+            : '***';
+      }
+    }
+    
+    return _truncateLog(jsonEncode(sanitized), 500);
+  }
+
+  // Truncate log messages to prevent overflow
+  String _truncateLog(String message, int maxLength) {
+    if (message.length <= maxLength) return message;
+    return '${message.substring(0, maxLength)}... [TRUNCATED]';
+  }
+
   // Handle HTTP response
   ApiResponse<T> _handleResponse<T>(
     http.Response response,
     T Function(Map<String, dynamic>)? fromJson,
+    String requestId,
   ) {
-    Logger.info('Response Status: ${response.statusCode}');
-    Logger.info('Response Body: ${response.body}');
+    Logger.info('📥 [$requestId] Response Status: ${response.statusCode}');
+    Logger.info('📥 [$requestId] Response Headers: ${response.headers}');
+    
+    // Log response body (truncated if too long)
+    final responseBodyLog = _truncateLog(response.body, 1000);
+    Logger.info('📥 [$requestId] Response Body: $responseBodyLog');
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      Logger.info('✅ [$requestId] Request Successful');
       try {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
 
         if (fromJson != null) {
           final data = fromJson(jsonData);
+          Logger.info('🎯 [$requestId] Data Parsed Successfully');
           return ApiResponse.success(data);
         } else {
+          Logger.info('🎯 [$requestId] Raw JSON Returned');
           return ApiResponse.success(jsonData as T);
         }
-      } catch (e) {
-        Logger.error('JSON Parse Error: $e');
+      } catch (e, stackTrace) {
+        Logger.error('❌ [$requestId] JSON Parse Error', 'ApiClient', e, stackTrace);
         return ApiResponse.error('Failed to parse response');
       }
     } else {
+      Logger.warning('⚠️ [$requestId] Request Failed with Status: ${response.statusCode}');
       try {
         final Map<String, dynamic> errorData = jsonDecode(response.body);
         final message = errorData['message'] ?? 'Unknown error occurred';
+        Logger.error('❌ [$requestId] Error Message: $message');
         return ApiResponse.error(message);
       } catch (e) {
-        return ApiResponse.error(
-          'HTTP ${response.statusCode}: ${response.reasonPhrase}',
-        );
+        final errorMessage = 'HTTP ${response.statusCode}: ${response.reasonPhrase}';
+        Logger.error('❌ [$requestId] Error: $errorMessage');
+        return ApiResponse.error(errorMessage);
       }
     }
   }

@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/validators.dart';
+import '../../../core/utils/api_error_mapper.dart';
+import '../../../core/utils/logger.dart';
 import '../../widgets/language_selector.dart';
 import '../../widgets/theme_settings_sheet.dart';
 import '../../widgets/uzbekistan_phone_field.dart';
 import '../../widgets/password_field.dart';
 import '../../widgets/login_submit_button.dart';
+import '../../providers/auth_provider.dart';
 import 'sms_verification_screen.dart';
+import '../main/main_screen.dart';
 
 import '../../widgets/auth_app_bar.dart';
 
@@ -56,20 +61,63 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     final loc = AppLocalizations.of(context);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
     if (!_formKey.currentState!.validate()) {
       setState(() => _autoValidate = true);
       return;
     }
+    
     setState(() => _submitting = true);
-    // Simulate server auth & wait total 5 seconds before navigating to SMS verification
-    await Future.delayed(const Duration(seconds: 5));
-    if (!mounted) return;
-    setState(() => _submitting = false);
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SmsVerificationScreen(phone: _phoneCtrl.text.trim()),
-      ),
-    );
+    
+    try {
+      // Extract phone number (remove spaces and formatting)
+      final cleanPhone = _phoneCtrl.text.replaceAll(RegExp(r'[^\d+]'), '');
+      final password = _passwordCtrl.text.trim();
+      
+      // Call login API with phone and password
+      final success = await authProvider.login(cleanPhone, password);
+      
+      if (!mounted) return;
+      
+      if (success) {
+        // Check if user is already logged in (direct login without SMS)
+        if (authProvider.isLoggedIn) {
+          // Navigate directly to main screen
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const MainScreen()),
+            (route) => false,
+          );
+        } else {
+          // Navigate to SMS verification screen
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => SmsVerificationScreen(phone: cleanPhone),
+            ),
+          );
+        }
+      } else {
+        // Show error message with proper translation
+        final errorKey = ApiErrorMapper.getFallbackKey(authProvider.error);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(loc.translate(errorKey)),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.translate('messages.unexpectedError')),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _submitting = false);
+      }
+    }
   }
 
   @override
@@ -156,10 +204,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 8),
                               LoginSubmitButton(
-                                enabled: _isFormValid,
+                                enabled: _isFormValid && !_submitting,
                                 loading: _submitting,
                                 label: loc.translate('auth.loginButton'),
-                                onPressed: () async {
+                                onPressed: _submitting ? null : () async {
                                   await _submit();
                                   HapticFeedback.lightImpact();
                                 },

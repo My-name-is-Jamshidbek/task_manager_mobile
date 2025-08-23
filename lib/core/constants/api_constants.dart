@@ -1,9 +1,10 @@
 class ApiConstants {
   // Base URL for the API
-  static const String baseUrl = 'https://api.taskmanager.com/v1';
+  static const String baseUrl = 'http://tms.amusoft.uz/api';
 
   // API Endpoints
   static const String login = '/auth/login';
+  static const String verify = '/auth/verify';
   static const String register = '/auth/register';
   static const String logout = '/auth/logout';
   static const String refreshToken = '/auth/refresh';

@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../widgets/auth_app_bar.dart';
 import '../../widgets/login_submit_button.dart';
 import '../../widgets/pin_code_field.dart';
+import '../../providers/auth_provider.dart';
 import '../main/main_screen.dart';
 
 class SmsVerificationScreen extends StatefulWidget {
@@ -55,21 +57,62 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
 
   Future<void> _submit() async {
     final loc = AppLocalizations.of(context);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
     if (!_isValid) {
       setState(() => _autoValidate = true);
       return;
     }
-    setState(() => _submitting = true);
-    // Simulate verification process & wait 5 seconds before navigating to main screen
-    await Future.delayed(const Duration(seconds: 5));
-    if (!mounted) return;
-    setState(() => _submitting = false);
     
-    // Navigate to main screen and clear the auth stack
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const MainScreen()),
-      (route) => false,
-    );
+    setState(() => _submitting = true);
+    
+    try {
+      // Call verify API (currently bypassed)
+      final success = await authProvider.verifyCode(widget.phone, _code);
+      
+      if (!mounted) return;
+      
+      if (success) {
+        // Show success message briefly
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(loc.translate('messages.loginSuccessful')),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        
+        // Wait for 5 seconds as requested, then navigate to main screen
+        await Future.delayed(const Duration(seconds: 5));
+        
+        if (!mounted) return;
+        
+        // Navigate to main screen and clear the auth stack
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+          (route) => false,
+        );
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? loc.translate('auth.invalidCode')),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.translate('messages.unexpectedError')),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _submitting = false);
+      }
+    }
   }
 
   void _resend() {
@@ -170,10 +213,10 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
                           ),
                           const SizedBox(height: 8),
                           LoginSubmitButton(
-                            enabled: _isValid,
+                            enabled: _isValid && !_submitting,
                             loading: _submitting,
                             label: loc.translate('auth.verify'),
-                            onPressed: () async {
+                            onPressed: _submitting ? null : () async {
                               await _submit();
                               HapticFeedback.lightImpact();
                             },

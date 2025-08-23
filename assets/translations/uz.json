@@ -4,8 +4,8 @@
     "version": "Versiya 1.0.0"
   },
   "demo": {
-    "title": "CoreUI Mavzu Demo",
-    "subtitle": "Mavzu Tizimi Ko'rgazmasi",
+    "title": "CoreUI Mavzu Namoyishi",
+    "subtitle": "Mavzu Tizimi Namoyishi",
     "components": "Komponentlar",
     "colors": "Ranglar",
     "typography": "Tipografiya",
@@ -18,11 +18,11 @@
     "additionalComponents": "Qo'shimcha Komponentlar",
     "progressIndicators": "Jarayon Ko'rsatkichlari",
     "chips": "Chiplar",
-    "badges": "Belgiler",
+    "badges": "Nishonlar",
     "controls": "Boshqaruv Elementlari",
     "brandColors": "CoreUI Brend Ranglari",
-    "grayScaleColors": "Kulrang Shkalasi Ranglari",
-    "priorityColors": "Muhimlik Ranglari",
+    "grayScaleColors": "Kulrang Ranglari",
+    "priorityColors": "Ustuvorlik Ranglari",
     "headings": "Sarlavhalar",
     "bodyText": "Asosiy Matn",
     "labels": "Yorliqlar",
@@ -34,7 +34,7 @@
     "password": "Parol",
     "email": "Elektron pochta",
     "search": "Qidirish",
-    "multilineText": "Ko'p qatorli matn",
+    "multilineText": "Ko'p qatorli Matn",
     "completeProject": "Loyihani yakunlash",
     "teamMeeting": "Jamoa yig'ilishi",
     "dueTomorrow": "Ertaga tugaydi",
@@ -43,30 +43,30 @@
     "medium": "O'rta",
     "low": "Past",
     "primary": "Asosiy",
-    "outlined": "Chiziqli",
+    "outlined": "Chegaralangan",
     "text": "Matn",
-    "withIcon": "Belgi bilan",
+    "withIcon": "Belgili",
     "action": "Harakat",
     "cancel": "Bekor qilish",
     "done": "Tayyor",
-    "reset": "Qayta tiklash",
-    "enterSomeText": "Biror matn kiriting",
+    "reset": "Qaytarish",
+    "enterSomeText": "Matn kiriting",
     "enterPassword": "Parol kiriting",
     "searchSomething": "Nimanidir qidiring...",
     "enterMultipleLines": "Ko'p qatorli matn kiriting...",
-    "cardDescription": "Bu CoreUI dizayn tizimidan foydalangan holda to'g'ri bo'shliq va tipografiya bilan yaratilgan namuna karta.",
+    "cardDescription": "Bu CoreUI dizayn tizimi yordamida yaratilgan namuna karta bo'lib, to'g'ri oraliq va tipografiya bilan.",
     "headingExamples": {
-      "h1": "Sarlavha 1 - Katta Ko'rsatish",
-      "h2": "Sarlavha 2 - O'rta Ko'rsatish",
-      "h3": "Sarlavha 3 - Kichik Ko'rsatish",
-      "h4": "Sarlavha 4 - Katta Bosh",
-      "h5": "Sarlavha 5 - O'rta Bosh",
-      "h6": "Sarlavha 6 - Kichik Bosh"
+      "h1": "Sarlavha 1 - Katta Ko'rsatma",
+      "h2": "Sarlavha 2 - O'rta Ko'rsatma",
+      "h3": "Sarlavha 3 - Kichik Ko'rsatma",
+      "h4": "Sarlavha 4 - Katta Bosh sarlavha",
+      "h5": "Sarlavha 5 - O'rta Bosh sarlavha",
+      "h6": "Sarlavha 6 - Kichik Bosh sarlavha"
     },
     "bodyTextExamples": {
-      "large": "Katta Matn - Bu muhim kontent uchun ajoyib o'qilishi ta'minlaydigan katta asosiy matn.",
-      "medium": "O'rta Matn - Bu ilovada ko'pchilik kontent uchun ishlatiladigan standart asosiy matn.",
-      "small": "Kichik Matn - Bu ikkinchi darajali ma'lumot va izohlar uchun ishlatiladigan kichik asosiy matn."
+      "large": "Katta Asosiy Matn - Bu muhim kontent uchun ajoyib o'qilishi mumkin bo'lgan katta asosiy matn.",
+      "medium": "O'rta Asosiy Matn - Bu ilovadagi ko'pgina kontent uchun ishlatiladigan standart asosiy matn.",
+      "small": "Kichik Asosiy Matn - Bu ikkinchi darajali ma'lumot va izohlar uchun ishlatiladigan kichik asosiy matn."
     },
     "labelExamples": {
       "large": "Katta Yorliq - Tugma matni va muhim yorliqlar uchun ishlatiladi",
@@ -97,7 +97,7 @@
       },
       "warning": {
         "label": "CoreUI Ogohlantirish",
-        "description": "E'tibor Sariq"
+        "description": "E'tibor Orange"
       },
       "info": {
         "label": "CoreUI Ma'lumot",
@@ -122,27 +122,27 @@
       "gray700": "Kulrang 700",
       "gray800": "Kulrang 800",
       "gray900": "Kulrang 900",
-      "priorityHigh": "Yuqori Muhimlik",
-      "priorityMedium": "O'rta Muhimlik",
-      "priorityLow": "Past Muhimlik"
+      "priorityHigh": "Yuqori Ustuvorlik",
+      "priorityMedium": "O'rta Ustuvorlik",
+      "priorityLow": "Past Ustuvorlik"
     },
     "languages": {
-      "english": "Ingliz",
-      "uzbek": "O'zbek",
-      "russian": "Rus",
+      "english": "Inglizcha",
+      "uzbek": "O'zbekcha",
+      "russian": "Ruscha",
       "currentLanguage": "Joriy Til"
     },
     "settings": "Sozlamalar",
-    "settingsDescription": "Mavzu va til sozlamalari bilan demo tajribangizni sozlang.",
-    "languageDescription": "Demo interfeysi uchun kerakli tilni tanlang.",
+    "settingsDescription": "Mavzu va til afzalliklari bilan demo tajribangizni sozlang.",
+    "languageDescription": "Demo interfeysi uchun afzal ko'rgan tilingizni tanlang.",
     "additionalSettings": "Qo'shimcha Sozlamalar",
     "animations": "Animatsiyalar",
-    "animationsDescription": "UI animatsiyalarni yoqish yoki o'chirish",
+    "animationsDescription": "UI animatsiyalarini yoqish yoki o'chirish",
     "developerMode": "Dasturchi Rejimi",
-    "developerModeDescription": "Qo'shimcha debugging ma'lumotlarini ko'rsatish",
+    "developerModeDescription": "Qo'shimcha disk raskadka ma'lumotlarini ko'rsatish",
     "about": "Haqida",
     "aboutDescription": "CoreUI Demo v1.0.0",
-    "aboutContent": "Ko'p tilli va mavzu qo'llab-quvvatlash bilan CoreUI dizayn tizimini namoyish qiluvchi keng qamrovli demo."
+    "aboutContent": "Ko'p til va mavzu yordami bilan CoreUI dizayn tizimini ko'rsatuvchi keng qamrovli demo."
   },
   "navigation": {
     "home": "Bosh sahifa",
@@ -179,13 +179,13 @@
     "taskTitle": "Vazifa nomi",
     "taskDescription": "Vazifa tavsifi",
     "dueDate": "Tugash sanasi",
-    "priority": "Muhimlik",
+    "priority": "Ustuvorlik",
     "category": "Kategoriya",
     "status": "Holat",
     "save": "Saqlash",
     "cancel": "Bekor qilish",
     "delete": "O'chirish",
-    "markComplete": "Bajarildi deb belgilash",
+    "markComplete": "Bajarilgan deb belgilash",
     "markIncomplete": "Bajarilmagan deb belgilash",
     "noTasks": "Vazifalar topilmadi",
     "createFirstTask": "Birinchi vazifangizni yarating"
@@ -198,7 +198,7 @@
   },
   "status": {
     "pending": "Kutilmoqda",
-    "inProgress": "Jarayonda",
+    "inProgress": "Bajarilmoqda",
     "completed": "Bajarildi",
     "cancelled": "Bekor qilindi"
   },
@@ -225,7 +225,7 @@
     "theme": "Mavzu",
     "notifications": "Bildirishnomalar",
     "privacy": "Maxfiylik",
-    "about": "Haqida",
+    "about": "Dastur haqida",
     "version": "Versiya"
   },
   "common": {
@@ -241,7 +241,7 @@
     "create": "Yaratish",
     "search": "Qidirish",
     "filter": "Filtrlash",
-    "sort": "Saralash",
+    "sort": "Tartiblash",
     "loading": "Yuklanmoqda...",
     "error": "Xato",
     "success": "Muvaffaqiyat",
@@ -250,10 +250,10 @@
   },
   "validation": {
     "required": "Bu maydon to'ldirilishi shart",
-    "emailInvalid": "To'g'ri elektron pochta manzilini kiriting",
+    "emailInvalid": "Iltimos, to'g'ri elektron pochta manzilini kiriting",
     "passwordMinLength": "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
     "passwordsNotMatch": "Parollar mos kelmaydi",
-    "phoneInvalid": "To'g'ri telefon raqamini kiriting"
+    "phoneInvalid": "Iltimos, to'g'ri telefon raqamini kiriting"
   },
   "messages": {
     "taskCreated": "Vazifa muvaffaqiyatli yaratildi",
@@ -261,6 +261,11 @@
     "taskDeleted": "Vazifa muvaffaqiyatli o'chirildi",
     "profileUpdated": "Profil muvaffaqiyatli yangilandi",
     "loginSuccessful": "Kirish muvaffaqiyatli",
+    "loginFailed": "Kirish muvaffaqiyatsiz. Ma'lumotlaringizni tekshiring.",
+    "invalidCredentials": "Telefon raqami yoki parol noto'g'ri",
+    "phoneNotFound": "Telefon raqami topilmadi",
+    "incorrectPassword": "Parol noto'g'ri",
+    "userNotFound": "Foydalanuvchi topilmadi",
     "logoutSuccessful": "Chiqish muvaffaqiyatli",
     "registrationSuccessful": "Ro'yxatdan o'tish muvaffaqiyatli",
     "networkError": "Tarmoq xatosi. Ulanishingizni tekshiring.",

@@ -5,7 +5,7 @@ import '../../core/localization/app_localizations.dart';
 import '../../core/theme/theme_service.dart';
 import '../../core/constants/theme_constants.dart';
 
-/// Language Selector Widget
+/// Language Selector Widget - Optimized for bottom sheet
 class LanguageSelector extends StatelessWidget {
   const LanguageSelector({super.key});
 
@@ -15,21 +15,18 @@ class LanguageSelector extends StatelessWidget {
     final localizationService = Provider.of<LocalizationService>(context);
     final localizations = AppLocalizations.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Current Language Display
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: themeService.primaryColor.withOpacity(0.3),
-            ),
-            borderRadius: BorderRadius.circular(12),
-            color: themeService.primaryColor.withOpacity(0.05),
-          ),
-          child: Row(
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
@@ -45,83 +42,64 @@ class LanguageSelector extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      localizations.translate('demo.languages.currentLanguage'),
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: AppThemeConstants.gray600,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _getLanguageDisplayName(
-                        localizationService.currentLocale.languageCode,
-                        localizations,
+                child: Text(
+                  localizations.translate('settings.language'),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ],
                 ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close),
               ),
             ],
           ),
-        ),
 
-        const SizedBox(height: 20),
+          const SizedBox(height: 20),
 
-        Text(
-          localizations.translate('demo.availableLanguages'),
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppThemeConstants.gray700,
+          // Language Options
+          Column(
+            children: [
+              _buildLanguageTile(
+                context,
+                'en',
+                localizations.translate('demo.languages.english'),
+                'English',
+                Icons.public,
+                localizationService,
+                themeService,
               ),
-        ),
 
-        const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-        // Language Options
-        Column(
-          children: [
-            _buildLanguageTile(
-              context,
-              'en',
-              localizations.translate('demo.languages.english'),
-              'English',
-              Icons.public,
-              localizationService,
-              themeService,
-            ),
+              _buildLanguageTile(
+                context,
+                'uz',
+                localizations.translate('demo.languages.uzbek'),
+                'O\'zbekcha',
+                Icons.location_on,
+                localizationService,
+                themeService,
+              ),
 
-            const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-            _buildLanguageTile(
-              context,
-              'uz',
-              localizations.translate('demo.languages.uzbek'),
-              'O\'zbekcha',
-              Icons.location_on,
-              localizationService,
-              themeService,
-            ),
+              _buildLanguageTile(
+                context,
+                'ru',
+                localizations.translate('demo.languages.russian'),
+                'Русский',
+                Icons.language,
+                localizationService,
+                themeService,
+              ),
+            ],
+          ),
 
-            const SizedBox(height: 8),
-
-            _buildLanguageTile(
-              context,
-              'ru',
-              localizations.translate('demo.languages.russian'),
-              'Русский',
-              Icons.language,
-              localizationService,
-              themeService,
-            ),
-          ],
-        ),
-      ],
+          const SizedBox(height: 20),
+        ],
+      ),
     );
   }
 
@@ -143,11 +121,13 @@ class LanguageSelector extends StatelessWidget {
           await localizationService.changeLanguage(languageCode);
 
           if (context.mounted) {
+            Navigator.of(context).pop(); // Close the modal
+            
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Language changed to $localizedName'),
                 duration: const Duration(seconds: 2),
-                backgroundColor: AppThemeConstants.success,
+                backgroundColor: Theme.of(context).colorScheme.secondary,
               ),
             );
           }

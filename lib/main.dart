@@ -7,10 +7,16 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/theme_service.dart';
 import 'core/localization/localization_service.dart';
 import 'core/localization/app_localizations.dart';
+import 'core/utils/logger.dart';
+import 'presentation/providers/auth_provider.dart';
 import 'presentation/screens/auth/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize logging first
+  Logger.enable();
+  Logger.info('🚀 TaskManager App Starting...');
 
   // Lock orientation if needed
   await SystemChrome.setPreferredOrientations([
@@ -18,11 +24,18 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
+  Logger.info('📱 Orientation locked to portrait');
+
   // Initialize theme and localization services
   final themeService = ThemeService();
   final localizationService = LocalizationService();
+  final authProvider = AuthProvider();
+  
+  Logger.info('⚙️ Initializing services...');
   await themeService.initialize();
   await localizationService.initialize();
+  await authProvider.initialize();
+  Logger.info('✅ All services initialized successfully');
 
   // Run Login Screen with theme and localization providers
   runApp(
@@ -30,9 +43,10 @@ void main() async {
       providers: [
         ChangeNotifierProvider.value(value: themeService),
         ChangeNotifierProvider.value(value: localizationService),
+        ChangeNotifierProvider.value(value: authProvider),
       ],
-      child: Consumer2<ThemeService, LocalizationService>(
-        builder: (context, themeService, localizationService, child) {
+      child: Consumer3<ThemeService, LocalizationService, AuthProvider>(
+        builder: (context, themeService, localizationService, authProvider, child) {
           return MaterialApp(
             title: 'Task Manager',
             theme: themeService.lightTheme,
