@@ -162,7 +162,13 @@
     "registerButton": "Ro'yxatdan o'tish",
     "orContinueWith": "Yoki davom eting",
     "alreadyHaveAccount": "Hisobingiz bormi?",
-    "dontHaveAccount": "Hisobingiz yo'qmi?"
+    "dontHaveAccount": "Hisobingiz yo'qmi?",
+    "verify": "Tasdiqlash",
+    "verifyCode": "Kod Tasdiqlash",
+    "smsCode": "SMS KOD",
+    "resendCode": "Kodni qayta yuborish",
+    "codeSentTo": "Kod yuborildi",
+    "invalidCode": "Noto'g'ri kod"
   },
   "tasks": {
     "title": "Vazifalar",

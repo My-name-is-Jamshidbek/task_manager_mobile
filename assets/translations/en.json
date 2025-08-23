@@ -162,7 +162,13 @@
     "registerButton": "Sign Up",
     "orContinueWith": "Or continue with",
     "alreadyHaveAccount": "Already have an account?",
-    "dontHaveAccount": "Don't have an account?"
+    "dontHaveAccount": "Don't have an account?",
+    "verify": "Verify",
+    "verifyCode": "Verify Code",
+    "smsCode": "SMS Code",
+    "resendCode": "Resend Code",
+    "codeSentTo": "Code sent to",
+    "invalidCode": "Invalid code"
   },
   "tasks": {
     "title": "Tasks",

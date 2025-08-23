@@ -162,7 +162,13 @@
     "registerButton": "Зарегистрироваться",
     "orContinueWith": "Или продолжить с",
     "alreadyHaveAccount": "Уже есть аккаунт?",
-    "dontHaveAccount": "Нет аккаунта?"
+    "dontHaveAccount": "Нет аккаунта?",
+    "verify": "Подтвердить",
+    "verifyCode": "Проверка Кода",
+    "smsCode": "SMS Код",
+    "resendCode": "Отправить снова",
+    "codeSentTo": "Код отправлен на",
+    "invalidCode": "Неверный код"
   },
   "tasks": {
     "title": "Задачи",

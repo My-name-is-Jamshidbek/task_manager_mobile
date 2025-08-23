@@ -7,6 +7,9 @@ import '../../widgets/theme_settings_sheet.dart';
 import '../../widgets/uzbekistan_phone_field.dart';
 import '../../widgets/password_field.dart';
 import '../../widgets/login_submit_button.dart';
+import 'sms_verification_screen.dart';
+
+import '../../widgets/auth_app_bar.dart';
 
 /// Login Screen (Phone based for Uzbekistan) – Rewritten clean structure
 class LoginScreen extends StatefulWidget {
@@ -58,11 +61,14 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
     setState(() => _submitting = true);
-    await Future.delayed(const Duration(milliseconds: 900));
+    // Simulate server auth & wait total 5 seconds before navigating to SMS verification
+    await Future.delayed(const Duration(seconds: 5));
     if (!mounted) return;
     setState(() => _submitting = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${loc.translate('auth.login')} OK')),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SmsVerificationScreen(phone: _phoneCtrl.text.trim()),
+      ),
     );
   }
 
@@ -73,26 +79,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final media = MediaQuery.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(loc.translate('auth.login')),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.language),
-            tooltip: 'Language',
-            onPressed: () => showModalBottomSheet(
-              context: context,
-              builder: (_) => const LanguageSelector(),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.color_lens),
-            tooltip: 'Theme',
-            onPressed: () => showModalBottomSheet(
-              context: context,
-              builder: (_) => const ThemeSettingsSheet(),
-            ),
-          ),
-        ],
+      appBar: const AuthAppBar(
+        titleKey: 'auth.login',
       ),
       body: SafeArea(
         child: LayoutBuilder(
