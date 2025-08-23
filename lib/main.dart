@@ -10,6 +10,7 @@ import 'core/localization/app_localizations.dart';
 import 'core/utils/logger.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/widgets/app_root.dart';
+import 'core/utils/navigation_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +38,7 @@ void main() async {
   // Note: AuthProvider initialization will be handled by AppManager
   Logger.info('✅ Basic services initialized successfully');
 
+  // (navigatorKey imported from navigation_service)
   // Run Login Screen with theme and localization providers
   runApp(
     MultiProvider(
@@ -48,6 +50,7 @@ void main() async {
       child: Consumer3<ThemeService, LocalizationService, AuthProvider>(
         builder: (context, themeService, localizationService, authProvider, child) {
           return MaterialApp(
+            navigatorKey: navigatorKey,
             title: 'Task Manager',
             theme: themeService.lightTheme,
             darkTheme: themeService.darkTheme,
@@ -60,7 +63,9 @@ void main() async {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const AppRoot(), // Use AppRoot instead of direct LoginScreen
+            home: Builder(
+              builder: (context) => const AppRoot(),
+            ), // Use Builder to ensure proper context
             debugShowCheckedModeBanner: false,
           );
         },

@@ -1,11 +1,11 @@
 {
   "app": {
-    "title": "Vazifalar Boshqaruvchisi",
+    "title": "Vazifa Boshqaruvchisi",
     "version": "Versiya 1.0.0"
   },
   "demo": {
     "title": "CoreUI Mavzu Namoyishi",
-    "subtitle": "Mavzu Tizimi Namoyishi",
+    "subtitle": "Mavzu Tizimi Vitrinasi",
     "components": "Komponentlar",
     "colors": "Ranglar",
     "typography": "Tipografiya",
@@ -19,10 +19,10 @@
     "progressIndicators": "Jarayon Ko'rsatkichlari",
     "chips": "Chiplar",
     "badges": "Nishonlar",
-    "controls": "Boshqaruv Elementlari",
+    "controls": "Boshqarish Elementlari",
     "brandColors": "CoreUI Brend Ranglari",
-    "grayScaleColors": "Kulrang Ranglari",
-    "priorityColors": "Ustuvorlik Ranglari",
+    "grayScaleColors": "Kulrang Gradatsiya Ranglari",
+    "priorityColors": "Muhimlik Ranglari",
     "headings": "Sarlavhalar",
     "bodyText": "Asosiy Matn",
     "labels": "Yorliqlar",
@@ -37,35 +37,35 @@
     "multilineText": "Ko'p qatorli Matn",
     "completeProject": "Loyihani yakunlash",
     "teamMeeting": "Jamoa yig'ilishi",
-    "dueTomorrow": "Ertaga tugaydi",
-    "dueToday": "Bugun tugaydi",
+    "dueTomorrow": "Ertaga muddati",
+    "dueToday": "Bugun muddati",
     "high": "Yuqori",
     "medium": "O'rta",
     "low": "Past",
     "primary": "Asosiy",
-    "outlined": "Chegaralangan",
+    "outlined": "Konturli",
     "text": "Matn",
     "withIcon": "Belgili",
     "action": "Harakat",
     "cancel": "Bekor qilish",
     "done": "Tayyor",
-    "reset": "Qaytarish",
+    "reset": "Qayta tiklash",
     "enterSomeText": "Matn kiriting",
     "enterPassword": "Parol kiriting",
-    "searchSomething": "Nimanidir qidiring...",
+    "searchSomething": "Nimadir qidiring...",
     "enterMultipleLines": "Ko'p qatorli matn kiriting...",
-    "cardDescription": "Bu CoreUI dizayn tizimi yordamida yaratilgan namuna karta bo'lib, to'g'ri oraliq va tipografiya bilan.",
+    "cardDescription": "Bu to'g'ri masofa va tipografiya bilan CoreUI dizayn tizimidan foydalangan namuna karta.",
     "headingExamples": {
-      "h1": "Sarlavha 1 - Katta Ko'rsatma",
-      "h2": "Sarlavha 2 - O'rta Ko'rsatma",
-      "h3": "Sarlavha 3 - Kichik Ko'rsatma",
+      "h1": "Sarlavha 1 - Katta Ko'rinish",
+      "h2": "Sarlavha 2 - O'rta Ko'rinish",
+      "h3": "Sarlavha 3 - Kichik Ko'rinish",
       "h4": "Sarlavha 4 - Katta Bosh sarlavha",
       "h5": "Sarlavha 5 - O'rta Bosh sarlavha",
       "h6": "Sarlavha 6 - Kichik Bosh sarlavha"
     },
     "bodyTextExamples": {
-      "large": "Katta Asosiy Matn - Bu muhim kontent uchun ajoyib o'qilishi mumkin bo'lgan katta asosiy matn.",
-      "medium": "O'rta Asosiy Matn - Bu ilovadagi ko'pgina kontent uchun ishlatiladigan standart asosiy matn.",
+      "large": "Katta Asosiy Matn - Bu muhim kontent uchun ajoyib o'qilishni ta'minlaydigan katta asosiy matn.",
+      "medium": "O'rta Asosiy Matn - Bu ilovadagi ko'pchilik kontent uchun ishlatiladigan standart asosiy matn.",
       "small": "Kichik Asosiy Matn - Bu ikkinchi darajali ma'lumot va izohlar uchun ishlatiladigan kichik asosiy matn."
     },
     "labelExamples": {
@@ -97,11 +97,11 @@
       },
       "warning": {
         "label": "CoreUI Ogohlantirish",
-        "description": "E'tibor Orange"
+        "description": "Diqqat To'q sariq"
       },
       "info": {
         "label": "CoreUI Ma'lumot",
-        "description": "Ma'lumotli Ko'k"
+        "description": "Ma'lumotli Moviy"
       }
     },
     "colorNames": {
@@ -122,9 +122,9 @@
       "gray700": "Kulrang 700",
       "gray800": "Kulrang 800",
       "gray900": "Kulrang 900",
-      "priorityHigh": "Yuqori Ustuvorlik",
-      "priorityMedium": "O'rta Ustuvorlik",
-      "priorityLow": "Past Ustuvorlik"
+      "priorityHigh": "Yuqori Muhimlik",
+      "priorityMedium": "O'rta Muhimlik",
+      "priorityLow": "Past Muhimlik"
     },
     "languages": {
       "english": "Inglizcha",
@@ -139,10 +139,10 @@
     "animations": "Animatsiyalar",
     "animationsDescription": "UI animatsiyalarini yoqish yoki o'chirish",
     "developerMode": "Dasturchi Rejimi",
-    "developerModeDescription": "Qo'shimcha disk raskadka ma'lumotlarini ko'rsatish",
+    "developerModeDescription": "Qo'shimcha nosozliklarni tuzatish ma'lumotlarini ko'rsatish",
     "about": "Haqida",
     "aboutDescription": "CoreUI Demo v1.0.0",
-    "aboutContent": "Ko'p til va mavzu yordami bilan CoreUI dizayn tizimini ko'rsatuvchi keng qamrovli demo."
+    "aboutContent": "Ko'p tilli va mavzu qo'llab-quvvatlashi bilan CoreUI dizayn tizimini namoyish etuvchi keng qamrovli demo."
   },
   "navigation": {
     "home": "Bosh sahifa",
@@ -151,13 +151,28 @@
     "profile": "Profil",
     "settings": "Sozlamalar"
   },
+  "home": {
+    "welcomeBack": "Xush kelibsiz!",
+    "todayMotivation": "Bugun ishlarni tugataylik",
+    "quickActions": "Tezkor amallar",
+    "newProject": "Yangi loyiha",
+    "recentActivity": "So'nggi faollik",
+    "hoursAgo": "soat oldin",
+    "yesterday": "Kecha",
+    "projectUpdated": "Loyiha yangilandi",
+    "sampleActivities": {
+      "completePresentation": "Loyiha taqdimotini yakunlash",
+      "reviewFeedback": "Jamoa fikr-mulohazalarini ko'rib chiqish",
+      "mobileAppDev": "Mobil Ilova Ishlab Chiqish"
+    }
+  },
   "auth": {
     "login": "Kirish",
     "register": "Ro'yxatdan o'tish",
     "logout": "Chiqish",
     "email": "Elektron pochta",
     "password": "Parol",
-    "confirmPassword": "Parolni tasdiqlang",
+    "confirmPassword": "Parolni tasdiqlash",
     "forgotPassword": "Parolni unutdingizmi?",
     "loginButton": "Kirish",
     "registerButton": "Ro'yxatdan o'tish",
@@ -165,8 +180,8 @@
     "alreadyHaveAccount": "Hisobingiz bormi?",
     "dontHaveAccount": "Hisobingiz yo'qmi?",
     "verify": "Tasdiqlash",
-    "verifyCode": "Kod Tasdiqlash",
-    "smsCode": "SMS KOD",
+    "verifyCode": "Kodni tasdiqlash",
+    "smsCode": "SMS kod",
     "resendCode": "Kodni qayta yuborish",
     "codeSentTo": "Kod yuborildi",
     "invalidCode": "Noto'g'ri kod"
@@ -178,8 +193,8 @@
     "deleteTask": "Vazifani o'chirish",
     "taskTitle": "Vazifa nomi",
     "taskDescription": "Vazifa tavsifi",
-    "dueDate": "Tugash sanasi",
-    "priority": "Ustuvorlik",
+    "dueDate": "Oxirgi muddat",
+    "priority": "Muhimlik",
     "category": "Kategoriya",
     "status": "Holat",
     "save": "Saqlash",
@@ -188,19 +203,50 @@
     "markComplete": "Bajarilgan deb belgilash",
     "markIncomplete": "Bajarilmagan deb belgilash",
     "noTasks": "Vazifalar topilmadi",
-    "createFirstTask": "Birinchi vazifangizni yarating"
+    "createFirstTask": "Birinchi vazifangizni yarating",
+    "all": "Hammasi",
+    "due": "Muddati",
+    "sampleTaskTitle": "Mobil ilovaning dizaynini yakunlash",
+    "sampleTaskDescription": "Vazifa boshqaruvchi ilovasining asosiy ekranlarini loyihalash: kirish, boshqaruv paneli va vazifalar ko'rinishi.",
+    "sampleProjectName": "Mobil Ilova"
+  },
+  "projects": {
+    "title": "Loyihalar",
+    "addProject": "Loyiha qo'shish",
+    "active": "Faol",
+    "completed": "Yakunlangan",
+    "onHold": "Kutilmoqda",
+    "progress": "Jarayon",
+    "tasks": "vazifalar",
+    "sampleProjects": {
+      "taskManager": {
+        "name": "Vazifa Boshqaruvchi Mobil Ilova",
+        "description": "Flutter asosidagi vazifa boshqaruv ilovasi"
+      },
+      "ecommerce": {
+        "name": "Elektron Tijorat Veb-sayti",
+        "description": "Onlayn xarid qilish platformasini ishlab chiqish"
+      },
+      "dashboard": {
+        "name": "Marketing Paneli",
+        "description": "Tahlil va hisobot paneli"
+      }
+    }
   },
   "priority": {
     "low": "Past",
     "medium": "O'rta",
     "high": "Yuqori",
-    "urgent": "Shoshilinch"
+    "urgent": "Shoshilinch",
+    "lowChip": "PAST",
+    "mediumChip": "O'RTA",
+    "highChip": "YUQORI"
   },
   "status": {
     "pending": "Kutilmoqda",
-    "inProgress": "Bajarilmoqda",
-    "completed": "Bajarildi",
-    "cancelled": "Bekor qilindi"
+    "inProgress": "Jarayonda",
+    "completed": "Bajarilgan",
+    "cancelled": "Bekor qilingan"
   },
   "categories": {
     "work": "Ish",
@@ -217,7 +263,14 @@
     "lastName": "Familiya",
     "phoneNumber": "Telefon raqami",
     "dateOfBirth": "Tug'ilgan sana",
-    "updateProfile": "Profilni yangilash"
+    "updateProfile": "Profilni yangilash",
+    "completed": "Bajarilgan",
+    "pending": "Kutilayotgan",
+    "projects": "Loyihalar",
+    "sampleUser": {
+      "name": "Jon Do",
+      "email": "jon.do@example.com"
+    }
   },
   "settings": {
     "title": "Sozlamalar",
@@ -225,7 +278,7 @@
     "theme": "Mavzu",
     "notifications": "Bildirishnomalar",
     "privacy": "Maxfiylik",
-    "about": "Dastur haqida",
+    "about": "Haqida",
     "version": "Versiya"
   },
   "common": {
@@ -240,8 +293,8 @@
     "update": "Yangilash",
     "create": "Yaratish",
     "search": "Qidirish",
-    "filter": "Filtrlash",
-    "sort": "Tartiblash",
+    "filter": "Filtr",
+    "sort": "Saralash",
     "loading": "Yuklanmoqda...",
     "error": "Xato",
     "success": "Muvaffaqiyat",
@@ -249,11 +302,11 @@
     "info": "Ma'lumot"
   },
   "validation": {
-    "required": "Bu maydon to'ldirilishi shart",
-    "emailInvalid": "Iltimos, to'g'ri elektron pochta manzilini kiriting",
+    "required": "Bu maydon talab qilinadi",
+    "emailInvalid": "To'g'ri elektron pochta manzilini kiriting",
     "passwordMinLength": "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
     "passwordsNotMatch": "Parollar mos kelmaydi",
-    "phoneInvalid": "Iltimos, to'g'ri telefon raqamini kiriting"
+    "phoneInvalid": "To'g'ri telefon raqamini kiriting"
   },
   "messages": {
     "taskCreated": "Vazifa muvaffaqiyatli yaratildi",
@@ -262,14 +315,16 @@
     "profileUpdated": "Profil muvaffaqiyatli yangilandi",
     "loginSuccessful": "Kirish muvaffaqiyatli",
     "loginFailed": "Kirish muvaffaqiyatsiz. Ma'lumotlaringizni tekshiring.",
-    "invalidCredentials": "Telefon raqami yoki parol noto'g'ri",
+    "invalidCredentials": "Noto'g'ri telefon raqami yoki parol",
     "phoneNotFound": "Telefon raqami topilmadi",
-    "incorrectPassword": "Parol noto'g'ri",
+    "incorrectPassword": "Noto'g'ri parol",
     "userNotFound": "Foydalanuvchi topilmadi",
     "logoutSuccessful": "Chiqish muvaffaqiyatli",
+    "logoutConfirmation": "Haqiqatan ham chiqmoqchimisiz?",
+    "logoutWarning": "Hisobingizga kirish uchun qayta tizimga kirishingiz kerak bo'ladi.",
     "registrationSuccessful": "Ro'yxatdan o'tish muvaffaqiyatli",
     "networkError": "Tarmoq xatosi. Ulanishingizni tekshiring.",
-    "serverError": "Server xatosi. Keyinroq qayta urinib ko'ring.",
+    "serverError": "Server xatosi. Keyinroq urinib ko'ring.",
     "unexpectedError": "Kutilmagan xato yuz berdi"
   }
 }

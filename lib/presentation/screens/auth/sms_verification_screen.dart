@@ -3,15 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/utils/logger.dart';
 import '../../widgets/auth_app_bar.dart';
 import '../../widgets/login_submit_button.dart';
 import '../../widgets/pin_code_field.dart';
 import '../../providers/auth_provider.dart';
-import '../main/main_screen.dart';
 
 class SmsVerificationScreen extends StatefulWidget {
   final String phone; // formatted phone passed from previous screen
-  const SmsVerificationScreen({super.key, required this.phone});
+  final VoidCallback? onAuthSuccess;
+  
+  const SmsVerificationScreen({
+    super.key, 
+    required this.phone,
+    this.onAuthSuccess,
+  });
 
   @override
   State<SmsVerificationScreen> createState() => _SmsVerificationScreenState();
@@ -73,39 +79,66 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
       if (!mounted) return;
       
       if (success) {
-        // Show success message briefly
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(loc.translate('messages.loginSuccessful')),
-            backgroundColor: Theme.of(context).colorScheme.secondary,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        
-        // Wait for 5 seconds as requested, then navigate to main screen
-        await Future.delayed(const Duration(seconds: 5));
+        // Brief delay before navigation
+        await Future.delayed(const Duration(milliseconds: 500));
         
         if (!mounted) return;
         
-        // Navigate to main screen and clear the auth stack
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-          (route) => false,
-        );
+        // Always use callback for consistent navigation
+        if (widget.onAuthSuccess != null) {
+          widget.onAuthSuccess!();
+        } else {
+          // Log warning if no callback provided (this shouldn't happen)
+          Logger.warning('⚠️ SmsVerificationScreen: No onAuthSuccess callback provided');
+        }
       } else {
-        // Show error message
+        // Show error message with icon
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.error ?? loc.translate('auth.invalidCode')),
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Theme.of(context).colorScheme.onError,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(authProvider.error ?? loc.translate('auth.invalidCode')),
+                ),
+              ],
+            ),
             backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(loc.translate('messages.unexpectedError')),
+          content: Row(
+            children: [
+              Icon(
+                Icons.warning_outlined,
+                color: Theme.of(context).colorScheme.onError,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(loc.translate('messages.unexpectedError'))),
+            ],
+          ),
           backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          duration: const Duration(seconds: 4),
         ),
       );
     } finally {
@@ -123,11 +156,28 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
     });
     _startTimer();
     
-    // Show feedback to user
+    // Show feedback to user with icon
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(AppLocalizations.of(context).translate('auth.codeSentTo') + ' ${widget.phone}'),
-        duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            Icon(
+              Icons.sms,
+              color: Theme.of(context).colorScheme.onSecondary,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('${AppLocalizations.of(context).translate('auth.codeSentTo')} ${widget.phone}'),
+            ),
+          ],
+        ),
+        duration: const Duration(seconds: 3),
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
     // TODO: Actually trigger SMS resend API call

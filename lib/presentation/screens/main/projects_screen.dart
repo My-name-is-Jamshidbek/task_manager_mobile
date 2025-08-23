@@ -12,16 +12,16 @@ class ProjectsScreen extends StatelessWidget {
     return SafeArea(
       child: Column(
         children: [
-          _buildProjectStats(context, theme),
+          _buildProjectStats(context, loc, theme),
           Expanded(
-            child: _buildProjectsList(context, theme),
+            child: _buildProjectsList(context, theme, loc),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProjectStats(BuildContext context, ThemeData theme) {
+  Widget _buildProjectStats(BuildContext context, AppLocalizations loc, ThemeData theme) {
     return Container(
       margin: const EdgeInsets.all(16),
       child: Row(
@@ -29,7 +29,7 @@ class ProjectsScreen extends StatelessWidget {
           Expanded(
             child: _buildStatCard(
               context,
-              title: 'Active',
+              title: loc.translate('projects.active'),
               count: '5',
               color: theme.colorScheme.primary,
               theme: theme,
@@ -39,7 +39,7 @@ class ProjectsScreen extends StatelessWidget {
           Expanded(
             child: _buildStatCard(
               context,
-              title: 'Completed',
+              title: loc.translate('projects.completed'),
               count: '12',
               color: Colors.green,
               theme: theme,
@@ -49,7 +49,7 @@ class ProjectsScreen extends StatelessWidget {
           Expanded(
             child: _buildStatCard(
               context,
-              title: 'On Hold',
+              title: loc.translate('projects.onHold'),
               count: '2',
               color: Colors.orange,
               theme: theme,
@@ -94,37 +94,37 @@ class ProjectsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProjectsList(BuildContext context, ThemeData theme) {
+  Widget _buildProjectsList(BuildContext context, ThemeData theme, AppLocalizations loc) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: 8, // Mock data
       itemBuilder: (context, index) {
-        return _buildProjectCard(context, index, theme);
+        return _buildProjectCard(context, index, theme, loc);
       },
     );
   }
 
-  Widget _buildProjectCard(BuildContext context, int index, ThemeData theme) {
+  Widget _buildProjectCard(BuildContext context, int index, ThemeData theme, AppLocalizations loc) {
     final projects = [
       {
-        'name': 'Task Manager Mobile App',
-        'description': 'Flutter-based task management application',
+        'name': loc.translate('projects.sampleProjects.taskManager.name'),
+        'description': loc.translate('projects.sampleProjects.taskManager.description'),
         'progress': 0.75,
         'tasks': 24,
         'completed': 18,
         'color': Colors.blue,
       },
       {
-        'name': 'E-commerce Website',
-        'description': 'Online shopping platform development',
+        'name': loc.translate('projects.sampleProjects.ecommerce.name'),
+        'description': loc.translate('projects.sampleProjects.ecommerce.description'),
         'progress': 0.45,
         'tasks': 32,
         'completed': 14,
         'color': Colors.green,
       },
       {
-        'name': 'Marketing Dashboard',
-        'description': 'Analytics and reporting dashboard',
+        'name': loc.translate('projects.sampleProjects.dashboard.name'),
+        'description': loc.translate('projects.sampleProjects.dashboard.description'),
         'progress': 0.90,
         'tasks': 16,
         'completed': 14,
@@ -188,7 +188,7 @@ class ProjectsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Progress',
+                          loc.translate('projects.progress'),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -220,7 +220,7 @@ class ProjectsScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'tasks',
+                        loc.translate('projects.tasks'),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

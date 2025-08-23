@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../widgets/logout_confirmation_dialog.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final Future<void> Function()? onLogout;
+  
+  const ProfileScreen({super.key, this.onLogout});
 
   @override
   Widget build(BuildContext context) {
@@ -44,14 +47,14 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'John Doe', // TODO: Get from user data
+              loc.translate('profile.sampleUser.name'),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              'john.doe@example.com', // TODO: Get from user data
+              loc.translate('profile.sampleUser.email'),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -70,13 +73,14 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildStatsCards(BuildContext context, ThemeData theme) {
+    final loc = AppLocalizations.of(context);
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
             context,
             icon: Icons.task_alt,
-            title: 'Completed',
+            title: loc.translate('profile.completed'),
             count: '45',
             color: Colors.green,
             theme: theme,
@@ -87,7 +91,7 @@ class ProfileScreen extends StatelessWidget {
           child: _buildStatCard(
             context,
             icon: Icons.pending_actions,
-            title: 'Pending',
+            title: loc.translate('profile.pending'),
             count: '12',
             color: Colors.orange,
             theme: theme,
@@ -98,7 +102,7 @@ class ProfileScreen extends StatelessWidget {
           child: _buildStatCard(
             context,
             icon: Icons.folder,
-            title: 'Projects',
+            title: loc.translate('profile.projects'),
             count: '8',
             color: Colors.blue,
             theme: theme,
@@ -214,7 +218,15 @@ class ProfileScreen extends StatelessWidget {
             icon: Icons.logout,
             title: loc.translate('auth.logout'),
             onTap: () {
-              // TODO: Show logout confirmation
+              LogoutConfirmationDialog.show(
+                context: context,
+                onConfirm: () async {
+                  if (onLogout != null) {
+                    await onLogout!();
+                  }
+                },
+                onCancel: () {},
+              );
             },
             theme: theme,
             isDestructive: true,

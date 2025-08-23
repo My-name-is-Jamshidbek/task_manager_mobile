@@ -5,20 +5,19 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/utils/api_error_mapper.dart';
 import '../../../core/utils/logger.dart';
-import '../../widgets/language_selector.dart';
-import '../../widgets/theme_settings_sheet.dart';
 import '../../widgets/uzbekistan_phone_field.dart';
 import '../../widgets/password_field.dart';
 import '../../widgets/login_submit_button.dart';
 import '../../providers/auth_provider.dart';
 import 'sms_verification_screen.dart';
-import '../main/main_screen.dart';
-
 import '../../widgets/auth_app_bar.dart';
 
 /// Login Screen (Phone based for Uzbekistan) – Rewritten clean structure
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final VoidCallback? onAuthSuccess;
+  
+  const LoginScreen({super.key, this.onAuthSuccess});
+  
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -83,34 +82,72 @@ class _LoginScreenState extends State<LoginScreen> {
       if (success) {
         // Check if user is already logged in (direct login without SMS)
         if (authProvider.isLoggedIn) {
-          // Navigate directly to main screen
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const MainScreen()),
-            (route) => false,
-          );
+          // Always use callback for consistent navigation
+          if (widget.onAuthSuccess != null) {
+            widget.onAuthSuccess!();
+          } else {
+            // Log warning if no callback provided (this shouldn't happen)
+            Logger.warning('⚠️ LoginScreen: No onAuthSuccess callback provided');
+          }
         } else {
           // Navigate to SMS verification screen
+          if (!mounted) return;
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => SmsVerificationScreen(phone: cleanPhone),
+              builder: (context) => SmsVerificationScreen(
+                phone: cleanPhone,
+                onAuthSuccess: widget.onAuthSuccess,
+              ),
             ),
           );
         }
       } else {
-        // Show error message with proper translation
+        // Show more specific error message with icon
         final errorKey = ApiErrorMapper.getFallbackKey(authProvider.error);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(loc.translate(errorKey)),
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Theme.of(context).colorScheme.onError,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Text(loc.translate(errorKey))),
+              ],
+            ),
             backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(loc.translate('messages.unexpectedError')),
+          content: Row(
+            children: [
+              Icon(
+                Icons.warning_outlined,
+                color: Theme.of(context).colorScheme.onError,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(loc.translate('messages.unexpectedError'))),
+            ],
+          ),
           backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          duration: const Duration(seconds: 4),
         ),
       );
     } finally {

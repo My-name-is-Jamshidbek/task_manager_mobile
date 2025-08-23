@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/managers/app_manager.dart';
 import '../../core/utils/logger.dart';
+import '../../core/utils/navigation_service.dart';
+import '../../core/localization/app_localizations.dart';
 import '../screens/loading/loading_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/main/main_screen.dart';
@@ -52,17 +54,61 @@ class _AppRootState extends State<AppRoot> {
   }
 
   /// Handle authentication success callback
-  void _onAuthenticationSuccess() {
+  Future<void> _onAuthenticationSuccess() async {
     Logger.info('🎉 AppRoot: Authentication successful, switching to main screen');
     
-    // Update app manager state
-    _appManager.onAuthenticationSuccess();
-    
-    // Update UI state
-    if (mounted) {
-      setState(() {
-        _currentState = AppState.authenticated;
-      });
+    try {
+      // Update app manager state first
+      await _appManager.onAuthenticationSuccess();
+      
+      // Update UI state to trigger rebuild with main screen
+      if (mounted) {
+        setState(() {
+          _currentState = AppState.authenticated;
+        });
+        
+        // Show login success toast after a brief delay to ensure main screen is rendered
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted && navigatorKey.currentContext != null) {
+            final loc = AppLocalizations.of(navigatorKey.currentContext!);
+            ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: Theme.of(navigatorKey.currentContext!).colorScheme.onSecondary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(loc.translate('messages.loginSuccessful')),
+                  ],
+                ),
+                duration: const Duration(seconds: 3),
+                backgroundColor: Theme.of(navigatorKey.currentContext!).colorScheme.secondary,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+          }
+        });
+      }
+      
+      Logger.info('✅ AppRoot: Successfully transitioned to authenticated state');
+    } catch (e, stackTrace) {
+      Logger.error('❌ AppRoot: Failed to handle authentication success', 'AppRoot', e, stackTrace);
+      
+      // Fallback: show error and stay on current screen
+      if (mounted) {
+        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+          const SnackBar(
+            content: Text('Authentication successful but transition failed. Please restart the app.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     }
   }
 
@@ -70,19 +116,64 @@ class _AppRootState extends State<AppRoot> {
   Future<void> _onLogout() async {
     Logger.info('🚪 AppRoot: Logout requested');
     
-    // Handle logout in app manager
-    await _appManager.onLogout();
-    
-    // Update UI state
-    if (mounted) {
-      setState(() {
-        _currentState = AppState.unauthenticated;
-      });
+    try {
+      // Show logout success toast before transitioning
+      if (mounted && navigatorKey.currentContext != null) {
+        final loc = AppLocalizations.of(navigatorKey.currentContext!);
+        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.logout,
+                  color: Theme.of(navigatorKey.currentContext!).colorScheme.onPrimary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(loc.translate('messages.logoutSuccessful')),
+              ],
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Theme.of(navigatorKey.currentContext!).colorScheme.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+      
+      // Clear authentication state in app manager
+      await _appManager.onLogout();
+      Logger.info('✅ AppRoot: AppManager logout completed');
+      
+      // Brief delay to let user see the toast
+      await Future.delayed(const Duration(milliseconds: 800));
+      
+      // Update UI state to show login screen
+      if (mounted) {
+        setState(() {
+          _currentState = AppState.unauthenticated;
+        });
+      }
+      
+      Logger.info('✅ AppRoot: Successfully transitioned to unauthenticated state');
+    } catch (e, stackTrace) {
+      Logger.error('❌ AppRoot: Logout failed', 'AppRoot', e, stackTrace);
+      
+      // Force logout even if there's an error
+      if (mounted) {
+        setState(() {
+          _currentState = AppState.unauthenticated;
+        });
+      }
     }
   }
 
   /// Build the appropriate screen based on current state
   Widget _buildCurrentScreen() {
+    Logger.info('🔍 AppRoot: Building screen - isInitializing: $_isInitializing, currentState: $_currentState');
+    
     if (_isInitializing) {
       Logger.info('📱 AppRoot: Showing loading screen');
       return const LoadingScreen();
@@ -95,23 +186,29 @@ class _AppRootState extends State<AppRoot> {
         
       case AppState.authenticated:
         Logger.info('📱 AppRoot: Showing main screen');
-        return MainScreen(onLogout: _onLogout);
+        return MainScreen(
+          key: const ValueKey('main_screen'),
+          onLogout: _onLogout,
+        );
         
       case AppState.unauthenticated:
         Logger.info('📱 AppRoot: Showing login screen');
-        return LoginScreenWrapper(onAuthSuccess: _onAuthenticationSuccess);
+        return LoginScreenWrapper(
+          key: const ValueKey('login_screen'),
+          onAuthSuccess: _onAuthenticationSuccess,
+        );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    Logger.info('🔍 AppRoot: Build method called');
     return _buildCurrentScreen();
   }
 }
-
 /// Wrapper for LoginScreen to handle auth success callback
 class LoginScreenWrapper extends StatelessWidget {
-  final VoidCallback? onAuthSuccess;
+  final Future<void> Function()? onAuthSuccess;
   
   const LoginScreenWrapper({
     super.key,
@@ -120,7 +217,9 @@ class LoginScreenWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We'll modify the original LoginScreen to accept and use this callback
-    return const LoginScreen(); // For now, using original LoginScreen
+    // Pass the callback to the LoginScreen - convert to sync callback
+    return LoginScreen(
+      onAuthSuccess: onAuthSuccess != null ? () => onAuthSuccess!() : null,
+    );
   }
 }

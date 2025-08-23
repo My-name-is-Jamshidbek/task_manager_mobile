@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import '../../widgets/theme_settings_sheet.dart';
+import '../../widgets/logout_confirmation_dialog.dart';
 import 'home_screen.dart';
 import 'tasks_screen.dart';
 import 'projects_screen.dart';
@@ -32,7 +33,7 @@ class _MainScreenState extends State<MainScreen> {
       const HomeScreen(),
       const TasksScreen(),
       const ProjectsScreen(),
-      const ProfileScreen(),
+      ProfileScreen(onLogout: widget.onLogout),
     ];
   }
 
@@ -248,13 +249,19 @@ class _MainScreenState extends State<MainScreen> {
                   context,
                   icon: Icons.logout,
                   title: loc.translate('auth.logout'),
-                  onTap: () async {
+                  onTap: () {
                     Navigator.pop(context);
-                    // Call the logout callback if provided
-                    if (widget.onLogout != null) {
-                      await widget.onLogout!();
-                    }
+                    LogoutConfirmationDialog.show(
+                      context: context,
+                      onConfirm: () async {
+                        if (widget.onLogout != null) {
+                          await widget.onLogout!();
+                        }
+                      },
+                      onCancel: () {},
+                    );
                   },
+                  isDestructive: true,
                 ),
               ],
             ),
@@ -270,23 +277,27 @@ class _MainScreenState extends State<MainScreen> {
     required String title,
     required VoidCallback onTap,
     bool isSelected = false,
+    bool isDestructive = false,
   }) {
     final theme = Theme.of(context);
+    final Color baseColor = isDestructive
+        ? Colors.red
+        : (isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant);
+
     return ListTile(
-      leading: Icon(
-        icon,
-        color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-      ),
+      leading: Icon(icon, color: baseColor),
       title: Text(
         title,
         style: TextStyle(
-          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          color: isDestructive ? Colors.red : (isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface),
+          fontWeight: isSelected ? FontWeight.w600 : null,
         ),
       ),
       selected: isSelected,
-      selectedTileColor: theme.colorScheme.primary.withOpacity(0.1),
+      selectedTileColor: theme.colorScheme.primary.withOpacity(0.08),
+      trailing: isSelected ? Icon(Icons.check, color: theme.colorScheme.primary) : null,
       onTap: onTap,
     );
   }
 }
+

@@ -54,7 +54,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Welcome back!', // TODO: Localize
+              loc.translate('home.welcomeBack'),
               style: theme.textTheme.headlineSmall?.copyWith(
                 color: theme.colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,
@@ -62,7 +62,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Let\'s get things done today', // TODO: Localize
+              loc.translate('home.todayMotivation'),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onPrimary.withOpacity(0.9),
               ),
@@ -78,7 +78,7 @@ class HomeScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Quick Actions', // TODO: Localize
+          loc.translate('home.quickActions'),
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -102,7 +102,7 @@ class HomeScreen extends StatelessWidget {
               child: _buildActionCard(
                 context,
                 icon: Icons.create_new_folder,
-                title: 'New Project', // TODO: Localize
+                title: loc.translate('home.newProject'),
                 color: theme.colorScheme.secondary,
                 onTap: () {
                   // TODO: Navigate to add project
@@ -158,7 +158,7 @@ class HomeScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Recent Activity', // TODO: Localize
+          loc.translate('home.recentActivity'),
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -167,22 +167,25 @@ class HomeScreen extends StatelessWidget {
         _buildRecentItem(
           context,
           icon: Icons.task_alt,
-          title: 'Complete project presentation',
-          subtitle: '2 hours ago',
+          title: loc.translate('home.sampleActivities.completePresentation'),
+          subtitle: '2 ${loc.translate('home.hoursAgo')}',
+          color: Colors.green,
           theme: theme,
         ),
         _buildRecentItem(
           context,
           icon: Icons.folder,
-          title: 'Mobile App Development',
-          subtitle: 'Project updated',
+          title: loc.translate('home.sampleActivities.mobileAppDev'),
+          subtitle: loc.translate('home.projectUpdated'),
+          color: Colors.blue,
           theme: theme,
         ),
         _buildRecentItem(
           context,
-          icon: Icons.task_alt,
-          title: 'Review team feedback',
-          subtitle: 'Yesterday',
+          icon: Icons.rate_review,
+          title: loc.translate('home.sampleActivities.reviewFeedback'),
+          subtitle: loc.translate('home.yesterday'),
+          color: Colors.orange,
           theme: theme,
         ),
       ],
@@ -195,6 +198,7 @@ class HomeScreen extends StatelessWidget {
     required String title,
     required String subtitle,
     required ThemeData theme,
+    required Color color,
   }) {
     return Card(
       elevation: 1,
@@ -202,10 +206,10 @@ class HomeScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+          backgroundColor: color.withOpacity(0.1),
           child: Icon(
             icon,
-            color: theme.colorScheme.primary,
+            color: color,
             size: 20,
           ),
         ),

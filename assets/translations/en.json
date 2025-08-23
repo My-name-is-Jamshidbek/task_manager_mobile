@@ -146,10 +146,25 @@
   },
   "navigation": {
     "home": "Home",
-    "tasks": "Tasks",
+    "tasks": "Tasks", 
     "projects": "Projects",
     "profile": "Profile",
     "settings": "Settings"
+  },
+  "home": {
+    "welcomeBack": "Welcome back!",
+    "todayMotivation": "Let's get things done today",
+    "quickActions": "Quick Actions",
+    "newProject": "New Project",
+    "recentActivity": "Recent Activity",
+    "hoursAgo": "hours ago",
+    "yesterday": "Yesterday",
+    "projectUpdated": "Project updated",
+    "sampleActivities": {
+      "completePresentation": "Complete project presentation",
+      "reviewFeedback": "Review team feedback",
+      "mobileAppDev": "Mobile App Development"
+    }
   },
   "auth": {
     "login": "Login",
@@ -188,13 +203,44 @@
     "markComplete": "Mark as Complete",
     "markIncomplete": "Mark as Incomplete",
     "noTasks": "No tasks found",
-    "createFirstTask": "Create your first task"
+    "createFirstTask": "Create your first task",
+    "all": "All",
+    "due": "Due",
+    "sampleTaskTitle": "Complete the mobile app design",
+    "sampleTaskDescription": "Design the main screens for the task manager application including login, dashboard, and task views.",
+    "sampleProjectName": "Mobile App"
+  },
+  "projects": {
+    "title": "Projects",
+    "addProject": "Add Project",
+    "active": "Active",
+    "completed": "Completed",
+    "onHold": "On Hold",
+    "progress": "Progress",
+    "tasks": "tasks",
+    "sampleProjects": {
+      "taskManager": {
+        "name": "Task Manager Mobile App",
+        "description": "Flutter-based task management application"
+      },
+      "ecommerce": {
+        "name": "E-commerce Website",
+        "description": "Online shopping platform development"
+      },
+      "dashboard": {
+        "name": "Marketing Dashboard",
+        "description": "Analytics and reporting dashboard"
+      }
+    }
   },
   "priority": {
     "low": "Low",
     "medium": "Medium",
     "high": "High",
-    "urgent": "Urgent"
+    "urgent": "Urgent",
+    "lowChip": "LOW",
+    "mediumChip": "MEDIUM",
+    "highChip": "HIGH"
   },
   "status": {
     "pending": "Pending",
@@ -217,7 +263,14 @@
     "lastName": "Last Name",
     "phoneNumber": "Phone Number",
     "dateOfBirth": "Date of Birth",
-    "updateProfile": "Update Profile"
+    "updateProfile": "Update Profile",
+    "completed": "Completed",
+    "pending": "Pending",
+    "projects": "Projects",
+    "sampleUser": {
+      "name": "John Doe",
+      "email": "john.doe@example.com"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -267,6 +320,8 @@
     "incorrectPassword": "Incorrect password",
     "userNotFound": "User not found",
     "logoutSuccessful": "Logout successful",
+    "logoutConfirmation": "Are you sure you want to logout?",
+    "logoutWarning": "You will need to login again to access your account.",
     "registrationSuccessful": "Registration successful",
     "networkError": "Network error. Please check your connection.",
     "serverError": "Server error. Please try again later.",

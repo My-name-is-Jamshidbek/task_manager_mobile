@@ -28,7 +28,7 @@ class TasksScreen extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _buildFilterChip(context, 'All', true, theme),
+            _buildFilterChip(context, loc.translate('tasks.all'), true, theme),
             const SizedBox(width: 8),
             _buildFilterChip(context, loc.translate('status.pending'), false, theme),
             const SizedBox(width: 8),
@@ -58,12 +58,12 @@ class TasksScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: 10, // Mock data
       itemBuilder: (context, index) {
-        return _buildTaskCard(context, index, theme);
+        return _buildTaskCard(context, index, theme, loc);
       },
     );
   }
 
-  Widget _buildTaskCard(BuildContext context, int index, ThemeData theme) {
+  Widget _buildTaskCard(BuildContext context, int index, ThemeData theme, AppLocalizations loc) {
     final priorities = ['high', 'medium', 'low'];
     final priority = priorities[index % 3];
     final isCompleted = index % 4 == 0;
@@ -92,7 +92,7 @@ class TasksScreen extends StatelessWidget {
                   ),
                   Expanded(
                     child: Text(
-                      'Task ${index + 1}: Complete the mobile app design',
+                      '${loc.translate('tasks.title')} ${index + 1}: ${loc.translate('tasks.sampleTaskTitle')}',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         decoration: isCompleted ? TextDecoration.lineThrough : null,
@@ -100,12 +100,12 @@ class TasksScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  _buildPriorityChip(priority, theme),
+                  _buildPriorityChip(priority, theme, loc),
                 ],
               ),
               const SizedBox(height: 8),
               Text(
-                'Design the main screens for the task manager application including login, dashboard, and task views.',
+                loc.translate('tasks.sampleTaskDescription'),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -120,7 +120,7 @@ class TasksScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Due: Dec ${index + 15}, 2024',
+                    '${loc.translate('tasks.due')}: Dec ${index + 15}, 2024',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -133,7 +133,7 @@ class TasksScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Mobile App',
+                    loc.translate('tasks.sampleProjectName'),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -147,20 +147,26 @@ class TasksScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPriorityChip(String priority, ThemeData theme) {
+  Widget _buildPriorityChip(String priority, ThemeData theme, AppLocalizations loc) {
     Color color;
+    String displayText;
+    
     switch (priority) {
       case 'high':
         color = Colors.red;
+        displayText = loc.translate('priority.highChip');
         break;
       case 'medium':
         color = Colors.orange;
+        displayText = loc.translate('priority.mediumChip');
         break;
       case 'low':
         color = Colors.green;
+        displayText = loc.translate('priority.lowChip');
         break;
       default:
         color = theme.colorScheme.primary;
+        displayText = priority.toUpperCase();
     }
 
     return Container(
@@ -171,7 +177,7 @@ class TasksScreen extends StatelessWidget {
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(
-        priority.toUpperCase(),
+        displayText,
         style: theme.textTheme.labelSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.bold,
