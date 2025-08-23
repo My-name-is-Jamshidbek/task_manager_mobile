@@ -8,7 +8,12 @@ import 'projects_screen.dart';
 import 'profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final Future<void> Function()? onLogout;
+  
+  const MainScreen({
+    super.key,
+    this.onLogout,
+  });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -243,9 +248,12 @@ class _MainScreenState extends State<MainScreen> {
                   context,
                   icon: Icons.logout,
                   title: loc.translate('auth.logout'),
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context);
-                    // TODO: Show logout confirmation
+                    // Call the logout callback if provided
+                    if (widget.onLogout != null) {
+                      await widget.onLogout!();
+                    }
                   },
                 ),
               ],

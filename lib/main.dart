@@ -9,7 +9,7 @@ import 'core/localization/localization_service.dart';
 import 'core/localization/app_localizations.dart';
 import 'core/utils/logger.dart';
 import 'presentation/providers/auth_provider.dart';
-import 'presentation/screens/auth/login_screen.dart';
+import 'presentation/widgets/app_root.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,11 +31,11 @@ void main() async {
   final localizationService = LocalizationService();
   final authProvider = AuthProvider();
   
-  Logger.info('⚙️ Initializing services...');
+  Logger.info('⚙️ Initializing basic services...');
   await themeService.initialize();
   await localizationService.initialize();
-  await authProvider.initialize();
-  Logger.info('✅ All services initialized successfully');
+  // Note: AuthProvider initialization will be handled by AppManager
+  Logger.info('✅ Basic services initialized successfully');
 
   // Run Login Screen with theme and localization providers
   runApp(
@@ -60,7 +60,7 @@ void main() async {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const LoginScreen(),
+            home: const AppRoot(), // Use AppRoot instead of direct LoginScreen
             debugShowCheckedModeBanner: false,
           );
         },
