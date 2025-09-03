@@ -88,23 +88,17 @@ class AppManager {
       final token = _authService.currentToken!;
       Logger.info('🔑 AppManager: Token found');
       
-      // Step 2: Temporarily bypass server verification
-      Logger.info('⚠️ AppManager: Bypassing token verification (temporary)');
-      
-      // TODO: Uncomment when auth/verify endpoint is ready
-      // final isValid = await _verifyTokenWithServer(token);
-      // if (isValid) {
-      //   Logger.info('✅ AppManager: Token verified - user is authenticated');
-      //   return AppState.authenticated;
-      // } else {
-      //   Logger.warning('⚠️ AppManager: Token verification failed - clearing session');
-      //   await _authService.clearSession();
-      //   return AppState.unauthenticated;
-      // }
-      
-      // For now, assume token is valid if it exists
-      Logger.info('✅ AppManager: Token assumed valid (bypass mode) - user is authenticated');
-      return AppState.authenticated;
+      // Step 2: Verify token with server
+      Logger.info('🔍 AppManager: Verifying token with server');
+      final isValid = await _verifyTokenWithServer(token);
+      if (isValid) {
+        Logger.info('✅ AppManager: Token verified - user is authenticated');
+        return AppState.authenticated;
+      } else {
+        Logger.warning('⚠️ AppManager: Token verification failed - clearing session');
+        await _authService.clearSession();
+        return AppState.unauthenticated;
+      }
       
     } catch (e, stackTrace) {
       Logger.error('❌ AppManager: Authentication check failed', 'AppManager', e, stackTrace);
@@ -114,18 +108,15 @@ class AppManager {
     }
   }
 
-  /// Verify token with the server (Currently disabled - TODO: Enable when ready)
+  /// Verify token with the server
   Future<bool> _verifyTokenWithServer(String token) async {
     Logger.info('🔍 AppManager: Verifying token with server');
     
     try {
-      // Set the token for API calls
-      _apiClient.setAuthToken(token);
+      // Use AuthService token verification
+      final response = await _authService.verifyToken();
       
-      // Call auth/verify endpoint
-      final response = await _apiClient.get(ApiConstants.verify);
-      
-      if (response.isSuccess) {
+      if (response.isSuccess && response.data?.tokenValid == true) {
         Logger.info('✅ AppManager: Server token verification successful');
         return true;
       } else {

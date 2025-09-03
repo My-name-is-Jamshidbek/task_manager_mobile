@@ -125,3 +125,31 @@ class VerifyResponse {
     );
   }
 }
+
+class TokenVerifyResponse {
+  final String message;
+  final User? user;
+  final bool tokenValid;
+
+  TokenVerifyResponse({
+    required this.message,
+    this.user,
+    required this.tokenValid,
+  });
+
+  factory TokenVerifyResponse.fromJson(Map<String, dynamic> json) {
+    return TokenVerifyResponse(
+      message: json['message'] ?? '',
+      user: json['user'] != null ? User.fromJson(json['user']) : null,
+      tokenValid: json['token_valid'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'message': message,
+      'user': user?.toJson(),
+      'token_valid': tokenValid,
+    };
+  }
+}

@@ -130,4 +130,37 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> checkSession() async {
     return await _authService.isSessionValid();
   }
+
+  // Verify current token with server
+  Future<bool> verifyToken() async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _authService.verifyToken();
+      
+      if (response.isSuccess && response.data?.tokenValid == true) {
+        // Update user data if provided in response
+        if (response.data?.user != null) {
+          _currentUser = response.data!.user;
+          notifyListeners();
+        }
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.error);
+        _setLoading(false);
+        
+        // If token is invalid, clear the session
+        if (response.data?.tokenValid == false) {
+          await logout();
+        }
+        return false;
+      }
+    } catch (e) {
+      _setError(null); // Let UI handle the translation
+      _setLoading(false);
+      return false;
+    }
+  }
 }

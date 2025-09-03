@@ -5,6 +5,7 @@ import '../pages/demo_typography_page.dart';
 import '../pages/demo_settings_page.dart';
 import '../widgets/demo_theme_settings.dart';
 import '../widgets/language_settings_widget.dart';
+import '../token_verification_demo.dart';
 
 /// CoreUI Demo Navigation Widget
 class DemoNavigation extends StatefulWidget {
@@ -34,6 +35,11 @@ class _DemoNavigationState extends State<DemoNavigation>
       icon: Icons.text_fields,
       label: 'Typography',
       page: const DemoTypographyPage(),
+    ),
+    DemoNavigationItem(
+      icon: Icons.verified_user,
+      label: 'Auth Test',
+      page: const TokenVerificationDemo(),
     ),
     DemoNavigationItem(
       icon: Icons.settings,

@@ -39,21 +39,28 @@ class ApiClient {
   Future<ApiResponse<T>> get<T>(
     String endpoint, {
     Map<String, String>? queryParams,
+    Map<String, String>? headers,
     T Function(Map<String, dynamic>)? fromJson,
   }) async {
     final String requestId = _generateRequestId();
     try {
       final uri = _buildUri(endpoint, queryParams);
       
+      // Merge custom headers with default headers
+      final finalHeaders = {..._headers};
+      if (headers != null) {
+        finalHeaders.addAll(headers);
+      }
+      
       Logger.info('🚀 [$requestId] GET Request Started');
       Logger.info('📍 [$requestId] URL: $uri');
-      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(_headers)}');
+      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(finalHeaders)}');
       if (queryParams != null && queryParams.isNotEmpty) {
         Logger.info('🔍 [$requestId] Query Params: $queryParams');
       }
 
       final stopwatch = Stopwatch()..start();
-      final response = await _client.get(uri, headers: _headers);
+      final response = await _client.get(uri, headers: finalHeaders);
       stopwatch.stop();
 
       Logger.info('⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms');

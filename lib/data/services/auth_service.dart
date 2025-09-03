@@ -271,14 +271,75 @@ class AuthService {
     }
     
     try {
-      // You can add a profile check API call here
-      // For now, just return true if token exists
-      Logger.info('✅ AuthService: Session is valid');
-      return true;
+      // Call the token verification API
+      final verifyResult = await verifyToken();
+      if (verifyResult.isSuccess && verifyResult.data?.tokenValid == true) {
+        Logger.info('✅ AuthService: Session is valid');
+        
+        // Update user data if provided in response
+        if (verifyResult.data?.user != null) {
+          _currentUser = verifyResult.data!.user;
+          Logger.info('👤 AuthService: User data updated from token verification');
+        }
+        
+        return true;
+      } else {
+        Logger.warning('⚠️ AuthService: Token verification failed - ${verifyResult.error}');
+        await clearSession();
+        return false;
+      }
     } catch (e, stackTrace) {
       Logger.error('❌ AuthService: Session validation failed', 'AuthService', e, stackTrace);
       await clearSession();
       return false;
+    }
+  }
+
+  // Verify current token with server
+  Future<ApiResponse<TokenVerifyResponse>> verifyToken() async {
+    Logger.info('🔍 AuthService: Verifying current token with server');
+    
+    if (_currentToken == null) {
+      Logger.warning('⚠️ AuthService: No token to verify');
+      return ApiResponse.error('No authentication token found');
+    }
+    
+    try {
+      // Set current language for API headers
+      final localizationService = LocalizationService();
+      final currentLanguage = localizationService.currentLocale.languageCode;
+      
+      // Create headers with language preference (token will be auto-added by ApiClient)
+      final headers = {
+        'Accept-Language': currentLanguage,
+        'X-Locale': currentLanguage,
+      };
+      
+      Logger.info('🌐 AuthService: Using language: $currentLanguage');
+      Logger.info('📤 AuthService: Sending token verification request');
+      
+      final response = await _apiClient.get<TokenVerifyResponse>(
+        ApiConstants.verify,
+        headers: headers,
+        fromJson: (json) => TokenVerifyResponse.fromJson(json),
+      );
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info('✅ AuthService: Token verification successful');
+        
+        if (response.data!.tokenValid) {
+          Logger.info('🎯 AuthService: Token is valid and active');
+        } else {
+          Logger.warning('⚠️ AuthService: Token is invalid or expired');
+        }
+      } else {
+        Logger.warning('⚠️ AuthService: Token verification failed - ${response.error}');
+      }
+
+      return response;
+    } catch (e, stackTrace) {
+      Logger.error('❌ AuthService: Token verification exception', 'AuthService', e, stackTrace);
+      return ApiResponse.error('Token verification failed: $e');
     }
   }
 
