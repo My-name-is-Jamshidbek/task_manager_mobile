@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/utils/auth_debug_helper.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/logout_confirmation_dialog.dart';
+import 'edit_profile_screen.dart';
+import 'change_password_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final Future<void> Function()? onLogout;
-  
+
   const ProfileScreen({super.key, this.onLogout});
 
   @override
@@ -28,48 +33,162 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, AppLocalizations loc, ThemeData theme) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-              child: Icon(
-                Icons.person,
-                size: 50,
-                color: theme.colorScheme.primary,
-              ),
+  Widget _buildProfileHeader(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+  ) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final user = authProvider.currentUser;
+
+        return Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: theme.colorScheme.primary.withOpacity(
+                        0.1,
+                      ),
+                      child: user?.name != null
+                          ? Text(
+                              _getInitials(user!.name!),
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary,
+                              ),
+                            )
+                          : Icon(
+                              Icons.person,
+                              size: 50,
+                              color: theme.colorScheme.primary,
+                            ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: () async {
+                          print('DEBUG: Starting profile refresh...');
+                          final result = await authProvider.loadUserProfile();
+                          print('DEBUG: Profile refresh result: $result');
+                          print(
+                            'DEBUG: Current user after refresh: ${authProvider.currentUser?.toJson()}',
+                          );
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.refresh,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      authProvider.error ?? 'Profile refreshed',
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: authProvider.error != null
+                                    ? Colors.orange
+                                    : Colors.green,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.secondary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: authProvider.isLoading
+                              ? SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      theme.colorScheme.onSecondary,
+                                    ),
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.refresh,
+                                  size: 16,
+                                  color: theme.colorScheme.onSecondary,
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  user?.name ?? loc.translate('profile.sampleUser.name'),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  user?.phone ??
+                      user?.email ??
+                      loc.translate('profile.sampleUser.email'),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (user?.id != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'ID: ${user!.id}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withOpacity(
+                        0.7,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              loc.translate('profile.sampleUser.name'),
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              loc.translate('profile.sampleUser.email'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            FilledButton.tonal(
-              onPressed: () {
-                // TODO: Navigate to edit profile
-              },
-              child: Text(loc.translate('profile.editProfile')),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
+  }
+
+  // Helper method to get user initials
+  String _getInitials(String name) {
+    final parts = name.trim().split(' ');
+    if (parts.isEmpty) return '';
+    if (parts.length == 1) return parts[0].substring(0, 1).toUpperCase();
+    return '${parts[0].substring(0, 1)}${parts[parts.length - 1].substring(0, 1)}'
+        .toUpperCase();
   }
 
   Widget _buildStatsCards(BuildContext context, ThemeData theme) {
@@ -127,11 +246,7 @@ class ProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Icon(
-              icon,
-              size: 32,
-              color: color,
-            ),
+            Icon(icon, size: 32, color: color),
             const SizedBox(height: 8),
             Text(
               count,
@@ -153,7 +268,11 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileMenu(BuildContext context, AppLocalizations loc, ThemeData theme) {
+  Widget _buildProfileMenu(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+  ) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -164,7 +283,24 @@ class ProfileScreen extends StatelessWidget {
             icon: Icons.person_outline,
             title: loc.translate('profile.editProfile'),
             onTap: () {
-              // TODO: Navigate to edit profile
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const EditProfileScreen(),
+                ),
+              );
+            },
+            theme: theme,
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.lock_outline,
+            title: loc.translate('profile.changePassword'),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ChangePasswordScreen(),
+                ),
+              );
             },
             theme: theme,
           ),
@@ -213,6 +349,70 @@ class ProfileScreen extends StatelessWidget {
             },
             theme: theme,
           ),
+          // Debug section for authentication testing
+          _buildMenuItem(
+            context,
+            icon: Icons.bug_report_outlined,
+            title: 'Debug: Check Auth Data',
+            onTap: () async {
+              await AuthDebugHelper.printStoredAuthData();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Auth data logged to console - check debug output',
+                    ),
+                    backgroundColor: Colors.blue,
+                  ),
+                );
+              }
+            },
+            theme: theme,
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.storage_outlined,
+            title: 'Debug: Test SharedPreferences',
+            onTap: () async {
+              await AuthDebugHelper.testSharedPreferences();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'SharedPreferences test completed - check console',
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            theme: theme,
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.person_pin_outlined,
+            title: 'Debug: Load Profile from API',
+            onTap: () async {
+              final authProvider = Provider.of<AuthProvider>(
+                context,
+                listen: false,
+              );
+              final success = await authProvider.loadUserProfile();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? 'Profile loaded successfully from API'
+                          : 'Failed to load profile: ${authProvider.error}',
+                    ),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+            },
+            theme: theme,
+          ),
           _buildMenuItem(
             context,
             icon: Icons.logout,
@@ -245,18 +445,10 @@ class ProfileScreen extends StatelessWidget {
     bool isDestructive = false,
   }) {
     final color = isDestructive ? Colors.red : theme.colorScheme.onSurface;
-    
+
     return ListTile(
-      leading: Icon(
-        icon,
-        color: color,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: color,
-        ),
-      ),
+      leading: Icon(icon, color: color),
+      title: Text(title, style: TextStyle(color: color)),
       trailing: Icon(
         Icons.chevron_right,
         color: theme.colorScheme.onSurfaceVariant,

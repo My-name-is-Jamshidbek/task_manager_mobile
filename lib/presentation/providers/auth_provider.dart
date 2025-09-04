@@ -1,11 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../../data/models/auth_models.dart';
 import '../../data/services/auth_service.dart';
-import '../../core/api/api_client.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
-  
+
   bool _isLoading = false;
   String? _error;
   User? _currentUser;
@@ -50,7 +49,7 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final response = await _authService.login(phone, password);
-      
+
       if (response.isSuccess) {
         // Check if we got a token directly (no SMS verification needed)
         if (response.data?.token != null && response.data?.user != null) {
@@ -65,7 +64,12 @@ class AuthProvider extends ChangeNotifier {
           return true;
         }
       } else {
-        _setError(response.error);
+        // Try to get localized message from API response first
+        String? errorMessage = response.error;
+        if (response.data?.message != null) {
+          errorMessage = response.data!.getLocalizedMessage();
+        }
+        _setError(errorMessage);
         _setLoading(false);
         return false;
       }
@@ -83,7 +87,7 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final response = await _authService.verifyCode(phone, code);
-      
+
       if (response.isSuccess && response.data != null) {
         _currentUser = response.data!.user;
         _isLoggedIn = true;
@@ -91,7 +95,12 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        _setError(response.error);
+        // Try to get localized message from API response first
+        String? errorMessage = response.error;
+        if (response.data?.message != null) {
+          errorMessage = response.data!.getLocalizedMessage();
+        }
+        _setError(errorMessage);
         _setLoading(false);
         return false;
       }
@@ -105,7 +114,7 @@ class AuthProvider extends ChangeNotifier {
   // Logout
   Future<void> logout() async {
     _setLoading(true);
-    
+
     try {
       await _authService.logout();
       _currentUser = null;
@@ -138,7 +147,7 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final response = await _authService.verifyToken();
-      
+
       if (response.isSuccess && response.data?.tokenValid == true) {
         // Update user data if provided in response
         if (response.data?.user != null) {
@@ -148,9 +157,14 @@ class AuthProvider extends ChangeNotifier {
         _setLoading(false);
         return true;
       } else {
-        _setError(response.error);
+        // Try to get localized message from API response first
+        String? errorMessage = response.error;
+        if (response.data != null) {
+          errorMessage = response.data!.getLocalizedMessage();
+        }
+        _setError(errorMessage);
         _setLoading(false);
-        
+
         // If token is invalid, clear the session
         if (response.data?.tokenValid == false) {
           await logout();
@@ -163,4 +177,124 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  // Load user profile from API
+  Future<bool> loadUserProfile() async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _authService.loadUserProfile();
+
+      if (response.isSuccess && response.data != null) {
+        _currentUser = response.data!;
+        _setLoading(false);
+        // Force notification to ensure UI updates
+        notifyListeners();
+        return true;
+      } else {
+        // Try to get localized message from API response first
+        String? errorMessage = response.error;
+        _setError(errorMessage);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError('Failed to load profile: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // Refresh user profile (convenience method)
+  Future<void> refreshProfile() async {
+    await loadUserProfile();
+  }
+
+  // Update user profile (name and phone)
+  Future<ProfileUpdateResult> updateProfile({
+    required String name,
+    required String phone,
+  }) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _authService.updateProfile(
+        name: name,
+        phone: phone,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        _currentUser = response.data!.user;
+        _setLoading(false);
+        // Force notification to ensure UI updates
+        notifyListeners();
+        final localizedMessage = response.data!.getLocalizedMessage();
+        return ProfileUpdateResult(
+          success: true,
+          message: localizedMessage,
+          user: _currentUser,
+        );
+      } else {
+        String? errorMessage = response.error;
+        _setError(errorMessage);
+        _setLoading(false);
+        return ProfileUpdateResult(success: false, message: null);
+      }
+    } catch (e) {
+      _setError('Failed to update profile: $e');
+      _setLoading(false);
+      return ProfileUpdateResult(success: false, message: null);
+    }
+  }
+
+  // Change user password
+  Future<PasswordChangeResult> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _authService.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        _setLoading(false);
+        final localizedMessage = response.data!.getLocalizedMessage();
+        return PasswordChangeResult(success: true, message: localizedMessage);
+      } else {
+        String? errorMessage = response.error;
+        _setError(errorMessage);
+        _setLoading(false);
+        return PasswordChangeResult(success: false, message: null);
+      }
+    } catch (e) {
+      _setError('Failed to change password: $e');
+      _setLoading(false);
+      return PasswordChangeResult(success: false, message: null);
+    }
+  }
+}
+
+// Helper class to return both success status and localized message
+class PasswordChangeResult {
+  final bool success;
+  final String? message;
+
+  PasswordChangeResult({required this.success, this.message});
+}
+
+class ProfileUpdateResult {
+  final bool success;
+  final String? message;
+  final User? user;
+
+  ProfileUpdateResult({required this.success, this.message, this.user});
 }

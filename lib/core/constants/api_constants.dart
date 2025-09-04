@@ -1,6 +1,6 @@
 class ApiConstants {
   // Base URL for the API
-  static const String baseUrl = 'http://tms.amusoft.uz/api';
+  static const String baseUrl = 'https://tms.amusoft.uz/api';
 
   // API Endpoints
   static const String login = '/auth/login';
@@ -17,8 +17,9 @@ class ApiConstants {
   static const String taskById = '/tasks'; // + /{id}
 
   // User endpoints
-  static const String profile = '/user/profile';
-  static const String updateProfile = '/user/profile';
+  static const String profile = '/profile';
+  static const String updateProfile = '/profile/update-details';
+  static const String changePassword = '/profile/update-password';
 
   // Categories endpoints
   static const String categories = '/categories';

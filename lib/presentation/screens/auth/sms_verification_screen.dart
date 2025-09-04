@@ -12,9 +12,9 @@ import '../../providers/auth_provider.dart';
 class SmsVerificationScreen extends StatefulWidget {
   final String phone; // formatted phone passed from previous screen
   final VoidCallback? onAuthSuccess;
-  
+
   const SmsVerificationScreen({
-    super.key, 
+    super.key,
     required this.phone,
     this.onAuthSuccess,
   });
@@ -32,7 +32,8 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
   Timer? _timer;
 
   bool get _isValid => _code.length == _codeLength;
-  Duration get _resendRemaining => _resendAvailableAt.difference(DateTime.now());
+  Duration get _resendRemaining =>
+      _resendAvailableAt.difference(DateTime.now());
   bool get _canResend => _resendRemaining <= Duration.zero;
 
   void _onCodeChanged(String value) {
@@ -64,35 +65,46 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
   Future<void> _submit() async {
     final loc = AppLocalizations.of(context);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     if (!_isValid) {
       setState(() => _autoValidate = true);
       return;
     }
-    
+
     setState(() => _submitting = true);
-    
+
     try {
       // Call verify API (currently bypassed)
       final success = await authProvider.verifyCode(widget.phone, _code);
-      
+
       if (!mounted) return;
-      
+
       if (success) {
         // Brief delay before navigation
         await Future.delayed(const Duration(milliseconds: 500));
-        
+
         if (!mounted) return;
-        
+
         // Always use callback for consistent navigation
         if (widget.onAuthSuccess != null) {
           widget.onAuthSuccess!();
         } else {
           // Log warning if no callback provided (this shouldn't happen)
-          Logger.warning('⚠️ SmsVerificationScreen: No onAuthSuccess callback provided');
+          Logger.warning(
+            '⚠️ SmsVerificationScreen: No onAuthSuccess callback provided',
+          );
         }
       } else {
-        // Show error message with icon
+        // Show error message with icon - prioritize API message over translation
+        String errorMessage;
+        if (authProvider.error != null && authProvider.error!.isNotEmpty) {
+          // Use API message directly if available
+          errorMessage = authProvider.error!;
+        } else {
+          // Fallback to translation
+          errorMessage = loc.translate('auth.invalidCode');
+        }
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -104,9 +116,7 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
                   size: 20,
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Text(authProvider.error ?? loc.translate('auth.invalidCode')),
-                ),
+                Expanded(child: Text(errorMessage)),
               ],
             ),
             backgroundColor: Theme.of(context).colorScheme.error,
@@ -135,9 +145,7 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
           ),
           backgroundColor: Theme.of(context).colorScheme.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           duration: const Duration(seconds: 4),
         ),
       );
@@ -155,7 +163,7 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
       _code = '';
     });
     _startTimer();
-    
+
     // Show feedback to user with icon
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -168,16 +176,16 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text('${AppLocalizations.of(context).translate('auth.codeSentTo')} ${widget.phone}'),
+              child: Text(
+                '${AppLocalizations.of(context).translate('auth.codeSentTo')} ${widget.phone}',
+              ),
             ),
           ],
         ),
         duration: const Duration(seconds: 3),
         backgroundColor: Theme.of(context).colorScheme.secondary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
     // TODO: Actually trigger SMS resend API call
@@ -233,7 +241,9 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
                           Text(
                             loc.translate('auth.verifyCode'),
                             textAlign: TextAlign.center,
-                            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
@@ -259,17 +269,21 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
                             onPressed: _canResend ? _resend : null,
                             child: _canResend
                                 ? Text(loc.translate('auth.resendCode'))
-                                : Text('${loc.translate('auth.resendCode')} (${_resendRemaining.inSeconds}s)'),
+                                : Text(
+                                    '${loc.translate('auth.resendCode')} (${_resendRemaining.inSeconds}s)',
+                                  ),
                           ),
                           const SizedBox(height: 8),
                           LoginSubmitButton(
                             enabled: _isValid && !_submitting,
                             loading: _submitting,
                             label: loc.translate('auth.verify'),
-                            onPressed: _submitting ? null : () async {
-                              await _submit();
-                              HapticFeedback.lightImpact();
-                            },
+                            onPressed: _submitting
+                                ? null
+                                : () async {
+                                    await _submit();
+                                    HapticFeedback.lightImpact();
+                                  },
                           ),
                         ],
                       ),
