@@ -7,6 +7,7 @@ import '../../../core/utils/validators.dart';
 import '../../widgets/success_toast.dart';
 import '../../widgets/uzbekistan_phone_field.dart';
 import '../../widgets/login_submit_button.dart';
+import '../../widgets/editable_avatar.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -21,6 +22,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _phoneController = TextEditingController();
   bool _autoValidate = false;
   bool _submitting = false;
+  // Avatar upload logic moved into EditableAvatar widget (SRP)
 
   @override
   void initState() {
@@ -60,6 +62,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _onFieldChanged() => setState(() {});
+
+  // Legacy inline avatar upload method removed (now handled by EditableAvatar)
 
   bool get _isFormValid {
     final loc = AppLocalizations.of(context);
@@ -120,66 +124,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 children: [
                                   // Avatar + title
                                   Center(
-                                    child: Stack(
-                                      children: [
-                                        Container(
-                                          width: 96,
-                                          height: 96,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: theme.colorScheme.primary,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(
-                                                  0.1,
-                                                ),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 4),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              _getInitials(
-                                                authProvider
-                                                        .currentUser
-                                                        ?.name ??
-                                                    '',
-                                              ),
-                                              style: theme
-                                                  .textTheme
-                                                  .headlineMedium
-                                                  ?.copyWith(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                            ),
-                                          ),
-                                        ),
-                                        Positioned(
-                                          bottom: 0,
-                                          right: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(6),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  theme.colorScheme.secondary,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color:
-                                                    theme.colorScheme.surface,
-                                                width: 2,
-                                              ),
-                                            ),
-                                            child: Icon(
-                                              Icons.camera_alt,
-                                              size: 16,
-                                              color:
-                                                  theme.colorScheme.onSecondary,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                    child: EditableAvatar(
+                                      imageUrl:
+                                          authProvider.currentUser?.avatar,
+                                      initials: _getInitials(
+                                        authProvider.currentUser?.name ?? '',
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 16),

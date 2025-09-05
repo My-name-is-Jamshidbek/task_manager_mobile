@@ -142,7 +142,9 @@
     "developerModeDescription": "Qo'shimcha nosozliklarni tuzatish ma'lumotlarini ko'rsatish",
     "about": "Haqida",
     "aboutDescription": "CoreUI Demo v1.0.0",
-    "aboutContent": "Ko'p tilli va mavzu qo'llab-quvvatlashi bilan CoreUI dizayn tizimini namoyish etuvchi keng qamrovli demo."
+  "aboutContent": "Ko'p tilli va mavzu qo'llab-quvvatlashi bilan CoreUI dizayn tizimini namoyish etuvchi keng qamrovli demo.",
+  "availableLanguages": "Mavjud tillar",
+  "uiUxDemo": "UI/UX demo"
   },
   "navigation": {
     "home": "Bosh sahifa",
@@ -267,6 +269,12 @@
     "dateOfBirth": "Tug'ilgan sana",
     "updateProfile": "Profilni yangilash",
     "updateSuccess": "Profil muvaffaqiyatli yangilandi",
+  "chooseFromGallery": "Galereyadan tanlash",
+  "takePhoto": "Rasmga olish",
+  "avatarUpdated": "Avatar muvaffaqiyatli yangilandi",
+  "avatarTooLarge": "Fayl juda katta",
+  "avatarInvalidType": "Rasm formati qo'llab-quvvatlanmaydi",
+  "avatarUploadFailed": "Avatar yuklash muvaffaqiyatsiz tugadi",
     "changePassword": "Parolni o'zgartirish",
     "changePasswordDescription": "Iltimos, joriy parolingizni kiriting va yangisini tanlang.",
     "currentPassword": "Joriy parol",
@@ -335,6 +343,7 @@
     "registrationSuccessful": "Ro'yxatdan o'tish muvaffaqiyatli",
     "networkError": "Tarmoq xatosi. Ulanishingizni tekshiring.",
     "serverError": "Server xatosi. Keyinroq urinib ko'ring.",
-    "unexpectedError": "Kutilmagan xato yuz berdi"
+  "unexpectedError": "Kutilmagan xato yuz berdi",
+  "unknownError": "Noma'lum xato"
   }
 }

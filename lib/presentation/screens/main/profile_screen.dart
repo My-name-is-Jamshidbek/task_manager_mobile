@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../widgets/network_avatar.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/auth_debug_helper.dart';
 import '../../providers/auth_provider.dart';
@@ -16,18 +17,50 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final theme = Theme.of(context);
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildProfileHeader(context, loc, theme),
-            const SizedBox(height: 24),
-            _buildStatsCards(context, theme),
-            const SizedBox(height: 24),
-            _buildProfileMenu(context, loc, theme),
-          ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final success = await authProvider.loadUserProfile();
+        if (!success && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      authProvider.error ?? 'Failed to refresh profile',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+      },
+      child: SafeArea(
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _buildProfileHeader(context, loc, theme),
+              const SizedBox(height: 24),
+              _buildStatsCards(context, theme),
+              const SizedBox(height: 24),
+              _buildProfileMenu(context, loc, theme),
+            ],
+          ),
         ),
       ),
     );
@@ -51,101 +84,13 @@ class ProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: theme.colorScheme.primary.withOpacity(
-                        0.1,
-                      ),
-                      child: user?.name != null
-                          ? Text(
-                              _getInitials(user!.name!),
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.primary,
-                              ),
-                            )
-                          : Icon(
-                              Icons.person,
-                              size: 50,
-                              color: theme.colorScheme.primary,
-                            ),
-                    ),
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: () async {
-                          print('DEBUG: Starting profile refresh...');
-                          final result = await authProvider.loadUserProfile();
-                          print('DEBUG: Profile refresh result: $result');
-                          print(
-                            'DEBUG: Current user after refresh: ${authProvider.currentUser?.toJson()}',
-                          );
-
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.refresh,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      authProvider.error ?? 'Profile refreshed',
-                                    ),
-                                  ],
-                                ),
-                                backgroundColor: authProvider.error != null
-                                    ? Colors.orange
-                                    : Colors.green,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.secondary,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: authProvider.isLoading
-                              ? SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      theme.colorScheme.onSecondary,
-                                    ),
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.refresh,
-                                  size: 16,
-                                  color: theme.colorScheme.onSecondary,
-                                ),
-                        ),
-                      ),
-                    ),
-                  ],
+                NetworkAvatar(
+                  imageUrl: user?.avatar,
+                  size: 100,
+                  initials: user?.name != null
+                      ? _getInitials(user!.name!)
+                      : null,
+                  overlay: null,
                 ),
                 const SizedBox(height: 16),
                 Text(

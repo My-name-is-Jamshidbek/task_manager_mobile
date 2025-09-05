@@ -47,6 +47,8 @@ class User {
   final String? name;
   final String? phone;
   final String? email;
+
+  /// Avatar relative or absolute URL (server may return avatar or avatar_url)
   final String? avatar;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -62,12 +64,14 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    // Support both avatar and avatar_url keys
+    final rawAvatar = json['avatar'] ?? json['avatar_url'];
     return User(
       id: json['id'],
       name: json['name'],
       phone: json['phone'],
       email: json['email'],
-      avatar: json['avatar'],
+      avatar: rawAvatar,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -87,6 +91,26 @@ class User {
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
+  }
+
+  User copyWith({
+    int? id,
+    String? name,
+    String? phone,
+    String? email,
+    String? avatar,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return User(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      avatar: avatar ?? this.avatar,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 }
 

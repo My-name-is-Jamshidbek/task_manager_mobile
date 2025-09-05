@@ -196,6 +196,56 @@ class ApiClient {
     }
   }
 
+  // Multipart POST (file upload)
+  Future<ApiResponse<T>> uploadMultipart<T>(
+    String endpoint, {
+    required Map<String, String> fields,
+    required Map<String, http.MultipartFile> files,
+    Map<String, String>? headers,
+    T Function(Map<String, dynamic>)? fromJson,
+  }) async {
+    final String requestId = _generateRequestId();
+    try {
+      final uri = _buildUri(endpoint);
+      final request = http.MultipartRequest('POST', uri);
+
+      // Headers (exclude json content type)
+      final finalHeaders = {..._headers};
+      finalHeaders.remove('Content-Type'); // Let multipart set boundary
+      if (headers != null) finalHeaders.addAll(headers);
+      request.headers.addAll(finalHeaders);
+
+      // Fields
+      fields.forEach((k, v) => request.fields[k] = v);
+      // Files
+      files.forEach((k, file) => request.files.add(file));
+
+      Logger.info('🚀 [$requestId] MULTIPART POST Started');
+      Logger.info('📍 [$requestId] URL: $uri');
+      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(finalHeaders)}');
+      Logger.info('📦 [$requestId] Fields: $fields');
+      Logger.info('🖼️ [$requestId] Files: ${files.keys.toList()}');
+
+      final stopwatch = Stopwatch()..start();
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+      stopwatch.stop();
+      Logger.info(
+        '⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms',
+      );
+
+      return _handleResponse<T>(response, fromJson, requestId);
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ [$requestId] MULTIPART POST Failed',
+        'ApiClient',
+        e,
+        stackTrace,
+      );
+      return ApiResponse.error('Upload error: $e');
+    }
+  }
+
   // Build URI with base URL and query parameters
   Uri _buildUri(String endpoint, [Map<String, String>? queryParams]) {
     return Uri.parse(

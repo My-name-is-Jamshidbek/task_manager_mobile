@@ -20,6 +20,7 @@ class ApiConstants {
   static const String profile = '/profile';
   static const String updateProfile = '/profile/update-details';
   static const String changePassword = '/profile/update-password';
+  static const String updateAvatar = '/profile/update-avatar';
 
   // Categories endpoints
   static const String categories = '/categories';

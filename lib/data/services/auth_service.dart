@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/api_constants.dart';
@@ -56,7 +57,7 @@ class AuthService {
         if (userJson != null) {
           try {
             final userData = jsonDecode(userJson) as Map<String, dynamic>;
-            _currentUser = User.fromJson(userData);
+            _currentUser = _withNormalizedAvatar(User.fromJson(userData));
             Logger.info(
               '👤 AuthService: User data loaded successfully for ${_currentUser?.name}',
             );
@@ -484,7 +485,8 @@ class AuthService {
         fromJson: (json) {
           // Handle nested response structure: {"data": {user_data}}
           final userData = json['data'] ?? json;
-          return User.fromJson(userData);
+          final user = User.fromJson(userData);
+          return _withNormalizedAvatar(user);
         },
       );
 
@@ -545,7 +547,7 @@ class AuthService {
 
       if (response.isSuccess && response.data != null) {
         // Update local user data
-        _currentUser = response.data!.user;
+        _currentUser = _withNormalizedAvatar(response.data!.user);
 
         // Store updated user data
         try {
@@ -627,10 +629,93 @@ class AuthService {
     }
   }
 
+  // Update avatar (multipart upload)
+  Future<ApiResponse<User>> updateAvatar(String filePath) async {
+    Logger.info('🖼️ AuthService: Starting avatar upload');
+    try {
+      final file = await http.MultipartFile.fromPath('avatar', filePath);
+      final response = await _apiClient.uploadMultipart<User>(
+        ApiConstants.updateAvatar,
+        fields: {},
+        files: {'avatar': file},
+        fromJson: (json) {
+          final data = json['data'] ?? json; // handle nested
+          final user = User.fromJson(data);
+          return _withNormalizedAvatar(user);
+        },
+      );
+
+      if (response.isSuccess && response.data != null) {
+        _currentUser = response.data;
+        // persist
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_userKey, jsonEncode(_currentUser!.toJson()));
+          Logger.info('💾 AuthService: Stored updated avatar user');
+        } catch (e, st) {
+          Logger.error(
+            '❌ AuthService: Failed storing avatar user',
+            'AuthService',
+            e,
+            st,
+          );
+        }
+      } else {
+        Logger.warning(
+          '⚠️ AuthService: Avatar upload failed ${response.error}',
+        );
+      }
+      return response;
+    } catch (e, st) {
+      Logger.error(
+        '❌ AuthService: Avatar upload exception',
+        'AuthService',
+        e,
+        st,
+      );
+      return ApiResponse.error('Avatar upload failed: $e');
+    }
+  }
+
   // Helper method to sanitize phone number for logging
   String? _sanitizePhone(String? phone) {
     if (phone == null) return null;
     if (phone.length <= 4) return '***';
     return '${phone.substring(0, 4)}***${phone.substring(phone.length - 2)}';
+  }
+}
+
+// Normalize avatar URL (convert relative /uploads/... to full URL if base provided)
+User _withNormalizedAvatar(User user) {
+  try {
+    if (user.avatar == null || user.avatar!.isEmpty) return user;
+    final avatar = user.avatar!;
+    // If already absolute but contains '/api/uploads/', correct it
+    if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+      if (avatar.contains('/api/uploads/')) {
+        final fixed = avatar.replaceFirst('/api/uploads/', '/uploads/');
+        return user.copyWith(avatar: fixed);
+      }
+      return user; // Already correct absolute URL
+    }
+
+    // Build origin without trailing /api path segment
+    final baseUri = Uri.parse(ApiConstants.baseUrl);
+    String origin = '${baseUri.scheme}://${baseUri.host}';
+    if (baseUri.hasPort) origin += ':${baseUri.port}';
+    // If avatar path does not start with '/', add it
+    final path = avatar.startsWith('/') ? avatar : '/$avatar';
+    final normalized = '$origin$path';
+    return User(
+      id: user.id,
+      name: user.name,
+      phone: user.phone,
+      email: user.email,
+      avatar: normalized,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    );
+  } catch (_) {
+    return user;
   }
 }

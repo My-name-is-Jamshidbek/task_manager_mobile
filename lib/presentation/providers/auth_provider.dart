@@ -281,6 +281,37 @@ class AuthProvider extends ChangeNotifier {
       return PasswordChangeResult(success: false, message: null);
     }
   }
+
+  // Update avatar
+  Future<ProfileUpdateResult> updateAvatar(String filePath) async {
+    _setLoading(true);
+    _setError(null);
+    try {
+      final response = await _authService.updateAvatar(filePath);
+      if (response.isSuccess && response.data != null) {
+        _currentUser = response.data;
+        _setLoading(false);
+        notifyListeners();
+        return ProfileUpdateResult(
+          success: true,
+          message: null,
+          user: _currentUser,
+        );
+      } else {
+        _setError(response.error);
+        _setLoading(false);
+        return ProfileUpdateResult(
+          success: false,
+          message: response.error,
+          user: null,
+        );
+      }
+    } catch (e) {
+      _setError('Failed to update avatar: $e');
+      _setLoading(false);
+      return ProfileUpdateResult(success: false, message: null, user: null);
+    }
+  }
 }
 
 // Helper class to return both success status and localized message

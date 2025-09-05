@@ -142,7 +142,9 @@
     "developerModeDescription": "Показать дополнительную отладочную информацию",
     "about": "О программе",
     "aboutDescription": "CoreUI Demo v1.0.0",
-    "aboutContent": "Комплексное демо, демонстрирующее дизайн-систему CoreUI с поддержкой многоязычности и тем."
+  "aboutContent": "Комплексное демо, демонстрирующее дизайн-систему CoreUI с поддержкой многоязычности и тем.",
+  "availableLanguages": "Доступные языки",
+  "uiUxDemo": "UI/UX демо"
   },
   "navigation": {
     "home": "Главная",
@@ -267,6 +269,12 @@
     "dateOfBirth": "Дата рождения",
     "updateProfile": "Обновить профиль",
     "updateSuccess": "Профиль успешно обновлен",
+  "chooseFromGallery": "Выбрать из Галереи",
+  "takePhoto": "Сделать фото",
+  "avatarUpdated": "Аватар успешно обновлён",
+  "avatarTooLarge": "Файл слишком большой",
+  "avatarInvalidType": "Неподдерживаемый формат изображения",
+  "avatarUploadFailed": "Не удалось загрузить аватар",
     "changePassword": "Изменить пароль",
     "changePasswordDescription": "Пожалуйста, введите ваш текущий пароль и выберите новый.",
     "currentPassword": "Текущий пароль",
@@ -335,6 +343,7 @@
     "registrationSuccessful": "Регистрация прошла успешно",
     "networkError": "Ошибка сети. Проверьте подключение.",
     "serverError": "Ошибка сервера. Попробуйте позже.",
-    "unexpectedError": "Произошла неожиданная ошибка"
+  "unexpectedError": "Произошла неожиданная ошибка",
+  "unknownError": "Неизвестная ошибка"
   }
 }
