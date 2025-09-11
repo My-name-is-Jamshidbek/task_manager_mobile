@@ -116,7 +116,10 @@ class RequiredUpdateDialog extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Current: $currentVersion → Latest: $latestVersion',
+                  loc.translateWithParams('app.versionComparison', {
+                    'current': currentVersion,
+                    'latest': latestVersion,
+                  }),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -256,7 +259,7 @@ class OptionalUpdateDialog extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'You can continue using the current version or update now for the latest features.',
+                    loc.translate('app.updateOptionalMessage'),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.primary,
                     ),
@@ -275,7 +278,10 @@ class OptionalUpdateDialog extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Current: $currentVersion → Latest: $latestVersion',
+                loc.translateWithParams('app.versionComparison', {
+                  'current': currentVersion,
+                  'latest': latestVersion,
+                }),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

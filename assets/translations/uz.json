@@ -15,7 +15,9 @@
     "skipUpdate": "O'tkazib yuborish",
     "checkingUpdates": "Yangilanishlar tekshirilmoqda...",
     "noUpdatesAvailable": "Yangilanishlar mavjud emas",
-    "updateInstructions": "Ilovadan foydalanishni davom ettirish uchun yangilang"
+    "updateInstructions": "Ilovadan foydalanishni davom ettirish uchun yangilang",
+    "updateOptionalMessage": "Siz joriy versiyadan foydalanishda davom etishingiz yoki eng so'nggi xususiyatlar uchun hozir yangilashingiz mumkin.",
+    "versionComparison": "Joriy: {current} → Eng so'nggi: {latest}"
   },
   "demo": {
     "title": "CoreUI Mavzu Namoyishi",

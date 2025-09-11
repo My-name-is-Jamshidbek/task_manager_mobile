@@ -45,6 +45,15 @@ class AppLocalizations {
     return _getTranslationByKey(key) ?? key;
   }
 
+  // Get translated string with placeholders replaced
+  String translateWithParams(String key, Map<String, String> params) {
+    String translated = translate(key);
+    params.forEach((placeholder, value) {
+      translated = translated.replaceAll('{$placeholder}', value);
+    });
+    return translated;
+  }
+
   // Get translation by nested key (e.g., "auth.login")
   String? _getTranslationByKey(String key) {
     List<String> keys = key.split('.');

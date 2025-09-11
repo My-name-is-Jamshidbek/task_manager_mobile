@@ -33,7 +33,13 @@ class VersionInfo {
 class LatestVersion {
   final int id;
   final String name;
+  final String nameEn;
+  final String nameRu;
+  final String nameUz;
   final String description;
+  final String descriptionEn;
+  final String descriptionRu;
+  final String descriptionUz;
   final String type;
   final String code;
   final bool isActive;
@@ -43,7 +49,13 @@ class LatestVersion {
   LatestVersion({
     required this.id,
     required this.name,
+    required this.nameEn,
+    required this.nameRu,
+    required this.nameUz,
     required this.description,
+    required this.descriptionEn,
+    required this.descriptionRu,
+    required this.descriptionUz,
     required this.type,
     required this.code,
     required this.isActive,
@@ -55,13 +67,45 @@ class LatestVersion {
     return LatestVersion(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
+      nameEn: json['name_en'] ?? json['name'] ?? '',
+      nameRu: json['name_ru'] ?? json['name'] ?? '',
+      nameUz: json['name_uz'] ?? json['name'] ?? '',
       description: json['desc'] ?? '',
+      descriptionEn: json['desc_en'] ?? json['desc'] ?? '',
+      descriptionRu: json['desc_ru'] ?? json['desc'] ?? '',
+      descriptionUz: json['desc_uz'] ?? json['desc'] ?? '',
       type: json['type'] ?? '',
       code: json['code'] ?? '',
       isActive: json['is_active'] ?? false,
       createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
     );
+  }
+
+  /// Get localized name based on locale
+  String getLocalizedName(String locale) {
+    switch (locale.toLowerCase()) {
+      case 'ru':
+        return nameRu.isNotEmpty ? nameRu : name;
+      case 'uz':
+        return nameUz.isNotEmpty ? nameUz : name;
+      case 'en':
+      default:
+        return nameEn.isNotEmpty ? nameEn : name;
+    }
+  }
+
+  /// Get localized description based on locale
+  String getLocalizedDescription(String locale) {
+    switch (locale.toLowerCase()) {
+      case 'ru':
+        return descriptionRu.isNotEmpty ? descriptionRu : description;
+      case 'uz':
+        return descriptionUz.isNotEmpty ? descriptionUz : description;
+      case 'en':
+      default:
+        return descriptionEn.isNotEmpty ? descriptionEn : description;
+    }
   }
 }
 
@@ -193,11 +237,14 @@ class UpdateService {
     }
   }
 
-  /// Get update information for display
-  static Future<Map<String, dynamic>?> getUpdateInfo() async {
+  /// Get update information for display with localization support
+  static Future<Map<String, dynamic>?> getUpdateInfo([String? locale]) async {
     try {
       final versionInfo = await checkForUpdates();
       if (versionInfo == null) return null;
+
+      // Default to English if no locale provided
+      final targetLocale = locale ?? 'en';
 
       return {
         'hasUpdate':
@@ -205,9 +252,16 @@ class UpdateService {
         'isRequired': versionInfo.updateRequired,
         'currentVersion': versionInfo.currentVersion,
         'latestVersion': versionInfo.latest.code,
-        'updateTitle': versionInfo.latest.name,
-        'updateDescription': versionInfo.latest.description,
+        'updateTitle': versionInfo.latest.getLocalizedName(targetLocale),
+        'updateDescription': versionInfo.latest.getLocalizedDescription(targetLocale),
         'platform': versionInfo.platform,
+        // Include all language variants for flexibility
+        'titleEn': versionInfo.latest.nameEn,
+        'titleRu': versionInfo.latest.nameRu,
+        'titleUz': versionInfo.latest.nameUz,
+        'descriptionEn': versionInfo.latest.descriptionEn,
+        'descriptionRu': versionInfo.latest.descriptionRu,
+        'descriptionUz': versionInfo.latest.descriptionUz,
       };
     } catch (e) {
       Logger.warning('⚠️ UpdateService: Error getting update info: $e');

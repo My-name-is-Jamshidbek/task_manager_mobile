@@ -15,7 +15,9 @@
     "skipUpdate": "Skip",
     "checkingUpdates": "Checking for updates...",
     "noUpdatesAvailable": "No updates available",
-    "updateInstructions": "Please update to continue using the app"
+    "updateInstructions": "Please update to continue using the app",
+    "updateOptionalMessage": "You can continue using the current version or update now for the latest features.",
+    "versionComparison": "Current: {current} → Latest: {latest}"
   },
   "demo": {
     "title": "CoreUI Theme Demo",

@@ -132,7 +132,20 @@ class _AppRootState extends State<AppRoot> {
       }
 
       Logger.info('🔄 AppRoot: Starting update check');
-      final updateInfo = await UpdateService.getUpdateInfo();
+      
+      // Get current locale for localized update messages
+      String? currentLocale;
+      if (mounted) {
+        try {
+          final loc = AppLocalizations.of(context);
+          currentLocale = loc.locale.languageCode;
+        } catch (e) {
+          Logger.warning('⚠️ AppRoot: Could not get current locale: $e');
+          currentLocale = 'en'; // Default to English
+        }
+      }
+      
+      final updateInfo = await UpdateService.getUpdateInfo(currentLocale);
 
       if (updateInfo == null) {
         Logger.info('ℹ️ AppRoot: No update information available');
@@ -148,6 +161,7 @@ class _AppRootState extends State<AppRoot> {
       }
 
       Logger.info('📱 AppRoot: Update available - Required: $isRequired');
+      Logger.info('🌐 AppRoot: Update content localized for: $currentLocale');
 
       if (mounted) {
         if (isRequired) {
