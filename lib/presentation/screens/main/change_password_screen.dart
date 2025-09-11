@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../../core/localization/app_localizations.dart';
+ import '../../../core/localization/app_localizations.dart';
 import '../../widgets/success_toast.dart';
+import '../../widgets/password_field.dart';
+import '../../widgets/login_submit_button.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -16,17 +19,36 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _autoValidate = false;
+  bool _submitting = false;
 
-  bool _obscureCurrentPassword = true;
-  bool _obscureNewPassword = true;
-  bool _obscureConfirmPassword = true;
+  @override
+  void initState() {
+    super.initState();
+    _currentPasswordController.addListener(_onFieldChanged);
+    _newPasswordController.addListener(_onFieldChanged);
+    _confirmPasswordController.addListener(_onFieldChanged);
+  }
 
   @override
   void dispose() {
+    _currentPasswordController.removeListener(_onFieldChanged);
+    _newPasswordController.removeListener(_onFieldChanged);
+    _confirmPasswordController.removeListener(_onFieldChanged);
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void _onFieldChanged() => setState(() {});
+
+  bool get _isFormValid {
+    return _currentPasswordController.text.trim().isNotEmpty &&
+        _newPasswordController.text.trim().isNotEmpty &&
+        _confirmPasswordController.text.trim().isNotEmpty &&
+        _newPasswordController.text.length >= 6 &&
+        _newPasswordController.text == _confirmPasswordController.text;
   }
 
   @override
@@ -41,200 +63,233 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         backgroundColor: theme.colorScheme.surface,
         foregroundColor: theme.colorScheme.onSurface,
       ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Header
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.lock_outline,
-                          color: theme.colorScheme.onPrimaryContainer,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            loc.translate('profile.changePasswordDescription'),
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Current password field
-                  TextFormField(
-                    controller: _currentPasswordController,
-                    obscureText: _obscureCurrentPassword,
-                    decoration: InputDecoration(
-                      labelText: loc.translate('profile.currentPassword'),
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureCurrentPassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureCurrentPassword = !_obscureCurrentPassword;
-                          });
-                        },
-                      ),
-                      border: const OutlineInputBorder(),
-                      filled: true,
-                      fillColor: theme.colorScheme.surface,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return loc.translate('validation.required');
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // New password field
-                  TextFormField(
-                    controller: _newPasswordController,
-                    obscureText: _obscureNewPassword,
-                    decoration: InputDecoration(
-                      labelText: loc.translate('profile.newPassword'),
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureNewPassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureNewPassword = !_obscureNewPassword;
-                          });
-                        },
-                      ),
-                      border: const OutlineInputBorder(),
-                      filled: true,
-                      fillColor: theme.colorScheme.surface,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return loc.translate('validation.required');
-                      }
-                      if (value.length < 6) {
-                        return loc.translate('validation.passwordMinLength');
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Confirm password field
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: _obscureConfirmPassword,
-                    decoration: InputDecoration(
-                      labelText: loc.translate('profile.confirmPassword'),
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirmPassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureConfirmPassword = !_obscureConfirmPassword;
-                          });
-                        },
-                      ),
-                      border: const OutlineInputBorder(),
-                      filled: true,
-                      fillColor: theme.colorScheme.surface,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return loc.translate('validation.required');
-                      }
-                      if (value != _newPasswordController.text) {
-                        return loc.translate('validation.passwordsDoNotMatch');
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Error message
-                  if (authProvider.error != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, c) => SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 460,
+                minHeight: c.maxHeight - 56,
+              ),
+              child: Center(
+                child: Consumer<AuthProvider>(
+                  builder: (context, authProvider, _) {
+                    return Form(
+                      key: _formKey,
+                      autovalidateMode: _autoValidate
+                          ? AutovalidateMode.always
+                          : AutovalidateMode.disabled,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: theme.colorScheme.onErrorContainer,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              authProvider.error!,
-                              style: TextStyle(
-                                color: theme.colorScheme.onErrorContainer,
+                          Card(
+                            elevation: 3,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                24,
+                                28,
+                                24,
+                                32,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Icon + title
+                                  Center(
+                                    child: Container(
+                                      width: 96,
+                                      height: 96,
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.lock_outline,
+                                        size: 48,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    loc.translate('profile.changePassword'),
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    loc.translate(
+                                      'profile.changePasswordDescription',
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 32),
+                                  // Current password field
+                                  PasswordField(
+                                    controller: _currentPasswordController,
+                                    loc: loc,
+                                    textInputAction: TextInputAction.next,
+                                    hint: loc.translate(
+                                      'profile.currentPassword',
+                                    ),
+                                    validator: (v) {
+                                      if (v == null || v.trim().isEmpty) {
+                                        return loc.translate(
+                                          'validation.required',
+                                        );
+                                      }
+                                      return null;
+                                    },
+                                    onSubmitted: () =>
+                                        FocusScope.of(context).nextFocus(),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // New password field
+                                  PasswordField(
+                                    controller: _newPasswordController,
+                                    loc: loc,
+                                    textInputAction: TextInputAction.next,
+                                    hint: loc.translate('profile.newPassword'),
+                                    validator: (v) {
+                                      if (v == null || v.trim().isEmpty) {
+                                        return loc.translate(
+                                          'validation.required',
+                                        );
+                                      }
+                                      if (v.length < 6) {
+                                        return loc.translate(
+                                          'validation.passwordMinLength',
+                                        );
+                                      }
+                                      return null;
+                                    },
+                                    onSubmitted: () =>
+                                        FocusScope.of(context).nextFocus(),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Confirm password field
+                                  PasswordField(
+                                    controller: _confirmPasswordController,
+                                    loc: loc,
+                                    hint: loc.translate(
+                                      'profile.confirmPassword',
+                                    ),
+                                    validator: (v) {
+                                      if (v == null || v.trim().isEmpty) {
+                                        return loc.translate(
+                                          'validation.required',
+                                        );
+                                      }
+                                      if (v != _newPasswordController.text) {
+                                        return loc.translate(
+                                          'validation.passwordsDoNotMatch',
+                                        );
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 24),
+                                  if (authProvider.error != null &&
+                                      authProvider.error!.isNotEmpty)
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.errorContainer,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.error_outline,
+                                            color: theme
+                                                .colorScheme
+                                                .onErrorContainer,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              authProvider.error!,
+                                              style: TextStyle(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onErrorContainer,
+                                              ),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            tooltip: 'Dismiss',
+                                            icon: const Icon(
+                                              Icons.close,
+                                              size: 18,
+                                            ),
+                                            color: theme
+                                                .colorScheme
+                                                .onErrorContainer
+                                                .withOpacity(.8),
+                                            onPressed: () =>
+                                                authProvider.clearError(),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  if (authProvider.error != null)
+                                    const SizedBox(height: 16),
+                                  LoginSubmitButton(
+                                    enabled: _isFormValid && !_submitting,
+                                    loading: _submitting,
+                                    label: loc.translate(
+                                      'profile.changePassword',
+                                    ),
+                                    onPressed: _submitting
+                                        ? null
+                                        : () async {
+                                            await _changePassword();
+                                            HapticFeedback.lightImpact();
+                                          },
+                                  ),
+                                ],
                               ),
                             ),
                           ),
+                          const SizedBox(height: 32),
+                          SizedBox(
+                            height: MediaQuery.of(context).padding.bottom + 8,
+                          ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Change password button
-                  FilledButton(
-                    onPressed: authProvider.isLoading ? null : _changePassword,
-                    child: authProvider.isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(loc.translate('profile.changePassword')),
-                  ),
-                ],
+                    );
+                  },
+                ),
               ),
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
 
   Future<void> _changePassword() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      setState(() => _autoValidate = true);
+      return;
+    }
+
+    setState(() => _submitting = true);
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -244,20 +299,45 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       confirmPassword: _confirmPasswordController.text,
     );
 
-    if (context.mounted) {
-      if (result.success) {
-        AppToast.showSuccess(
-          context,
-          message:
-              result.message ??
-              AppLocalizations.of(
-                context,
-              ).translate('profile.passwordChangeSuccess'),
+    if (!mounted) return;
+
+    if (result.success) {
+      AppToast.showSuccess(
+        context,
+        message:
+            result.message ??
+            AppLocalizations.of(
+              context,
+            ).translate('profile.passwordChangeSuccess'),
+      );
+      Navigator.of(context).pop();
+    } else {
+      if (authProvider.error != null && authProvider.error!.isNotEmpty) {
+        final errorMessage = authProvider.error!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Theme.of(context).colorScheme.onError,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Text(errorMessage)),
+              ],
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            duration: const Duration(seconds: 4),
+          ),
         );
-        Navigator.of(context).pop();
-      } else {
-        // Error is handled by the provider and displayed in UI
       }
     }
+
+    if (mounted) setState(() => _submitting = false);
   }
 }

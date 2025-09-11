@@ -48,8 +48,8 @@ class _PasswordFieldState extends State<PasswordField> {
         }
       },
       decoration: InputDecoration(
-        labelText: widget.loc.translate('auth.password'),
-        hintText: widget.hint ?? '••••••',
+        labelText: widget.hint ?? widget.loc.translate('auth.password'),
+        hintText: '••••••',
         prefixIcon: const Icon(Icons.lock),
         suffixIcon: IconButton(
           icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
