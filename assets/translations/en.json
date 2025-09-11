@@ -6,7 +6,16 @@
     "versionIOS": "iOS v1.1.5", 
     "versionWeb": "Web v1.0.8",
     "platformVersion": "Platform Version",
-    "buildInfo": "Build Information"
+    "buildInfo": "Build Information",
+    "updateAvailable": "Update Available",
+    "updateRequired": "Update Required",
+    "updateTitle": "New Version Available",
+    "updateNow": "Update Now",
+    "updateLater": "Later",
+    "skipUpdate": "Skip",
+    "checkingUpdates": "Checking for updates...",
+    "noUpdatesAvailable": "No updates available",
+    "updateInstructions": "Please update to continue using the app"
   },
   "demo": {
     "title": "CoreUI Theme Demo",

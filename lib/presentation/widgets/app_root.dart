@@ -6,10 +6,12 @@ import '../../core/utils/navigation_service.dart';
 import '../../core/utils/auth_debug_helper.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/services/authentication_manager.dart';
+import '../../core/services/update_service.dart';
 import '../providers/auth_provider.dart';
 import '../screens/loading/loading_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/main/main_screen.dart';
+import 'update_dialogs.dart';
 
 /// Root widget that manages app-wide state and routing based on AppManager
 class AppRoot extends StatefulWidget {
@@ -60,6 +62,10 @@ class _AppRootState extends State<AppRoot> {
         await authProvider.loadUserProfile();
         Logger.info('✅ AppRoot: User profile data loaded');
       }
+
+      // Check for app updates after initialization
+      Logger.info('🔄 AppRoot: Checking for app updates');
+      await _checkForUpdates();
 
       // Calculate elapsed time and ensure minimum loading duration
       final elapsedTime = DateTime.now().difference(startTime);
@@ -112,6 +118,83 @@ class _AppRootState extends State<AppRoot> {
         });
       }
     }
+  }
+
+  /// Check for app updates and handle required/optional updates
+  Future<void> _checkForUpdates() async {
+    try {
+      // Only check for updates on supported platforms
+      if (!UpdateService.isPlatformSupported()) {
+        Logger.info(
+          'ℹ️ AppRoot: Update check skipped - platform not supported',
+        );
+        return;
+      }
+
+      Logger.info('🔄 AppRoot: Starting update check');
+      final updateInfo = await UpdateService.getUpdateInfo();
+
+      if (updateInfo == null) {
+        Logger.info('ℹ️ AppRoot: No update information available');
+        return;
+      }
+
+      final hasUpdate = updateInfo['hasUpdate'] ?? false;
+      final isRequired = updateInfo['isRequired'] ?? false;
+
+      if (!hasUpdate) {
+        Logger.info('✅ AppRoot: App is up to date');
+        return;
+      }
+
+      Logger.info('📱 AppRoot: Update available - Required: $isRequired');
+
+      if (mounted) {
+        if (isRequired) {
+          // Required update - show blocking dialog
+          Logger.info('🚨 AppRoot: Showing required update dialog');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showRequiredUpdateDialog(updateInfo);
+          });
+        } else {
+          // Optional update - show after app loads
+          Logger.info('💡 AppRoot: Scheduling optional update dialog');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scheduleOptionalUpdateDialog(updateInfo);
+          });
+        }
+      }
+    } catch (e, stackTrace) {
+      Logger.error('❌ AppRoot: Update check failed', 'AppRoot', e, stackTrace);
+    }
+  }
+
+  /// Show required update dialog (blocking)
+  void _showRequiredUpdateDialog(Map<String, dynamic> updateInfo) {
+    RequiredUpdateDialog.show(
+      context: context,
+      currentVersion: updateInfo['currentVersion'] ?? '',
+      latestVersion: updateInfo['latestVersion'] ?? '',
+      updateTitle: updateInfo['updateTitle'] ?? 'Update Required',
+      updateDescription:
+          updateInfo['updateDescription'] ?? 'Please update to continue.',
+    );
+  }
+
+  /// Schedule optional update dialog to show after a delay
+  void _scheduleOptionalUpdateDialog(Map<String, dynamic> updateInfo) {
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        OptionalUpdateDialog.show(
+          context: context,
+          currentVersion: updateInfo['currentVersion'] ?? '',
+          latestVersion: updateInfo['latestVersion'] ?? '',
+          updateTitle: updateInfo['updateTitle'] ?? 'Update Available',
+          updateDescription:
+              updateInfo['updateDescription'] ?? 'A new version is available.',
+        );
+      }
+    });
   }
 
   /// Handle authentication success callback

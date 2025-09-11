@@ -6,7 +6,16 @@
     "versionIOS": "iOS v1.1.5",
     "versionWeb": "Web v1.0.8",
     "platformVersion": "Platforma versiyasi",
-    "buildInfo": "Qurilma haqida ma'lumot"
+    "buildInfo": "Qurilma haqida ma'lumot",
+    "updateAvailable": "Yangilanish mavjud",
+    "updateRequired": "Yangilanish talab qilinadi",
+    "updateTitle": "Yangi versiya mavjud",
+    "updateNow": "Hozir yangilash",
+    "updateLater": "Keyinroq",
+    "skipUpdate": "O'tkazib yuborish",
+    "checkingUpdates": "Yangilanishlar tekshirilmoqda...",
+    "noUpdatesAvailable": "Yangilanishlar mavjud emas",
+    "updateInstructions": "Ilovadan foydalanishni davom ettirish uchun yangilang"
   },
   "demo": {
     "title": "CoreUI Mavzu Namoyishi",

@@ -6,7 +6,16 @@
     "versionIOS": "iOS в1.1.5",
     "versionWeb": "Web в1.0.8", 
     "platformVersion": "Версия платформы",
-    "buildInfo": "Информация о сборке"
+    "buildInfo": "Информация о сборке",
+    "updateAvailable": "Доступно обновление",
+    "updateRequired": "Требуется обновление",
+    "updateTitle": "Доступна новая версия",
+    "updateNow": "Обновить сейчас",
+    "updateLater": "Позже",
+    "skipUpdate": "Пропустить",
+    "checkingUpdates": "Проверка обновлений...",
+    "noUpdatesAvailable": "Нет доступных обновлений",
+    "updateInstructions": "Пожалуйста, обновите приложение для продолжения использования"
   },
   "demo": {
     "title": "Демо CoreUI Темы",

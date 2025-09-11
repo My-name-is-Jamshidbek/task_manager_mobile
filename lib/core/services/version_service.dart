@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import '../utils/logger.dart';
 
 /// Service for managing platform-specific version information
 class VersionService {
-  static const String _androidVersion = '1.2.0';
-  static const String _iosVersion = '1.1.5';
+  static const String _androidVersion = '1.1.0';
+  static const String _iosVersion = '1.1.0';
   static const String _webVersion = '1.0.8';
   static const String _defaultVersion = '1.0.0';
 
@@ -129,9 +129,9 @@ class VersionService {
   static Future<int?> _getAndroidSdkVersion() async {
     try {
       if (Platform.isAndroid) {
-        const platform = MethodChannel('platform_info');
-        final int? sdkInt = await platform.invokeMethod('getAndroidSdkVersion');
-        return sdkInt;
+        final deviceInfo = DeviceInfoPlugin();
+        final androidInfo = await deviceInfo.androidInfo;
+        return androidInfo.version.sdkInt;
       }
     } catch (e) {
       Logger.warning(
@@ -145,9 +145,9 @@ class VersionService {
   static Future<String?> _getIosVersion() async {
     try {
       if (Platform.isIOS) {
-        const platform = MethodChannel('platform_info');
-        final String? iosVersion = await platform.invokeMethod('getIosVersion');
-        return iosVersion;
+        final deviceInfo = DeviceInfoPlugin();
+        final iosInfo = await deviceInfo.iosInfo;
+        return iosInfo.systemVersion;
       }
     } catch (e) {
       Logger.warning('⚠️ VersionService: Could not get iOS version: $e');
