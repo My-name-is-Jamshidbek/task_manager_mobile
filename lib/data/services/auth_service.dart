@@ -184,45 +184,18 @@ class AuthService {
     Logger.info('�🔢 AuthService: Code length: ${code.length}');
 
     try {
-      // For now, we'll bypass the actual SMS verification
-      // and simulate a successful response
-      Logger.info('⚠️ AuthService: Using mock verification (bypass mode)');
-      await Future.delayed(const Duration(seconds: 1));
+      // Check if we should use mock verification for testing
+      if (_shouldUseMockVerification(phone, code)) {
+        Logger.info('⚠️ AuthService: Using mock verification (test mode)');
+        return await _mockVerification(phone);
+      }
 
-      // Create a mock successful response (use original phone for user object)
-      final mockUser = User(
-        id: 1,
-        name: 'Test User',
-        phone: phone, // Keep original format for user display
-        email: 'test@example.com',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      final mockToken = 'mock_token_${DateTime.now().millisecondsSinceEpoch}';
-
-      final verifyResponse = VerifyResponse(
-        success: true,
-        message: const MultilingualMessage(
-          uzbek: 'Tasdiqlash muvaffaqiyatli',
-          russian: 'Подтверждение успешно',
-          english: 'Verification successful',
-        ),
-        token: mockToken,
-        user: mockUser,
-      );
-
-      Logger.info('✅ AuthService: Mock verification successful');
-
-      // Store session data
-      await _storeSession(mockToken, mockUser);
-
-      return ApiResponse.success(verifyResponse);
-
-      /* 
-      // TODO: Uncomment this when SMS verification API is ready
-      Logger.info('📤 AuthService: Sending verification request');
-      final request = VerifyRequest(phone: cleanPhone, code: code); // Use cleaned phone
+      // Real SMS verification with API
+      Logger.info('📤 AuthService: Sending verification request to API');
+      final request = VerifyRequest(
+        phone: cleanPhone,
+        code: code,
+      ); // Use cleaned phone
       final response = await _apiClient.post<VerifyResponse>(
         ApiConstants.verify,
         body: request.toJson(),
@@ -236,11 +209,12 @@ class AuthService {
           await _storeSession(verifyData.token!, verifyData.user!);
         }
       } else {
-        Logger.warning('⚠️ AuthService: SMS verification failed - ${response.error}');
+        Logger.warning(
+          '⚠️ AuthService: SMS verification failed - ${response.error}',
+        );
       }
 
       return response;
-      */
     } catch (e, stackTrace) {
       Logger.error(
         '❌ AuthService: Verification exception',
@@ -249,6 +223,60 @@ class AuthService {
         stackTrace,
       );
       return ApiResponse.error('Verification failed: $e');
+    }
+  }
+
+  // Resend SMS code
+  Future<ApiResponse<ResendSmsResponse>> resendSms(String phone) async {
+    // Remove + from phone number for API request
+    final cleanPhone = phone.replaceAll('+', '');
+
+    Logger.info(
+      '📱 AuthService: Resending SMS for phone: ${_sanitizePhone(phone)}',
+    );
+
+    try {
+      // Check if we should use mock for test numbers
+      if (_shouldUseMockVerification(phone, '')) {
+        Logger.info('⚠️ AuthService: Using mock resend SMS (test mode)');
+        await Future.delayed(const Duration(seconds: 1));
+
+        final response = ResendSmsResponse(
+          success: true,
+          message: const MultilingualMessage(
+            uzbek: 'SMS qayta yuborildi',
+            russian: 'SMS отправлено повторно',
+            english: 'SMS resent successfully',
+          ),
+        );
+
+        return ApiResponse.success(response);
+      }
+
+      // Real resend SMS API call
+      Logger.info('📤 AuthService: Sending resend SMS request to API');
+      final request = ResendSmsRequest(phone: cleanPhone);
+      final response = await _apiClient.post<ResendSmsResponse>(
+        ApiConstants.resendSms,
+        body: request.toJson(),
+        fromJson: (json) => ResendSmsResponse.fromJson(json),
+      );
+
+      if (response.isSuccess) {
+        Logger.info('✅ AuthService: SMS resent successfully');
+      } else {
+        Logger.warning('⚠️ AuthService: Resend SMS failed - ${response.error}');
+      }
+
+      return response;
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ AuthService: Resend SMS exception',
+        'AuthService',
+        e,
+        stackTrace,
+      );
+      return ApiResponse.error('Resend SMS failed: $e');
     }
   }
 
@@ -410,6 +438,26 @@ class AuthService {
       return ApiResponse.error('No authentication token found');
     }
 
+    // Development bypass: If using mock token, simulate success
+    if (_currentToken!.startsWith('mock_token_')) {
+      Logger.info(
+        '🧪 AuthService: Mock token detected, bypassing server verification',
+      );
+
+      final mockResponse = TokenVerifyResponse(
+        message: const MultilingualMessage(
+          uzbek: 'Token yaroqli',
+          russian: 'Токен действителен',
+          english: 'Token is valid',
+        ),
+        user: _currentUser,
+        tokenValid: true,
+      );
+
+      Logger.info('✅ AuthService: Mock token verification successful');
+      return ApiResponse.success(mockResponse);
+    }
+
     try {
       // Set current language for API headers
       final localizationService = LocalizationService();
@@ -424,9 +472,10 @@ class AuthService {
       Logger.info('🌐 AuthService: Using language: $currentLanguage');
       Logger.info('📤 AuthService: Sending token verification request');
 
-      final response = await _apiClient.get<TokenVerifyResponse>(
+      final response = await _apiClient.post<TokenVerifyResponse>(
         ApiConstants.verify,
         headers: headers,
+        body: {}, // Empty body for token verification POST request
         fromJson: (json) => TokenVerifyResponse.fromJson(json),
       );
 
@@ -682,6 +731,51 @@ class AuthService {
     if (phone == null) return null;
     if (phone.length <= 4) return '***';
     return '${phone.substring(0, 4)}***${phone.substring(phone.length - 2)}';
+  }
+
+  // Check if we should use mock verification for testing
+  bool _shouldUseMockVerification(String phone, String code) {
+    // Use mock verification for test phone numbers or specific test codes
+    return phone.contains('test') ||
+        phone == '+998901234567' ||
+        code == '123456' ||
+        code == '000000';
+  }
+
+  // Mock verification for testing purposes
+  Future<ApiResponse<VerifyResponse>> _mockVerification(String phone) async {
+    Logger.info('⚠️ AuthService: Using mock verification (test mode)');
+    await Future.delayed(const Duration(seconds: 1));
+
+    // Create a mock successful response (use original phone for user object)
+    final mockUser = User(
+      id: 1,
+      name: 'Test User',
+      phone: phone, // Keep original format for user display
+      email: 'test@example.com',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    final mockToken = 'mock_token_${DateTime.now().millisecondsSinceEpoch}';
+
+    final verifyResponse = VerifyResponse(
+      success: true,
+      message: const MultilingualMessage(
+        uzbek: 'Tasdiqlash muvaffaqiyatli',
+        russian: 'Подтверждение успешно',
+        english: 'Verification successful',
+      ),
+      token: mockToken,
+      user: mockUser,
+    );
+
+    Logger.info('✅ AuthService: Mock verification successful');
+
+    // Store session data
+    await _storeSession(mockToken, mockUser);
+
+    return ApiResponse.success(verifyResponse);
   }
 }
 

@@ -125,6 +125,16 @@ class VerifyRequest {
   }
 }
 
+class ResendSmsRequest {
+  final String phone;
+
+  ResendSmsRequest({required this.phone});
+
+  Map<String, dynamic> toJson() {
+    return {'phone': phone};
+  }
+}
+
 class VerifyResponse {
   final bool success;
   final MultilingualMessage? message;
@@ -141,6 +151,27 @@ class VerifyResponse {
           : null,
       token: json['token'],
       user: json['user'] != null ? User.fromJson(json['user']) : null,
+    );
+  }
+
+  /// Gets the message in the current app language
+  String? getLocalizedMessage() {
+    return message?.getMessage();
+  }
+}
+
+class ResendSmsResponse {
+  final bool success;
+  final MultilingualMessage? message;
+
+  ResendSmsResponse({required this.success, this.message});
+
+  factory ResendSmsResponse.fromJson(Map<String, dynamic> json) {
+    return ResendSmsResponse(
+      success: json['success'] ?? false,
+      message: json['message'] != null
+          ? MultilingualMessage.fromJson(json['message'])
+          : null,
     );
   }
 

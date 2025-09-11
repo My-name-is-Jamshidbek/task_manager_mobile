@@ -4,6 +4,9 @@ import '../constants/api_constants.dart';
 import '../utils/logger.dart';
 import '../utils/multilingual_message.dart';
 
+// Callback type for handling authentication failures
+typedef AuthFailureCallback = void Function();
+
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
   factory ApiClient() => _instance;
@@ -11,6 +14,9 @@ class ApiClient {
 
   final http.Client _client = http.Client();
   String? _authToken;
+
+  // Callback to handle authentication failures (401 responses)
+  AuthFailureCallback? _onAuthFailure;
 
   // Set authentication token
   void setAuthToken(String token) {
@@ -20,6 +26,23 @@ class ApiClient {
   // Clear authentication token
   void clearAuthToken() {
     _authToken = null;
+  }
+
+  // Set callback for authentication failures
+  void setAuthFailureCallback(AuthFailureCallback? callback) {
+    _onAuthFailure = callback;
+  }
+
+  // Handle authentication failure (401 response)
+  void _handleAuthFailure() {
+    Logger.warning('🚨 ApiClient: Authentication failure detected (401)');
+    clearAuthToken();
+    if (_onAuthFailure != null) {
+      Logger.info('🔄 ApiClient: Triggering auth failure callback');
+      _onAuthFailure!();
+    } else {
+      Logger.warning('⚠️ ApiClient: No auth failure callback set');
+    }
   }
 
   // Get common headers
@@ -335,6 +358,13 @@ class ApiClient {
       Logger.warning(
         '⚠️ [$requestId] Request Failed with Status: ${response.statusCode}',
       );
+
+      // Handle 401 Unauthorized responses - trigger automatic logout
+      if (response.statusCode == 401) {
+        Logger.warning('🚨 [$requestId] Unauthorized response detected');
+        _handleAuthFailure();
+      }
+
       try {
         final Map<String, dynamic> errorData = jsonDecode(response.body);
 

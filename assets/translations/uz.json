@@ -186,7 +186,8 @@
     "smsCode": "SMS kod",
     "resendCode": "Kodni qayta yuborish",
     "codeSentTo": "Kod yuborildi",
-    "invalidCode": "Noto'g'ri kod"
+    "invalidCode": "Noto'g'ri kod",
+    "smsVerificationRequired": "Kirishni saqlash uchun SMS tasdiqlashni yakunlang"
   },
   "tasks": {
     "title": "Vazifalar",
@@ -343,7 +344,9 @@
     "registrationSuccessful": "Ro'yxatdan o'tish muvaffaqiyatli",
     "networkError": "Tarmoq xatosi. Ulanishingizni tekshiring.",
     "serverError": "Server xatosi. Keyinroq urinib ko'ring.",
-  "unexpectedError": "Kutilmagan xato yuz berdi",
-  "unknownError": "Noma'lum xato"
+    "unexpectedError": "Kutilmagan xato yuz berdi",
+    "unknownError": "Noma'lum xato",
+    "sessionExpired": "Sessiya muddati tugadi. Iltimos, qayta kiring.",
+    "sessionExpiredTitle": "Sessiya tugadi"
   }
 }

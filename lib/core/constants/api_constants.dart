@@ -5,6 +5,7 @@ class ApiConstants {
   // API Endpoints
   static const String login = '/auth/login';
   static const String verify = '/auth/verify';
+  static const String resendSms = '/auth/resend-sms';
   static const String register = '/auth/register';
   static const String logout = '/auth/logout';
   static const String refreshToken = '/auth/refresh';

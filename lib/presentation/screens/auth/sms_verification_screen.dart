@@ -156,39 +156,104 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
     }
   }
 
-  void _resend() {
+  void _resend() async {
     if (!_canResend) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final loc = AppLocalizations.of(context);
+
     setState(() {
       _resendAvailableAt = DateTime.now().add(const Duration(seconds: 45));
       _code = '';
     });
     _startTimer();
 
-    // Show feedback to user with icon
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              Icons.sms,
-              color: Theme.of(context).colorScheme.onSecondary,
-              size: 20,
+    try {
+      // Actually call the resend SMS API
+      final success = await authProvider.resendSms(widget.phone);
+
+      if (!mounted) return;
+
+      if (success) {
+        // Show success feedback to user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.sms,
+                  color: Theme.of(context).colorScheme.onSecondary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '${loc.translate('auth.codeSentTo')} ${widget.phone}',
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '${AppLocalizations.of(context).translate('auth.codeSentTo')} ${widget.phone}',
+            duration: const Duration(seconds: 3),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      } else {
+        // Show error message
+        String errorMessage;
+        if (authProvider.error != null && authProvider.error!.isNotEmpty) {
+          errorMessage = authProvider.error!;
+        } else {
+          errorMessage = loc.translate('messages.networkError');
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Theme.of(context).colorScheme.onError,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Text(errorMessage)),
+              ],
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.warning_outlined,
+                color: Theme.of(context).colorScheme.onError,
+                size: 20,
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(child: Text(loc.translate('messages.unexpectedError'))),
+            ],
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          duration: const Duration(seconds: 4),
         ),
-        duration: const Duration(seconds: 3),
-        backgroundColor: Theme.of(context).colorScheme.secondary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-    // TODO: Actually trigger SMS resend API call
+      );
+    }
   }
 
   @override
@@ -251,6 +316,40 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodyMedium,
                           ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer
+                                  .withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.3,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: theme.colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    loc.translate(
+                                      'auth.smsVerificationRequired',
+                                    ),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                           const SizedBox(height: 32),
                           PinCodeField(
                             length: _codeLength,
@@ -263,6 +362,28 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
                               loc.translate('auth.invalidCode'),
                               style: TextStyle(color: theme.colorScheme.error),
                               textAlign: TextAlign.center,
+                            ),
+                          // Debug mode: Show bypass button for testing
+                          if (widget.phone.contains('test') ||
+                              widget.phone == '+998901234567')
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: TextButton.icon(
+                                onPressed: () async {
+                                  setState(() => _submitting = true);
+                                  // Simulate successful verification with test code
+                                  _code = '123456';
+                                  await _submit();
+                                },
+                                icon: const Icon(Icons.bug_report, size: 16),
+                                label: Text(
+                                  'Debug: Auto-verify (Test Mode)',
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: theme.colorScheme.secondary,
+                                ),
+                              ),
                             ),
                           const SizedBox(height: 4),
                           TextButton(

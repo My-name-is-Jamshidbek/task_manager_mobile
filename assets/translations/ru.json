@@ -186,7 +186,8 @@
     "smsCode": "SMS код",
     "resendCode": "Отправить код повторно",
     "codeSentTo": "Код отправлен на",
-    "invalidCode": "Неверный код"
+    "invalidCode": "Неверный код",
+    "smsVerificationRequired": "Пожалуйста, завершите SMS подтверждение для сохранения входа"
   },
   "tasks": {
     "title": "Задачи",
@@ -343,7 +344,9 @@
     "registrationSuccessful": "Регистрация прошла успешно",
     "networkError": "Ошибка сети. Проверьте подключение.",
     "serverError": "Ошибка сервера. Попробуйте позже.",
-  "unexpectedError": "Произошла неожиданная ошибка",
-  "unknownError": "Неизвестная ошибка"
+    "unexpectedError": "Произошла неожиданная ошибка",
+    "unknownError": "Неизвестная ошибка",
+    "sessionExpired": "Срок действия сессии истек. Пожалуйста, войдите снова.",
+    "sessionExpiredTitle": "Сессия истекла"
   }
 }

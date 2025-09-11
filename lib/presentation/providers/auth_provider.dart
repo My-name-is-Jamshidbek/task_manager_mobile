@@ -111,6 +111,34 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // Resend SMS code
+  Future<bool> resendSms(String phone) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _authService.resendSms(phone);
+
+      if (response.isSuccess) {
+        _setLoading(false);
+        return true;
+      } else {
+        // Try to get localized message from API response first
+        String? errorMessage = response.error;
+        if (response.data?.message != null) {
+          errorMessage = response.data!.getLocalizedMessage();
+        }
+        _setError(errorMessage);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(null); // Let UI handle the translation
+      _setLoading(false);
+      return false;
+    }
+  }
+
   // Logout
   Future<void> logout() async {
     _setLoading(true);

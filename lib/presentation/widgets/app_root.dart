@@ -5,6 +5,7 @@ import '../../core/utils/logger.dart';
 import '../../core/utils/navigation_service.dart';
 import '../../core/utils/auth_debug_helper.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/services/authentication_manager.dart';
 import '../providers/auth_provider.dart';
 import '../screens/loading/loading_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -33,10 +34,18 @@ class _AppRootState extends State<AppRoot> {
   Future<void> _initializeApp() async {
     Logger.info('🎯 AppRoot: Starting app initialization');
 
+    // Record start time for minimum loading duration
+    final startTime = DateTime.now();
+    const minimumLoadingDuration = Duration(seconds: 5);
+
     // Debug: Check stored auth data before initialization
     await AuthDebugHelper.printStoredAuthData();
 
     try {
+      // Initialize authentication manager for automatic logout on 401 responses
+      Logger.info('🔐 AppRoot: Initializing authentication manager');
+      AuthenticationManager().initialize();
+
       // Initialize app manager
       final state = await _appManager.initialize();
 
@@ -52,6 +61,23 @@ class _AppRootState extends State<AppRoot> {
         Logger.info('✅ AppRoot: User profile data loaded');
       }
 
+      // Calculate elapsed time and ensure minimum loading duration
+      final elapsedTime = DateTime.now().difference(startTime);
+      if (elapsedTime < minimumLoadingDuration) {
+        final remainingTime = minimumLoadingDuration - elapsedTime;
+        Logger.info(
+          '⏱️ AppRoot: Waiting ${remainingTime.inMilliseconds}ms more for minimum loading duration',
+        );
+        await Future.delayed(remainingTime);
+      }
+
+      // Add a small buffer for smoother transition
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      Logger.info(
+        '✅ AppRoot: Initialization completed after ${DateTime.now().difference(startTime).inMilliseconds}ms',
+      );
+
       if (mounted) {
         setState(() {
           _currentState = state;
@@ -65,6 +91,19 @@ class _AppRootState extends State<AppRoot> {
         e,
         stackTrace,
       );
+
+      // Ensure minimum loading time even on error
+      final elapsedTime = DateTime.now().difference(startTime);
+      if (elapsedTime < minimumLoadingDuration) {
+        final remainingTime = minimumLoadingDuration - elapsedTime;
+        Logger.info(
+          '⏱️ AppRoot: Waiting ${remainingTime.inMilliseconds}ms more for minimum loading duration (error case)',
+        );
+        await Future.delayed(remainingTime);
+      }
+
+      // Add a small buffer for smoother transition even on error
+      await Future.delayed(const Duration(milliseconds: 300));
 
       if (mounted) {
         setState(() {
@@ -263,7 +302,28 @@ class _AppRootState extends State<AppRoot> {
   @override
   Widget build(BuildContext context) {
     Logger.info('🔍 AppRoot: Build method called');
-    return _buildCurrentScreen();
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 800),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position:
+                Tween<Offset>(
+                  begin: const Offset(0.0, 0.1),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+            child: child,
+          ),
+        );
+      },
+      child: _buildCurrentScreen(),
+    );
   }
 }
 
