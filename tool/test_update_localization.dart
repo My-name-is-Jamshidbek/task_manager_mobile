@@ -1,4 +1,4 @@
-import '../lib/core/services/update_service.dart';
+import 'package:task_manager/core/services/update_service.dart';
 
 /// Test script to verify update localization
 void main() async {
@@ -12,10 +12,14 @@ void main() async {
     'name_en': 'v1.1.1 - Implement and Validate App Update Check Feature',
     'name_ru': 'v1.1.1 – Функция проверки обновлений',
     'name_uz': 'v1.1.1 – Yangilanishlarni tekshirish funksiyasi',
-    'desc': 'Implement and verify the update checking mechanism in the mobile app for both Android and iOS.',
-    'desc_en': 'Implement and verify the update checking mechanism in the mobile app for both Android and iOS.',
-    'desc_ru': 'В этой версии внедрена функция проверки обновлений для Android и iOS.',
-    'desc_uz': 'Bu versiyada Android va iOS uchun yangilanishlarni tekshirish funksiyasi qo\'shildi.',
+    'desc':
+        'Implement and verify the update checking mechanism in the mobile app for both Android and iOS.',
+    'desc_en':
+        'Implement and verify the update checking mechanism in the mobile app for both Android and iOS.',
+    'desc_ru':
+        'В этой версии внедрена функция проверки обновлений для Android и iOS.',
+    'desc_uz':
+        'Bu versiyada Android va iOS uchun yangilanishlarni tekshirish funksiyasi qo\'shildi.',
     'type': 'ios',
     'code': '1.1.1',
     'is_active': true,

@@ -132,7 +132,7 @@ class _AppRootState extends State<AppRoot> {
       }
 
       Logger.info('🔄 AppRoot: Starting update check');
-      
+
       // Get current locale for localized update messages
       String? currentLocale;
       if (mounted) {
@@ -144,7 +144,7 @@ class _AppRootState extends State<AppRoot> {
           currentLocale = 'en'; // Default to English
         }
       }
-      
+
       final updateInfo = await UpdateService.getUpdateInfo(currentLocale);
 
       if (updateInfo == null) {

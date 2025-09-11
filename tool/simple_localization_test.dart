@@ -10,10 +10,14 @@ void main() {
     'name_en': 'v1.1.1 - Implement and Validate App Update Check Feature',
     'name_ru': 'v1.1.1 – Функция проверки обновлений',
     'name_uz': 'v1.1.1 – Yangilanishlarni tekshirish funksiyasi',
-    'desc': 'Implement and verify the update checking mechanism in the mobile app for both Android and iOS.',
-    'desc_en': 'Implement and verify the update checking mechanism in the mobile app for both Android and iOS.',
-    'desc_ru': 'В этой версии внедрена функция проверки обновлений для Android и iOS.',
-    'desc_uz': 'Bu versiyada Android va iOS uchun yangilanishlarni tekshirish funksiyasi qo\'shildi.',
+    'desc':
+        'Implement and verify the update checking mechanism in the mobile app for both Android and iOS.',
+    'desc_en':
+        'Implement and verify the update checking mechanism in the mobile app for both Android and iOS.',
+    'desc_ru':
+        'В этой версии внедрена функция проверки обновлений для Android и iOS.',
+    'desc_uz':
+        'Bu versiyada Android va iOS uchun yangilanishlarni tekshirish funksiyasi qo\'shildi.',
     'type': 'ios',
     'code': '1.1.1',
     'is_active': 'true',
@@ -25,17 +29,17 @@ void main() {
   String getLocalizedName(String locale) {
     switch (locale.toLowerCase()) {
       case 'ru':
-        return mockVersionData['name_ru']!.isNotEmpty 
-            ? mockVersionData['name_ru']! 
+        return mockVersionData['name_ru']!.isNotEmpty
+            ? mockVersionData['name_ru']!
             : mockVersionData['name']!;
       case 'uz':
-        return mockVersionData['name_uz']!.isNotEmpty 
-            ? mockVersionData['name_uz']! 
+        return mockVersionData['name_uz']!.isNotEmpty
+            ? mockVersionData['name_uz']!
             : mockVersionData['name']!;
       case 'en':
       default:
-        return mockVersionData['name_en']!.isNotEmpty 
-            ? mockVersionData['name_en']! 
+        return mockVersionData['name_en']!.isNotEmpty
+            ? mockVersionData['name_en']!
             : mockVersionData['name']!;
     }
   }
@@ -44,17 +48,17 @@ void main() {
   String getLocalizedDescription(String locale) {
     switch (locale.toLowerCase()) {
       case 'ru':
-        return mockVersionData['desc_ru']!.isNotEmpty 
-            ? mockVersionData['desc_ru']! 
+        return mockVersionData['desc_ru']!.isNotEmpty
+            ? mockVersionData['desc_ru']!
             : mockVersionData['desc']!;
       case 'uz':
-        return mockVersionData['desc_uz']!.isNotEmpty 
-            ? mockVersionData['desc_uz']! 
+        return mockVersionData['desc_uz']!.isNotEmpty
+            ? mockVersionData['desc_uz']!
             : mockVersionData['desc']!;
       case 'en':
       default:
-        return mockVersionData['desc_en']!.isNotEmpty 
-            ? mockVersionData['desc_en']! 
+        return mockVersionData['desc_en']!.isNotEmpty
+            ? mockVersionData['desc_en']!
             : mockVersionData['desc']!;
     }
   }
@@ -78,7 +82,7 @@ void main() {
 
   print('\n✅ Localization Test Complete');
   print('All languages are properly supported!');
-  
+
   // Test what happens with missing translations
   print('\n🧪 Testing Fallback Logic:');
   final Map<String, String> incompleteData = {
@@ -91,7 +95,11 @@ void main() {
     'desc_ru': 'Russian Description',
     'desc_uz': '', // Empty Uzbek
   };
-  
-  print('Missing Russian name -> Falls back to: "${incompleteData['name_ru']!.isEmpty ? incompleteData['name']! : incompleteData['name_ru']!}"');
-  print('Missing Uzbek desc -> Falls back to: "${incompleteData['desc_uz']!.isEmpty ? incompleteData['desc']! : incompleteData['desc_uz']!}"');
+
+  print(
+    'Missing Russian name -> Falls back to: "${incompleteData['name_ru']!.isEmpty ? incompleteData['name']! : incompleteData['name_ru']!}"',
+  );
+  print(
+    'Missing Uzbek desc -> Falls back to: "${incompleteData['desc_uz']!.isEmpty ? incompleteData['desc']! : incompleteData['desc_uz']!}"',
+  );
 }

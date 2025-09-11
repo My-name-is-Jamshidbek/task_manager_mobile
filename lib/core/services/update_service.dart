@@ -253,7 +253,9 @@ class UpdateService {
         'currentVersion': versionInfo.currentVersion,
         'latestVersion': versionInfo.latest.code,
         'updateTitle': versionInfo.latest.getLocalizedName(targetLocale),
-        'updateDescription': versionInfo.latest.getLocalizedDescription(targetLocale),
+        'updateDescription': versionInfo.latest.getLocalizedDescription(
+          targetLocale,
+        ),
         'platform': versionInfo.platform,
         // Include all language variants for flexibility
         'titleEn': versionInfo.latest.nameEn,

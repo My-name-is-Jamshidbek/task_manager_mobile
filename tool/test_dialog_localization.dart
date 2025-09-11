@@ -6,15 +6,18 @@ void main() {
   // Test the new translation keys
   final translations = {
     'en': {
-      'updateOptionalMessage': 'You can continue using the current version or update now for the latest features.',
+      'updateOptionalMessage':
+          'You can continue using the current version or update now for the latest features.',
       'versionComparison': 'Current: {current} → Latest: {latest}',
     },
     'ru': {
-      'updateOptionalMessage': 'Вы можете продолжить использовать текущую версию или обновиться сейчас для получения последних функций.',
+      'updateOptionalMessage':
+          'Вы можете продолжить использовать текущую версию или обновиться сейчас для получения последних функций.',
       'versionComparison': 'Текущая: {current} → Последняя: {latest}',
     },
     'uz': {
-      'updateOptionalMessage': 'Siz joriy versiyadan foydalanishda davom etishingiz yoki eng so\'nggi xususiyatlar uchun hozir yangilashingiz mumkin.',
+      'updateOptionalMessage':
+          'Siz joriy versiyadan foydalanishda davom etishingiz yoki eng so\'nggi xususiyatlar uchun hozir yangilashingiz mumkin.',
       'versionComparison': 'Joriy: {current} → Eng so\'nggi: {latest}',
     },
   };
@@ -32,7 +35,7 @@ void main() {
   for (final lang in translations.keys) {
     final versionText = translateWithParams(
       translations[lang]!['versionComparison']!,
-      {'current': '1.1.0', 'latest': '1.1.1'}
+      {'current': '1.1.0', 'latest': '1.1.1'},
     );
     print('$lang: $versionText');
   }
@@ -51,11 +54,11 @@ void main() {
   final testTemplate = 'Version {version} is available. Current: {current}';
   final result = translateWithParams(testTemplate, {
     'version': '2.0.0',
-    'current': '1.5.0'
+    'current': '1.5.0',
   });
   print('Template: $testTemplate');
   print('Result: $result');
-  
+
   // Test missing parameter
   final missingParam = translateWithParams(testTemplate, {'version': '2.0.0'});
   print('Missing param result: $missingParam');
