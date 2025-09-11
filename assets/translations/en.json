@@ -1,7 +1,12 @@
 {
   "app": {
     "title": "Task Manager",
-    "version": "Version 1.0.0"
+    "version": "Version 1.0.0",
+    "versionAndroid": "Android v1.2.0",
+    "versionIOS": "iOS v1.1.5", 
+    "versionWeb": "Web v1.0.8",
+    "platformVersion": "Platform Version",
+    "buildInfo": "Build Information"
   },
   "demo": {
     "title": "CoreUI Theme Demo",

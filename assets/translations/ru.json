@@ -1,7 +1,12 @@
 {
   "app": {
     "title": "Менеджер задач",
-    "version": "Версия 1.0.0"
+    "version": "Версия 1.0.0",
+    "versionAndroid": "Android в1.2.0",
+    "versionIOS": "iOS в1.1.5",
+    "versionWeb": "Web в1.0.8", 
+    "platformVersion": "Версия платформы",
+    "buildInfo": "Информация о сборке"
   },
   "demo": {
     "title": "Демо CoreUI Темы",

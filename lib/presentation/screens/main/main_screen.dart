@@ -3,6 +3,8 @@ import '../../../core/localization/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import '../../widgets/theme_settings_sheet.dart';
 import '../../widgets/logout_confirmation_dialog.dart';
+import '../../widgets/platform_version_widget.dart';
+import '../settings/settings_screen.dart';
 import 'home_screen.dart';
 import 'tasks_screen.dart';
 import 'projects_screen.dart';
@@ -10,11 +12,8 @@ import 'profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final Future<void> Function()? onLogout;
-  
-  const MainScreen({
-    super.key,
-    this.onLogout,
-  });
+
+  const MainScreen({super.key, this.onLogout});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -70,10 +69,7 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
       drawer: _buildDrawer(context, loc, theme),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: _buildBottomNavigationBar(loc, theme),
     );
   }
@@ -125,7 +121,11 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context, AppLocalizations loc, ThemeData theme) {
+  Widget _buildDrawer(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+  ) {
     return Drawer(
       child: Column(
         children: [
@@ -217,7 +217,12 @@ class _MainScreenState extends State<MainScreen> {
                   title: loc.translate('navigation.settings'),
                   onTap: () {
                     Navigator.pop(context);
-                    // TODO: Navigate to settings
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsScreen(),
+                      ),
+                    );
                   },
                 ),
                 _buildDrawerItem(
@@ -263,6 +268,21 @@ class _MainScreenState extends State<MainScreen> {
                   },
                   isDestructive: true,
                 ),
+                const SizedBox(height: 16),
+                // Version Information
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Center(
+                    child: FullPlatformVersion(
+                      textStyle: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant.withOpacity(
+                          0.6,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -282,22 +302,29 @@ class _MainScreenState extends State<MainScreen> {
     final theme = Theme.of(context);
     final Color baseColor = isDestructive
         ? Colors.red
-        : (isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant);
+        : (isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurfaceVariant);
 
     return ListTile(
       leading: Icon(icon, color: baseColor),
       title: Text(
         title,
         style: TextStyle(
-          color: isDestructive ? Colors.red : (isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface),
+          color: isDestructive
+              ? Colors.red
+              : (isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface),
           fontWeight: isSelected ? FontWeight.w600 : null,
         ),
       ),
       selected: isSelected,
       selectedTileColor: theme.colorScheme.primary.withOpacity(0.08),
-      trailing: isSelected ? Icon(Icons.check, color: theme.colorScheme.primary) : null,
+      trailing: isSelected
+          ? Icon(Icons.check, color: theme.colorScheme.primary)
+          : null,
       onTap: onTap,
     );
   }
 }
-

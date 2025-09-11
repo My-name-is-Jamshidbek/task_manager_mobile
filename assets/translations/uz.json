@@ -1,7 +1,12 @@
 {
   "app": {
     "title": "Vazifa Boshqaruvchisi",
-    "version": "Versiya 1.0.0"
+    "version": "Versiya 1.0.0",
+    "versionAndroid": "Android v1.2.0",
+    "versionIOS": "iOS v1.1.5",
+    "versionWeb": "Web v1.0.8",
+    "platformVersion": "Platforma versiyasi",
+    "buildInfo": "Qurilma haqida ma'lumot"
   },
   "demo": {
     "title": "CoreUI Mavzu Namoyishi",

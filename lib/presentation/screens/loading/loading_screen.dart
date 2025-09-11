@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../widgets/platform_version_widget.dart';
 
 /// Loading screen shown during app initialization
 class LoadingScreen extends StatefulWidget {
@@ -183,10 +184,9 @@ class _LoadingScreenState extends State<LoadingScreen>
 
               const SizedBox(height: 80),
 
-              // Version Info
-              Text(
-                loc.translate('app.version'),
-                style: theme.textTheme.bodySmall?.copyWith(
+              // Platform-specific Version Info
+              FullPlatformVersion(
+                textStyle: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.5),
                 ),
               ),
