@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "647775127170",
+    "project_id": "tms-ranch",
+    "storage_bucket": "tms-ranch.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:647775127170:android:99a9beb9fdce4cb892d69b",
+        "android_client_info": {
+          "package_name": "com.ranch.tms"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDy7_isqncdPKK0XVkWCfnc650nNVp5hdQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

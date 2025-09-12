@@ -9,6 +9,7 @@ import 'core/localization/localization_service.dart';
 import 'core/localization/app_localizations.dart';
 import 'core/utils/logger.dart';
 import 'presentation/providers/auth_provider.dart';
+import 'presentation/providers/firebase_provider.dart';
 import 'presentation/widgets/app_root.dart';
 import 'core/utils/navigation_service.dart';
 
@@ -31,10 +32,12 @@ void main() async {
   final themeService = ThemeService();
   final localizationService = LocalizationService();
   final authProvider = AuthProvider();
-  
+  final firebaseProvider = FirebaseProvider();
+
   Logger.info('⚙️ Initializing basic services...');
   await themeService.initialize();
   await localizationService.initialize();
+  await firebaseProvider.initialize();
   // Note: AuthProvider initialization will be handled by AppManager
   Logger.info('✅ Basic services initialized successfully');
 
@@ -46,30 +49,45 @@ void main() async {
         ChangeNotifierProvider.value(value: themeService),
         ChangeNotifierProvider.value(value: localizationService),
         ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider.value(value: firebaseProvider),
       ],
-      child: Consumer3<ThemeService, LocalizationService, AuthProvider>(
-        builder: (context, themeService, localizationService, authProvider, child) {
-          return MaterialApp(
-            navigatorKey: navigatorKey,
-            title: 'Task Manager',
-            theme: themeService.lightTheme,
-            darkTheme: themeService.darkTheme,
-            themeMode: themeService.flutterThemeMode,
-            locale: localizationService.currentLocale,
-            localizationsDelegates: [
-              AppLocalizationsDelegate(),
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (context) => const AppRoot(),
-            ), // Use Builder to ensure proper context
-            debugShowCheckedModeBanner: false,
-          );
-        },
-      ),
+      child:
+          Consumer4<
+            ThemeService,
+            LocalizationService,
+            AuthProvider,
+            FirebaseProvider
+          >(
+            builder:
+                (
+                  context,
+                  themeService,
+                  localizationService,
+                  authProvider,
+                  firebaseProvider,
+                  child,
+                ) {
+                  return MaterialApp(
+                    navigatorKey: navigatorKey,
+                    title: 'Task Manager',
+                    theme: themeService.lightTheme,
+                    darkTheme: themeService.darkTheme,
+                    themeMode: themeService.flutterThemeMode,
+                    locale: localizationService.currentLocale,
+                    localizationsDelegates: [
+                      AppLocalizationsDelegate(),
+                      GlobalMaterialLocalizations.delegate,
+                      GlobalWidgetsLocalizations.delegate,
+                      GlobalCupertinoLocalizations.delegate,
+                    ],
+                    supportedLocales: AppLocalizations.supportedLocales,
+                    home: Builder(
+                      builder: (context) => const AppRoot(),
+                    ), // Use Builder to ensure proper context
+                    debugShowCheckedModeBanner: false,
+                  );
+                },
+          ),
     ),
   );
 }

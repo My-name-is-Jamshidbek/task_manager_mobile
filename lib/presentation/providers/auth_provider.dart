@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../data/models/auth_models.dart';
 import '../../data/services/auth_service.dart';
+import '../../../core/services/firebase_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -21,6 +22,10 @@ class AuthProvider extends ChangeNotifier {
     await _authService.initialize();
     _currentUser = _authService.currentUser;
     _isLoggedIn = _authService.isLoggedIn;
+    // If user session exists, ensure FCM token is registered with backend
+    if (_isLoggedIn) {
+      await FirebaseService().registerTokenWithBackend(authToken: _authService.currentToken);
+    }
     notifyListeners();
   }
 
@@ -57,6 +62,8 @@ class AuthProvider extends ChangeNotifier {
           _isLoggedIn = true;
           _setLoading(false);
           notifyListeners();
+          // Register FCM token with backend
+          await FirebaseService().registerTokenWithBackend(authToken: response.data!.token);
           return true;
         } else {
           // SMS verification required
@@ -93,6 +100,8 @@ class AuthProvider extends ChangeNotifier {
         _isLoggedIn = true;
         _setLoading(false);
         notifyListeners();
+        // Register FCM token after verification
+        await FirebaseService().registerTokenWithBackend(authToken: response.data!.token!);
         return true;
       } else {
         // Try to get localized message from API response first
@@ -143,6 +152,8 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     _setLoading(true);
 
+    // Deactivate FCM token before logout
+  await FirebaseService().deactivateTokenFromBackend(authToken: _authService.currentToken);
     try {
       await _authService.logout();
       _currentUser = null;

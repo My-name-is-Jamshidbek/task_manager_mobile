@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/logout_confirmation_dialog.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
+import '../debug/firebase_notification_debug_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final Future<void> Function()? onLogout;
@@ -254,7 +255,12 @@ class ProfileScreen extends StatelessWidget {
             icon: Icons.notifications_outlined,
             title: loc.translate('settings.notifications'),
             onTap: () {
-              // TODO: Navigate to notifications settings
+              // Navigate to Firebase notification debug page
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const FirebaseNotificationDebugScreen(),
+                ),
+              );
             },
             theme: theme,
           ),
