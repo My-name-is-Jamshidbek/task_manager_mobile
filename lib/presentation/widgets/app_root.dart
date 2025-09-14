@@ -25,6 +25,7 @@ class _AppRootState extends State<AppRoot> {
   final AppManager _appManager = AppManager();
   AppState _currentState = AppState.loading;
   bool _isInitializing = true;
+  bool _updateRequired = false; // Flag to pause initialization on required updates
 
   @override
   void initState() {
@@ -44,17 +45,38 @@ class _AppRootState extends State<AppRoot> {
     await AuthDebugHelper.printStoredAuthData();
 
     try {
+      // Check for app updates before authentication
+      Logger.info('🔄 AppRoot: Checking for app updates early');
+      await _checkForUpdates();
+      // If an update is required, halt further initialization
+      if (_updateRequired) {
+        Logger.warning('🚨 AppRoot: Required update detected, pausing initialization');
+        _isInitializing = false;
+        return;
+      }
+
       // Initialize authentication manager for automatic logout on 401 responses
       Logger.info('🔐 AppRoot: Initializing authentication manager');
-      AuthenticationManager().initialize();
+            AuthenticationManager().initialize();
 
       // Initialize app manager
       final state = await _appManager.initialize();
+
 
       // Initialize auth provider to sync with auth service
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.initialize();
       Logger.info('✅ AppRoot: AuthProvider synchronized with AuthService');
+
+      // Verify existing token validity
+      Logger.info('🔍 AppRoot: Verifying auth token validity');
+      final tokenValid = await authProvider.verifyToken();
+      if (!tokenValid) {
+        Logger.warning('🚫 AppRoot: Auth token invalid, marking unauthenticated');
+        if (mounted) setState(() => _currentState = AppState.unauthenticated);
+        _isInitializing = false;
+        return;
+      }
 
       // If user is authenticated, load their profile data
       if (state == AppState.authenticated && authProvider.isLoggedIn) {
@@ -165,8 +187,9 @@ class _AppRootState extends State<AppRoot> {
 
       if (mounted) {
         if (isRequired) {
-          // Required update - show blocking dialog
-          Logger.info('🚨 AppRoot: Showing required update dialog');
+          // Required update - pause app and show blocking dialog
+          Logger.info('🚨 AppRoot: Required update detected');
+          _updateRequired = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _showRequiredUpdateDialog(updateInfo);
           });
