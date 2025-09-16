@@ -141,8 +141,12 @@ Update your backend API base URL in the app:
    ```
 
 2. **Test token registration** with your backend using the API endpoints:
+
    - `POST /firebase/tokens` - Register token
-   - `DELETE /firebase/tokens` - Deactivate token
+   - `DELETE /firebase/tokens` - Deactivate token (auth)
+   - `DELETE /firebase/tokens/public` - Deactivate token (no auth)
+
+   The app first tries the authenticated delete; if it receives a 401, it will automatically call the public endpoint.
 
 ## Testing Firebase Messaging
 

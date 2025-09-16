@@ -62,12 +62,18 @@ POST /firebase/tokens
 DELETE /firebase/tokens
 - Body: { "token": "fcm_token" }
 - Headers: Authorization: Bearer {auth_token}
+
+DELETE /firebase/tokens/public
+- Body: { "token": "fcm_token" }
+- No Authorization header required (public)
 ```
 
 ### API Configuration
 
 - Base URL: `https://tms.amusoft.uz/api` (from `ApiConstants.baseUrl`)
 - Uses existing authentication system with Bearer tokens
+
+Note: The app will first attempt `DELETE /firebase/tokens` with auth; if the server returns 401, it will automatically retry with `DELETE /firebase/tokens/public` without auth.
 
 ## 🚀 How to Use
 

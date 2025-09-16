@@ -193,4 +193,29 @@ class FirebaseProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  /// Update token locale on backend
+  Future<void> updateTokenLocale({
+    required String authToken,
+    String? locale,
+  }) async {
+    try {
+      setLoading(true);
+      final ok = await _firebaseService.updateTokenLocale(
+        authToken: authToken,
+        locale: locale,
+      );
+      if (ok) {
+        Logger.info('✅ Token locale updated on backend');
+      } else {
+        Logger.error('❌ Failed to update token locale on backend');
+      }
+    } catch (e) {
+      _error = e.toString();
+      Logger.error('❌ Error updating token locale: $e');
+      notifyListeners();
+    } finally {
+      setLoading(false);
+    }
+  }
 }

@@ -187,6 +187,52 @@ class ApiClient {
     }
   }
 
+  // PATCH request
+  Future<ApiResponse<T>> patch<T>(
+    String endpoint, {
+    Map<String, dynamic>? body,
+    Map<String, String>? headers,
+    T Function(Map<String, dynamic>)? fromJson,
+  }) async {
+    final String requestId = _generateRequestId();
+    try {
+      final uri = _buildUri(endpoint);
+      final jsonBody = body != null ? jsonEncode(body) : null;
+
+      // Merge custom headers with default headers
+      final finalHeaders = {..._headers};
+      if (headers != null) {
+        finalHeaders.addAll(headers);
+      }
+
+      Logger.info('🚀 [$requestId] PATCH Request Started');
+      Logger.info('📍 [$requestId] URL: $uri');
+      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(finalHeaders)}');
+      Logger.info('📦 [$requestId] Request Body: ${_sanitizeBody(body)}');
+
+      final stopwatch = Stopwatch()..start();
+      final response = await _client.patch(
+        uri,
+        headers: finalHeaders,
+        body: jsonBody,
+      );
+      stopwatch.stop();
+
+      Logger.info(
+        '⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms',
+      );
+      return _handleResponse<T>(response, fromJson, requestId);
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ [$requestId] PATCH Request Failed',
+        'ApiClient',
+        e,
+        stackTrace,
+      );
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
   // DELETE request
   Future<ApiResponse<T>> delete<T>(
     String endpoint, {

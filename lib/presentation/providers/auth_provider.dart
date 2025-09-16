@@ -16,6 +16,8 @@ class AuthProvider extends ChangeNotifier {
   String? get error => _error;
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _isLoggedIn;
+  // Expose current auth token (if logged in)
+  String? get authToken => _authService.currentToken;
 
   // Initialize provider
   Future<void> initialize() async {
@@ -24,7 +26,9 @@ class AuthProvider extends ChangeNotifier {
     _isLoggedIn = _authService.isLoggedIn;
     // If user session exists, ensure FCM token is registered with backend
     if (_isLoggedIn) {
-      await FirebaseService().registerTokenWithBackend(authToken: _authService.currentToken);
+      await FirebaseService().registerTokenWithBackend(
+        authToken: _authService.currentToken,
+      );
     }
     notifyListeners();
   }
@@ -63,7 +67,9 @@ class AuthProvider extends ChangeNotifier {
           _setLoading(false);
           notifyListeners();
           // Register FCM token with backend
-          await FirebaseService().registerTokenWithBackend(authToken: response.data!.token);
+          await FirebaseService().registerTokenWithBackend(
+            authToken: response.data!.token,
+          );
           return true;
         } else {
           // SMS verification required
@@ -101,7 +107,9 @@ class AuthProvider extends ChangeNotifier {
         _setLoading(false);
         notifyListeners();
         // Register FCM token after verification
-        await FirebaseService().registerTokenWithBackend(authToken: response.data!.token!);
+        await FirebaseService().registerTokenWithBackend(
+          authToken: response.data!.token!,
+        );
         return true;
       } else {
         // Try to get localized message from API response first
@@ -153,7 +161,9 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
 
     // Deactivate FCM token before logout
-  await FirebaseService().deactivateTokenFromBackend(authToken: _authService.currentToken);
+    await FirebaseService().deactivateTokenFromBackend(
+      authToken: _authService.currentToken,
+    );
     try {
       await _authService.logout();
       _currentUser = null;

@@ -82,7 +82,7 @@ void main() async {
                     ],
                     supportedLocales: AppLocalizations.supportedLocales,
                     home: Builder(
-                      builder: (context) => const AppRoot(),
+                      builder: (context) => AppRoot(key: AppRootController.key),
                     ), // Use Builder to ensure proper context
                     debugShowCheckedModeBanner: false,
                   );

@@ -4,6 +4,8 @@ import '../../core/localization/localization_service.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/theme/theme_service.dart';
 import '../../core/constants/theme_constants.dart';
+import '../../presentation/providers/auth_provider.dart';
+import '../../presentation/providers/firebase_provider.dart';
 
 class LanguageSettingsWidget extends StatelessWidget {
   const LanguageSettingsWidget({super.key});
@@ -130,6 +132,27 @@ class LanguageSettingsWidget extends StatelessWidget {
         onTap: () async {
           if (!isSelected) {
             await localizationService.changeLanguage(languageCode);
+
+            // After language change, update FCM token locale on backend if logged in
+            try {
+              final authProvider = Provider.of<AuthProvider>(
+                context,
+                listen: false,
+              );
+              final firebaseProvider = Provider.of<FirebaseProvider>(
+                context,
+                listen: false,
+              );
+              final token = authProvider.authToken;
+              if (authProvider.isLoggedIn &&
+                  token != null &&
+                  token.isNotEmpty) {
+                await firebaseProvider.updateTokenLocale(
+                  authToken: token,
+                  locale: languageCode,
+                );
+              }
+            } catch (_) {}
 
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(

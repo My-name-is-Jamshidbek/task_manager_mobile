@@ -7,8 +7,10 @@ import 'package:http/http.dart' as http;
 import '../api/api_client.dart';
 import '../constants/api_constants.dart';
 import '../utils/logger.dart';
+import '../notifications/notification_templates.dart';
 import 'notification_service.dart';
 import '../../firebase_options.dart';
+import '../localization/localization_service.dart';
 
 class FirebaseService {
   static final FirebaseService _instance = FirebaseService._internal();
@@ -63,7 +65,7 @@ class FirebaseService {
     try {
       Logger.info('📱 Requesting notification permissions...');
 
-  final settings = await FirebaseMessaging.instance.requestPermission(
+      final settings = await FirebaseMessaging.instance.requestPermission(
         alert: true,
         announcement: false,
         badge: true,
@@ -77,8 +79,8 @@ class FirebaseService {
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
         Logger.info('✅ Notification permissions granted');
-      } else if (
-          settings.authorizationStatus == AuthorizationStatus.provisional) {
+      } else if (settings.authorizationStatus ==
+          AuthorizationStatus.provisional) {
         Logger.info('⚠️ Provisional notification permissions granted');
       } else {
         Logger.warning('❌ Notification permissions denied');
@@ -114,7 +116,8 @@ class FirebaseService {
       FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
 
       // Handle messages when app is terminated
-  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+      final initialMessage = await FirebaseMessaging.instance
+          .getInitialMessage();
       if (initialMessage != null) {
         Logger.info('📬 App opened from terminated state via notification');
         _handleTerminatedMessage(initialMessage);
@@ -161,34 +164,21 @@ class FirebaseService {
   /// Navigate based on message data
   void _navigateBasedOnMessage(RemoteMessage message) {
     final data = message.data;
-
-    // For now, just log the navigation data
-    // You can implement actual navigation later using your navigation service
-    Logger.info('📱 Navigation data: $data');
-
-    // Handle different notification types
-    if (data.containsKey('screen')) {
-      final screen = data['screen'];
-      final taskId = data['task_id'];
-
-      Logger.info('🧭 Navigating to: $screen (taskId: $taskId)');
-
-      switch (screen) {
-        case 'task_detail':
-          if (taskId != null) {
-            // Navigate to task detail
-            // Navigator.pushNamed(context, '/task-detail', arguments: taskId);
-          }
-          break;
-        case 'tasks':
-          // Navigate to tasks list
-          // Navigator.pushNamed(context, '/tasks');
-          break;
-        default:
-          Logger.info('🏠 Unknown screen, navigating to home');
-        // Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-      }
+    Logger.info('📱 Raw navigation data: $data');
+    final parsed = parseNotificationTemplate(data);
+    if (parsed == null) {
+      Logger.warning('⚠️ No actionable navigation from message');
+      return;
     }
+    // Reuse NotificationService navigation helpers via reflection of screen.
+    // For now we directly depend on NotificationService's internal dispatch
+    // by re-invoking tap handler semantics.
+    NotificationService.showInAppNotification(
+      title: message.notification?.title ?? 'Notification',
+      body: message.notification?.body ?? '',
+      data: data,
+      duration: const Duration(seconds: 3),
+    );
   }
 
   /// Register FCM token with backend
@@ -219,6 +209,8 @@ class FirebaseService {
         'token': _fcmToken!,
         'device_type': _getDeviceType(),
         'device_id': _getSimpleDeviceId(),
+        // Send current app locale to backend for push localization
+        'locale': LocalizationService().currentLocale.languageCode,
       };
 
       final response = await apiClient.post<Map<String, dynamic>>(
@@ -265,21 +257,85 @@ class FirebaseService {
 
       // Create a custom DELETE request with body using http client directly
       // since the ApiClient doesn't support DELETE with body
-      final success = await _deleteTokenWithBody(
-        apiClient,
-        '/firebase/tokens',
-        {'token': _fcmToken!},
-      );
+      final status = await _deleteTokenWithBody(apiClient, '/firebase/tokens', {
+        'token': _fcmToken!,
+      });
 
-      if (success) {
+      if (status >= 200 && status < 300) {
         Logger.info('✅ FCM token deactivated from backend');
         return true;
+      }
+
+      // If unauthorized, try public deactivation endpoint without auth header
+      if (status == 401) {
+        Logger.warning(
+          '⚠️ Auth deactivation returned 401, trying public endpoint',
+        );
+        final publicStatus = await _deleteTokenWithBody(
+          apiClient,
+          '/firebase/tokens/public',
+          {'token': _fcmToken!},
+          includeAuth: false,
+        );
+
+        if (publicStatus >= 200 && publicStatus < 300) {
+          Logger.info('✅ FCM token deactivated via public endpoint');
+          return true;
+        }
+        Logger.error('❌ Public deactivation failed with status: $publicStatus');
+        return false;
+      }
+
+      Logger.error('❌ Failed to deactivate FCM token, status: $status');
+      return false;
+    } catch (e) {
+      Logger.error('❌ Error deactivating FCM token: $e');
+      return false;
+    }
+  }
+
+  /// Update current FCM token locale on backend
+  Future<bool> updateTokenLocale({String? authToken, String? locale}) async {
+    // Ensure Firebase is initialized and token retrieved
+    if (!_isInitialized) {
+      await initialize();
+    }
+    if (_fcmToken == null) {
+      await _getFCMToken();
+    }
+
+    if (_fcmToken == null) {
+      Logger.error('❌ Cannot update token locale: FCM token is null');
+      return false;
+    }
+
+    try {
+      Logger.info('🌍 Updating FCM token locale on backend...');
+
+      final apiClient = ApiClient();
+      if (authToken != null) {
+        apiClient.setAuthToken(authToken);
+        _storedAuthToken = authToken;
+      }
+
+      final currentLocale =
+          (locale ?? LocalizationService().currentLocale.languageCode)
+              .toLowerCase();
+
+      final response = await apiClient.patch<Map<String, dynamic>>(
+        '/firebase/tokens/locale',
+        body: {'token': _fcmToken!, 'locale': currentLocale},
+      );
+
+      if (response.isSuccess) {
+        Logger.info('✅ FCM token locale updated to "$currentLocale"');
+        return true;
       } else {
-        Logger.error('❌ Failed to deactivate FCM token');
+        Logger.error('❌ Failed to update FCM token locale: ${response.error}');
         return false;
       }
     } catch (e) {
-      Logger.error('❌ Error deactivating FCM token: $e');
+      Logger.error('❌ Error updating FCM token locale: $e');
       return false;
     }
   }
@@ -358,11 +414,13 @@ class FirebaseService {
   }
 
   /// Custom DELETE request with body since ApiClient doesn't support it
-  Future<bool> _deleteTokenWithBody(
+  /// Returns HTTP status code (or 0 on transport error)
+  Future<int> _deleteTokenWithBody(
     ApiClient apiClient,
     String endpoint,
-    Map<String, dynamic> body,
-  ) async {
+    Map<String, dynamic> body, {
+    bool includeAuth = true,
+  }) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
 
@@ -371,26 +429,22 @@ class FirebaseService {
 
       // We'll need to store the auth token when it's set
       // For now, this will work without auth - update if auth is required
-      if (_storedAuthToken != null) {
+      if (includeAuth && _storedAuthToken != null) {
         request.headers['Authorization'] = 'Bearer $_storedAuthToken';
       }
 
       request.body = jsonEncode(body);
 
       final response = await request.send();
-      final success = response.statusCode >= 200 && response.statusCode < 300;
-
-      if (!success) {
+      final statusCode = response.statusCode;
+      if (statusCode < 200 || statusCode >= 300) {
         final responseBody = await response.stream.bytesToString();
-        Logger.error(
-          'DELETE request failed: ${response.statusCode} - $responseBody',
-        );
+        Logger.error('DELETE $endpoint failed: $statusCode - $responseBody');
       }
-
-      return success;
+      return statusCode;
     } catch (e) {
       Logger.error('Error in DELETE with body: $e');
-      return false;
+      return 0;
     }
   }
 }

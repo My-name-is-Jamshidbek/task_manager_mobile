@@ -13,6 +13,59 @@ import '../screens/auth/login_screen.dart';
 import '../screens/main/main_screen.dart';
 import 'update_dialogs.dart';
 
+/// Public controller to interact with AppRoot from other layers (e.g., services)
+/// without exposing the private _AppRootState type.
+class AppRootController {
+  AppRootController._();
+
+  // GlobalKey bound to AppRoot to access its state safely within this file
+  static final GlobalKey<_AppRootState> key = GlobalKey<_AppRootState>();
+
+  /// Re-run the update check from anywhere. If payload vars are provided
+  /// (e.g., from notification), immediately show the appropriate dialog
+  /// using AppRoot's standard widgets and localization.
+  static Future<void> recheckUpdates([Map<String, dynamic>? vars]) async {
+    final state = key.currentState;
+    if (state == null) return;
+
+    if (vars != null && vars.isNotEmpty) {
+      final isRequired =
+          (vars['update_required'] ?? vars['is_required']) == true;
+      final current = (vars['current_version'] ?? '').toString();
+      final latest = (vars['latest_version'] ?? '').toString();
+      final title = (vars['title'] ?? 'Update Available').toString();
+      final desc =
+          (vars['description'] ?? UpdateService.getUpdateInstructions())
+              .toString();
+
+      if (isRequired) {
+        state._showRequiredUpdateDialog({
+          'currentVersion': current,
+          'latestVersion': latest,
+          'updateTitle': title,
+          'updateDescription': desc,
+        });
+      } else {
+        state._scheduleOptionalUpdateDialog({
+          'currentVersion': current,
+          'latestVersion': latest,
+          'updateTitle': title,
+          'updateDescription': desc,
+        });
+      }
+    } else {
+      await state._checkForUpdates();
+    }
+  }
+
+  /// Restart the app initialization flow (rarely needed)
+  static Future<void> restartInitialization() async {
+    final state = key.currentState;
+    if (state == null) return;
+    await state._initializeApp();
+  }
+}
+
 /// Root widget that manages app-wide state and routing based on AppManager
 class AppRoot extends StatefulWidget {
   const AppRoot({super.key});
@@ -25,7 +78,8 @@ class _AppRootState extends State<AppRoot> {
   final AppManager _appManager = AppManager();
   AppState _currentState = AppState.loading;
   bool _isInitializing = true;
-  bool _updateRequired = false; // Flag to pause initialization on required updates
+  bool _updateRequired =
+      false; // Flag to pause initialization on required updates
 
   @override
   void initState() {
@@ -50,18 +104,19 @@ class _AppRootState extends State<AppRoot> {
       await _checkForUpdates();
       // If an update is required, halt further initialization
       if (_updateRequired) {
-        Logger.warning('🚨 AppRoot: Required update detected, pausing initialization');
+        Logger.warning(
+          '🚨 AppRoot: Required update detected, pausing initialization',
+        );
         _isInitializing = false;
         return;
       }
 
       // Initialize authentication manager for automatic logout on 401 responses
       Logger.info('🔐 AppRoot: Initializing authentication manager');
-            AuthenticationManager().initialize();
+      AuthenticationManager().initialize();
 
       // Initialize app manager
       final state = await _appManager.initialize();
-
 
       // Initialize auth provider to sync with auth service
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -72,7 +127,9 @@ class _AppRootState extends State<AppRoot> {
       Logger.info('🔍 AppRoot: Verifying auth token validity');
       final tokenValid = await authProvider.verifyToken();
       if (!tokenValid) {
-        Logger.warning('🚫 AppRoot: Auth token invalid, marking unauthenticated');
+        Logger.warning(
+          '🚫 AppRoot: Auth token invalid, marking unauthenticated',
+        );
         if (mounted) setState(() => _currentState = AppState.unauthenticated);
         _isInitializing = false;
         return;

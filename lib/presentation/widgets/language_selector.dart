@@ -4,6 +4,8 @@ import '../../core/localization/localization_service.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/theme/theme_service.dart';
 import '../../core/constants/theme_constants.dart';
+import '../providers/auth_provider.dart';
+import '../providers/firebase_provider.dart';
 
 /// Language Selector Widget - Optimized for bottom sheet
 class LanguageSelector extends StatelessWidget {
@@ -44,9 +46,9 @@ class LanguageSelector extends StatelessWidget {
               Expanded(
                 child: Text(
                   localizations.translate('settings.language'),
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               IconButton(
@@ -120,9 +122,35 @@ class LanguageSelector extends StatelessWidget {
         if (!isSelected) {
           await localizationService.changeLanguage(languageCode);
 
+          // After language change, update FCM token locale on backend if logged in
+          try {
+            // Access providers without rebuilding
+            final authProvider =
+                Provider.of<
+                  // ignore: use_build_context_synchronously
+                  AuthProvider
+                >(context, listen: false);
+            final firebaseProvider =
+                Provider.of<
+                  // ignore: use_build_context_synchronously
+                  FirebaseProvider
+                >(context, listen: false);
+
+            final token = authProvider.authToken;
+            if (authProvider.isLoggedIn && token != null && token.isNotEmpty) {
+              // Best-effort, don't block UI; wait but ignore result
+              await firebaseProvider.updateTokenLocale(
+                authToken: token,
+                locale: languageCode,
+              );
+            }
+          } catch (_) {
+            // Silent catch; localization change should not fail due to this
+          }
+
           if (context.mounted) {
             Navigator.of(context).pop(); // Close the modal
-            
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Language changed to $localizedName'),
@@ -170,17 +198,17 @@ class LanguageSelector extends StatelessWidget {
                   Text(
                     localizedName,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: isSelected ? themeService.primaryColor : null,
-                        ),
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                      color: isSelected ? themeService.primaryColor : null,
+                    ),
                   ),
                   Text(
                     nativeName,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppThemeConstants.gray600,
-                        ),
+                      color: AppThemeConstants.gray600,
+                    ),
                   ),
                 ],
               ),
@@ -191,18 +219,17 @@ class LanguageSelector extends StatelessWidget {
     );
   }
 
-    String _getLanguageDisplayName(
-        String code, AppLocalizations localizations) {
-      switch (code) {
-        case 'en':
-          return localizations.translate('demo.languages.english');
-        case 'uz':
-          return localizations.translate('demo.languages.uzbek');
-        case 'ru':
-          return localizations.translate('demo.languages.russian');
-        default:
-          return localizations.translate('demo.languages.currentLanguage');
-      }
+  // ignore: unused_element
+  String _getLanguageDisplayName(String code, AppLocalizations localizations) {
+    switch (code) {
+      case 'en':
+        return localizations.translate('demo.languages.english');
+      case 'uz':
+        return localizations.translate('demo.languages.uzbek');
+      case 'ru':
+        return localizations.translate('demo.languages.russian');
+      default:
+        return localizations.translate('demo.languages.currentLanguage');
     }
-  
   }
+}
