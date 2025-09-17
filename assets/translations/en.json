@@ -238,6 +238,13 @@
     "onHold": "On Hold",
     "progress": "Progress",
     "tasks": "tasks",
+    "empty": "No projects found",
+    "searchHint": "Search projects",
+    "filters": {
+      "all": "All",
+      "createdByMe": "Created by me",
+      "assignedToMe": "Assigned to me"
+    },
     "sampleProjects": {
       "taskManager": {
         "name": "Task Manager Mobile App",
@@ -335,6 +342,8 @@
     "success": "Success",
     "warning": "Warning",
     "info": "Information",
+    "refresh": "Refresh",
+    "retry": "Retry",
     "close": "Close",
     "more": "More",
     "details": "Details"

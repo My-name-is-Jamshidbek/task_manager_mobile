@@ -144,7 +144,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               controller: _searchController,
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
-                hintText: 'Search projects',
+                hintText: loc.translate('projects.searchHint'),
                 prefixIcon: const Icon(Icons.search),
                 isDense: true,
                 border: OutlineInputBorder(
@@ -172,9 +172,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               onChanged: (value) => _onFilterChanged(value),
               items:
                   <({String? val, String label})>[
-                        (val: null, label: 'All'),
-                        (val: 'created_by_me', label: 'Created by me'),
-                        (val: 'assigned_to_me', label: 'Assigned to me'),
+                        (
+                          val: null,
+                          label: loc.translate('projects.filters.all'),
+                        ),
+                        (
+                          val: 'created_by_me',
+                          label: loc.translate('projects.filters.createdByMe'),
+                        ),
+                        (
+                          val: 'assigned_to_me',
+                          label: loc.translate('projects.filters.assignedToMe'),
+                        ),
                       ]
                       .map(
                         (e) => DropdownMenuItem<String?>(
