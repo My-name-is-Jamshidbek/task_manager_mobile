@@ -16,7 +16,7 @@ class TasksApiProvider extends ChangeNotifier {
   int? status; // status id
 
   TasksApiProvider({TasksApiRemoteDataSource? remote})
-      : _remote = remote ?? TasksApiRemoteDataSource();
+    : _remote = remote ?? TasksApiRemoteDataSource();
 
   bool get isLoading => _loading;
   String? get error => _error;

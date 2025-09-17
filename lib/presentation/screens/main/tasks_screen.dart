@@ -18,7 +18,8 @@ class _TasksScreenState extends State<TasksScreen> {
 
   // Filters
   String? _filter; // created_by_me | assigned_to_me
-  int? _statusId; // 1=pending, 2=in progress, 3=completed, 4=cancelled (assumption)
+  int?
+  _statusId; // 1=pending, 2=in progress, 3=completed, 4=cancelled (assumption)
 
   // Assumed mapping for backend status ids
   static const Map<String, int> _statusIdMap = {
@@ -94,10 +95,18 @@ class _TasksScreenState extends State<TasksScreen> {
                 return RefreshIndicator(
                   onRefresh: () async => provider.fetchTasks(),
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     itemCount: provider.tasks.length,
                     itemBuilder: (context, index) {
-                      return _buildTaskCard(context, provider.tasks[index], theme, loc);
+                      return _buildTaskCard(
+                        context,
+                        provider.tasks[index],
+                        theme,
+                        loc,
+                      );
                     },
                   ),
                 );
@@ -109,7 +118,11 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
-  Widget _buildFilterRow(BuildContext context, AppLocalizations loc, ThemeData theme) {
+  Widget _buildFilterRow(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: SingleChildScrollView(
@@ -223,20 +236,33 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, AppLocalizations loc, ThemeData theme) {
+  Widget _buildEmptyState(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+  ) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 48, color: theme.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.inbox_outlined,
+              size: 48,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 12),
-            Text(loc.translate('tasks.noTasks'), style: theme.textTheme.titleMedium),
+            Text(
+              loc.translate('tasks.noTasks'),
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: 6),
             Text(
               loc.translate('tasks.createFirstTask'),
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -245,7 +271,12 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, AppLocalizations loc, ThemeData theme, String message) {
+  Widget _buildErrorState(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+    String message,
+  ) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -254,11 +285,18 @@ class _TasksScreenState extends State<TasksScreen> {
           children: [
             Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
             const SizedBox(height: 12),
-            Text(loc.translate('common.error'), style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.error)),
+            Text(
+              loc.translate('common.error'),
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
             const SizedBox(height: 6),
             Text(
               message,
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
@@ -273,7 +311,12 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
-  Widget _buildTaskCard(BuildContext context, ApiTask task, ThemeData theme, AppLocalizations loc) {
+  Widget _buildTaskCard(
+    BuildContext context,
+    ApiTask task,
+    ThemeData theme,
+    AppLocalizations loc,
+  ) {
     final isCompleted = task.status?.id == _statusIdMap['completed'];
     final deadline = task.deadline;
     final projectName = task.project?.name ?? '';
@@ -306,8 +349,12 @@ class _TasksScreenState extends State<TasksScreen> {
                       task.name,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        decoration: isCompleted ? TextDecoration.lineThrough : null,
-                        color: isCompleted ? theme.colorScheme.onSurfaceVariant : null,
+                        decoration: isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
+                        color: isCompleted
+                            ? theme.colorScheme.onSurfaceVariant
+                            : null,
                       ),
                     ),
                   ),
@@ -315,7 +362,8 @@ class _TasksScreenState extends State<TasksScreen> {
                     _buildStatusChip(statusLabel, theme),
                 ],
               ),
-              if (task.description != null && task.description!.trim().isNotEmpty) ...[
+              if (task.description != null &&
+                  task.description!.trim().isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
                   task.description!,

@@ -5,7 +5,7 @@ import '../models/api_task_models.dart';
 class TasksApiRemoteDataSource {
   final ApiClient _apiClient;
   TasksApiRemoteDataSource({ApiClient? apiClient})
-      : _apiClient = apiClient ?? ApiClient();
+    : _apiClient = apiClient ?? ApiClient();
 
   Future<ApiResponse<List<ApiTask>>> getTasks({
     int? perPage,
@@ -31,10 +31,8 @@ class TasksApiRemoteDataSource {
         return list;
       },
       // Support raw list: [ {...}, {...} ]
-      fromJsonList: (list) => list
-          .whereType<Map<String, dynamic>>()
-          .map(ApiTask.fromJson)
-          .toList(),
+      fromJsonList: (list) =>
+          list.whereType<Map<String, dynamic>>().map(ApiTask.fromJson).toList(),
     );
   }
 }

@@ -3,15 +3,20 @@ class ApiTaskStatusRef {
   final String? label;
   const ApiTaskStatusRef({required this.id, this.label});
   factory ApiTaskStatusRef.fromJson(Map<String, dynamic> json) =>
-      ApiTaskStatusRef(id: json['id'] as int? ?? 0, label: json['label'] as String?);
+      ApiTaskStatusRef(
+        id: json['id'] as int? ?? 0,
+        label: json['label'] as String?,
+      );
 }
 
 class ApiTaskTypeRef {
   final int id;
   final String? name;
   const ApiTaskTypeRef({required this.id, this.name});
-  factory ApiTaskTypeRef.fromJson(Map<String, dynamic> json) =>
-      ApiTaskTypeRef(id: json['id'] as int? ?? 0, name: json['name'] as String?);
+  factory ApiTaskTypeRef.fromJson(Map<String, dynamic> json) => ApiTaskTypeRef(
+    id: json['id'] as int? ?? 0,
+    name: json['name'] as String?,
+  );
 }
 
 class ApiUserRef {
@@ -21,11 +26,11 @@ class ApiUserRef {
   final String? avatarUrl;
   const ApiUserRef({required this.id, this.name, this.phone, this.avatarUrl});
   factory ApiUserRef.fromJson(Map<String, dynamic> json) => ApiUserRef(
-        id: json['id'] as int? ?? 0,
-        name: json['name'] as String?,
-        phone: json['phone'] as String?,
-        avatarUrl: json['avatar_url'] as String?,
-      );
+    id: json['id'] as int? ?? 0,
+    name: json['name'] as String?,
+    phone: json['phone'] as String?,
+    avatarUrl: json['avatar_url'] as String?,
+  );
 }
 
 class ApiProjectRef {
@@ -42,12 +47,12 @@ class ApiProjectRef {
     this.statusLabel,
   });
   factory ApiProjectRef.fromJson(Map<String, dynamic> json) => ApiProjectRef(
-        id: json['id'] as int? ?? 0,
-        name: json['name'] as String? ?? '',
-        description: json['description'] as String?,
-        status: (json['status'] as num?)?.toInt(),
-        statusLabel: json['status_label'] as String?,
-      );
+    id: json['id'] as int? ?? 0,
+    name: json['name'] as String? ?? '',
+    description: json['description'] as String?,
+    status: (json['status'] as num?)?.toInt(),
+    statusLabel: json['status_label'] as String?,
+  );
 }
 
 class ApiTask {
@@ -71,23 +76,23 @@ class ApiTask {
   });
 
   factory ApiTask.fromJson(Map<String, dynamic> json) => ApiTask(
-        id: json['id'] as int? ?? 0,
-        name: json['name'] as String? ?? '',
-        description: json['description'] as String?,
-        deadline: json['deadline'] != null
-            ? DateTime.tryParse(json['deadline'] as String)
-            : null,
-        status: json['status'] is Map<String, dynamic>
-            ? ApiTaskStatusRef.fromJson(json['status'] as Map<String, dynamic>)
-            : null,
-        taskType: json['task_type'] is Map<String, dynamic>
-            ? ApiTaskTypeRef.fromJson(json['task_type'] as Map<String, dynamic>)
-            : null,
-        project: json['project'] is Map<String, dynamic>
-            ? ApiProjectRef.fromJson(json['project'] as Map<String, dynamic>)
-            : null,
-        creator: json['creator'] is Map<String, dynamic>
-            ? ApiUserRef.fromJson(json['creator'] as Map<String, dynamic>)
-            : null,
-      );
+    id: json['id'] as int? ?? 0,
+    name: json['name'] as String? ?? '',
+    description: json['description'] as String?,
+    deadline: json['deadline'] != null
+        ? DateTime.tryParse(json['deadline'] as String)
+        : null,
+    status: json['status'] is Map<String, dynamic>
+        ? ApiTaskStatusRef.fromJson(json['status'] as Map<String, dynamic>)
+        : null,
+    taskType: json['task_type'] is Map<String, dynamic>
+        ? ApiTaskTypeRef.fromJson(json['task_type'] as Map<String, dynamic>)
+        : null,
+    project: json['project'] is Map<String, dynamic>
+        ? ApiProjectRef.fromJson(json['project'] as Map<String, dynamic>)
+        : null,
+    creator: json['creator'] is Map<String, dynamic>
+        ? ApiUserRef.fromJson(json['creator'] as Map<String, dynamic>)
+        : null,
+  );
 }
