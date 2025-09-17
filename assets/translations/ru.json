@@ -244,6 +244,13 @@
       "createdByMe": "Созданные мной",
       "assignedToMe": "Назначенные мне"
     },
+    "status": {
+      "all": "Все статусы",
+      "active": "Активные",
+      "completed": "Завершенные",
+      "expired": "Истекшие",
+      "rejected": "Отклоненные"
+    },
     "sampleProjects": {
       "taskManager": {
         "name": "Мобильное приложение управления задачами",

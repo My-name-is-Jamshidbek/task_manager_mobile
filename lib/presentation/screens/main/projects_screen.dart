@@ -17,6 +17,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   Timer? _debounce;
   // Filters: null => all, 'created_by_me', 'assigned_to_me'
   String? _currentFilter; // default to all
+  int? _status = 1; // default status 1 = active; null means all
   static const int _pageSizeAll = 1000; // large page size to approximate "all"
   // Global error modal is handled by ApiClient.
 
@@ -28,6 +29,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       context.read<ProjectsProvider>().fetchProjects(
         perPage: _pageSizeAll,
         filter: _currentFilter,
+        status: _status,
         search: _searchController.text.trim().isEmpty
             ? null
             : _searchController.text.trim(),
@@ -48,6 +50,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       context.read<ProjectsProvider>().fetchProjects(
         perPage: _pageSizeAll,
         filter: _currentFilter,
+        status: _status,
         search: value.trim().isEmpty ? null : value.trim(),
       );
     });
@@ -58,6 +61,19 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     context.read<ProjectsProvider>().fetchProjects(
       perPage: _pageSizeAll,
       filter: _currentFilter,
+      status: _status,
+      search: _searchController.text.trim().isEmpty
+          ? null
+          : _searchController.text.trim(),
+    );
+  }
+
+  void _onStatusChanged(int? status) {
+    setState(() => _status = status);
+    context.read<ProjectsProvider>().fetchProjects(
+      perPage: _pageSizeAll,
+      filter: _currentFilter,
+      status: _status,
       search: _searchController.text.trim().isEmpty
           ? null
           : _searchController.text.trim(),
@@ -163,6 +179,46 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             ),
           ),
           const SizedBox(width: 12),
+          // Status dropdown: All / Active / Completed / Expired / Rejected
+          DropdownButtonHideUnderline(
+            child: DropdownButton<int?>(
+              value: _status,
+              isDense: true,
+              borderRadius: BorderRadius.circular(12),
+              onChanged: (value) => _onStatusChanged(value),
+              items:
+                  <({int? val, String label})>[
+                        (
+                          val: null,
+                          label: loc.translate('projects.status.all'),
+                        ),
+                        (
+                          val: 1,
+                          label: loc.translate('projects.status.active'),
+                        ),
+                        (
+                          val: 2,
+                          label: loc.translate('projects.status.completed'),
+                        ),
+                        (
+                          val: 3,
+                          label: loc.translate('projects.status.expired'),
+                        ),
+                        (
+                          val: 4,
+                          label: loc.translate('projects.status.rejected'),
+                        ),
+                      ]
+                      .map(
+                        (e) => DropdownMenuItem<int?>(
+                          value: e.val,
+                          child: Text(e.label),
+                        ),
+                      )
+                      .toList(),
+            ),
+          ),
+          const SizedBox(width: 12),
           // Filter dropdown: All / Created / Assigned
           DropdownButtonHideUnderline(
             child: DropdownButton<String?>(
@@ -213,6 +269,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     context.read<ProjectsProvider>().fetchProjects(
                       perPage: _pageSizeAll,
                       filter: _currentFilter,
+                      status: _status,
                       search: _searchController.text.trim().isEmpty
                           ? null
                           : _searchController.text.trim(),

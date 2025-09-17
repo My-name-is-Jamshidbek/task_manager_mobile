@@ -245,6 +245,13 @@
       "createdByMe": "Created by me",
       "assignedToMe": "Assigned to me"
     },
+    "status": {
+      "all": "All statuses",
+      "active": "Active",
+      "completed": "Completed",
+      "expired": "Expired",
+      "rejected": "Rejected"
+    },
     "sampleProjects": {
       "taskManager": {
         "name": "Task Manager Mobile App",

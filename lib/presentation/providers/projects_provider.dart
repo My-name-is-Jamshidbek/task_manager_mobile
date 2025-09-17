@@ -20,6 +20,7 @@ class ProjectsProvider extends ChangeNotifier {
     String? search,
     int? perPage,
     String? filter,
+    int? status,
   }) async {
     if (_loading) return;
     _loading = true;
@@ -30,6 +31,7 @@ class ProjectsProvider extends ChangeNotifier {
       search: search,
       perPage: perPage,
       filter: filter,
+      status: status,
     );
 
     if (res.isSuccess) {

@@ -244,6 +244,13 @@
       "createdByMe": "Men yaratganlar",
       "assignedToMe": "Menga biriktirilganlar"
     },
+    "status": {
+      "all": "Barcha statuslar",
+      "active": "Faol",
+      "completed": "Yakunlangan",
+      "expired": "Muddati o'tgan",
+      "rejected": "Rad etilgan"
+    },
     "sampleProjects": {
       "taskManager": {
         "name": "Vazifa Boshqaruvchi Mobil Ilova",
