@@ -21,12 +21,14 @@ void main() async {
   Logger.info('🚀 TaskManager App Starting...');
 
   // Lock orientation if needed
+  // Allow auto-rotate in both portrait and landscape (exclude upside-down if undesired)
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
   ]);
 
-  Logger.info('📱 Orientation locked to portrait');
+  Logger.info('📱 Orientation enabled: portrait + landscape');
 
   // Initialize theme and localization services
   final themeService = ThemeService();

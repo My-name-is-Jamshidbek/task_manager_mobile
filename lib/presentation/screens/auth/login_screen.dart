@@ -26,7 +26,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneCtrl = TextEditingController(text: '+998 ');
   final _passwordCtrl = TextEditingController();
-  final bool _obscure = true;
   bool _autoValidate = false;
   bool _submitting = false;
 
@@ -172,120 +171,225 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final media = MediaQuery.of(context);
 
     return Scaffold(
       appBar: const AuthAppBar(titleKey: 'auth.login'),
       body: SafeArea(
         child: LayoutBuilder(
-          builder: (context, c) => SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: 460,
-                // Fill at least the viewport height minus padding so we can center
-                minHeight: c.maxHeight - 56, // 28 * 2 vertical padding
-              ),
-              child: Center(
-                child: Form(
-                  key: _formKey,
-                  autovalidateMode: _autoValidate
-                      ? AutovalidateMode.always
-                      : AutovalidateMode.disabled,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Card(
-                        elevation: 3,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Logo
-                              SizedBox(
-                                height: 96,
-                                child: FittedBox(
-                                  fit: BoxFit.contain,
-                                  child: Icon(
-                                    Icons.task_alt,
-                                    size: 96,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                loc.translate('app.title'),
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.w700),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 32),
-                              UzbekistanPhoneField(
-                                controller: _phoneCtrl,
-                                loc: loc,
-                                validator: (v) => _validatePhone(v, loc),
-                              ),
-                              const SizedBox(height: 16),
-                              PasswordField(
-                                controller: _passwordCtrl,
-                                loc: loc,
-                                validator: (v) => _validatePassword(v, loc),
-                                onSubmitted: _submit,
-                              ),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: () {
-                                    /* TODO: forgot */
-                                  },
-                                  child: Text(
-                                    loc.translate('auth.forgotPassword'),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              LoginSubmitButton(
-                                enabled: _isFormValid && !_submitting,
-                                loading: _submitting,
-                                label: loc.translate('auth.loginButton'),
-                                onPressed: _submitting
-                                    ? null
-                                    : () async {
-                                        await _submit();
-                                        HapticFeedback.lightImpact();
-                                      },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      SizedBox(
-                        height: MediaQuery.of(context).padding.bottom + 8,
-                      ),
-                    ],
+          builder: (context, c) {
+            final isWide = c.maxWidth >= 900; // tablet landscape / desktop
+            final isMedium =
+                c.maxWidth >= 600 && c.maxWidth < 900; // tablet portrait
+
+            if (isWide) {
+              // Two-pane layout for large screens
+              return Row(
+                children: [
+                  // Branding panel
+                  Expanded(flex: 5, child: _BrandingPanel(loc: loc)),
+                  // Divider between panels
+                  SizedBox(
+                    width: 1,
+                    child: Container(
+                      color: theme.colorScheme.outlineVariant.withOpacity(0.4),
+                    ),
                   ),
+                  // Form panel
+                  Expanded(
+                    flex: 4,
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 28,
+                        ),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 520),
+                          child: _LoginForm(loc: loc),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            // Medium screens: widen card, keep single column
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isMedium ? 560 : 460,
+                    minHeight: c.maxHeight - 56, // 28 * 2 vertical padding
+                  ),
+                  child: _LoginForm(loc: loc),
                 ),
               ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // Removed unused helper methods after responsive refactor
+}
+
+/// Left-side branding panel for large screens
+class _BrandingPanel extends StatelessWidget {
+  final AppLocalizations loc;
+  const _BrandingPanel({required this.loc});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme;
+    return Container(
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.primary.withOpacity(0.12),
+            color.primaryContainer.withOpacity(0.20),
+            color.surfaceContainerHighest.withOpacity(0.10),
+          ],
+        ),
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.task_alt, size: 120, color: color.primary),
+                const SizedBox(height: 24),
+                Text(
+                  loc.translate('app.title'),
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.brightness == Brightness.dark
+                        ? color.onSurface
+                        : color.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  loc.translate('home.welcomeBack'),
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: color.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
             ),
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildOrDivider(AppLocalizations loc, ThemeData theme) =>
-      const SizedBox.shrink();
-  Widget _buildAltMethods() => const SizedBox.shrink();
-  Widget _buildRegisterRow(AppLocalizations loc) => const SizedBox.shrink();
+// Removed unused _Pill widget after refactor
+
+/// Login form extracted so it can be reused in multiple layouts
+class _LoginForm extends StatelessWidget {
+  final AppLocalizations loc;
+  const _LoginForm({required this.loc});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.findAncestorStateOfType<_LoginScreenState>()!;
+    final theme = Theme.of(context);
+
+    return Form(
+      key: state._formKey,
+      autovalidateMode: state._autoValidate
+          ? AutovalidateMode.always
+          : AutovalidateMode.disabled,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Text(
+                    loc.translate('home.welcomeBack'),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    loc.translate('auth.login'),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  UzbekistanPhoneField(
+                    controller: state._phoneCtrl,
+                    loc: loc,
+                    validator: (v) => state._validatePhone(v, loc),
+                  ),
+                  const SizedBox(height: 16),
+                  PasswordField(
+                    controller: state._passwordCtrl,
+                    loc: loc,
+                    validator: (v) => state._validatePassword(v, loc),
+                    onSubmitted: state._submit,
+                  ),
+
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        /* TODO: forgot */
+                      },
+                      child: Text(loc.translate('auth.forgotPassword')),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  LoginSubmitButton(
+                    enabled: state._isFormValid && !state._submitting,
+                    loading: state._submitting,
+                    label: loc.translate('auth.loginButton'),
+                    onPressed: state._submitting
+                        ? null
+                        : () async {
+                            await state._submit();
+                            HapticFeedback.lightImpact();
+                          },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
+        ],
+      ),
+    );
+  }
 }
