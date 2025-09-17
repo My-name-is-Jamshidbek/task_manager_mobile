@@ -1,8 +1,59 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../providers/tasks_api_provider.dart';
+import '../../../data/models/api_task_models.dart';
 
-class TasksScreen extends StatelessWidget {
+class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
+
+  @override
+  State<TasksScreen> createState() => _TasksScreenState();
+}
+
+class _TasksScreenState extends State<TasksScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
+
+  // Filters
+  String? _filter; // created_by_me | assigned_to_me
+  int? _statusId; // 1=pending, 2=in progress, 3=completed, 4=cancelled (assumption)
+
+  // Assumed mapping for backend status ids
+  static const Map<String, int> _statusIdMap = {
+    'pending': 1,
+    'inProgress': 2,
+    'completed': 3,
+    'cancelled': 4,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    // Initial fetch
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<TasksApiProvider>();
+      provider.perPage = 20;
+      provider.fetchTasks();
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      final provider = context.read<TasksApiProvider>();
+      provider.name = value.trim().isEmpty ? null : value.trim();
+      provider.fetchTasks();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,61 +63,221 @@ class TasksScreen extends StatelessWidget {
     return SafeArea(
       child: Column(
         children: [
-          _buildFilterChips(context, loc, theme),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: loc.translate('tasks.searchHint'),
+                prefixIcon: const Icon(Icons.search),
+                isDense: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onChanged: _onSearchChanged,
+            ),
+          ),
+          _buildFilterRow(context, loc, theme),
           Expanded(
-            child: _buildTasksList(context, loc, theme),
+            child: Consumer<TasksApiProvider>(
+              builder: (context, provider, _) {
+                if (provider.isLoading && provider.tasks.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (provider.error != null && provider.tasks.isEmpty) {
+                  return _buildErrorState(context, loc, theme, provider.error!);
+                }
+                if (provider.tasks.isEmpty) {
+                  return _buildEmptyState(context, loc, theme);
+                }
+                return RefreshIndicator(
+                  onRefresh: () async => provider.fetchTasks(),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: provider.tasks.length,
+                    itemBuilder: (context, index) {
+                      return _buildTaskCard(context, provider.tasks[index], theme, loc);
+                    },
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChips(BuildContext context, AppLocalizations loc, ThemeData theme) {
+  Widget _buildFilterRow(BuildContext context, AppLocalizations loc, ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _buildFilterChip(context, loc.translate('tasks.all'), true, theme),
+            // Created/Assigned filter
+            _buildChoiceChip(
+              context,
+              label: loc.translate('projects.filters.all'),
+              selected: _filter == null,
+              onSelected: (_) {
+                setState(() => _filter = null);
+                final p = context.read<TasksApiProvider>();
+                p.filter = null;
+                p.fetchTasks();
+              },
+            ),
             const SizedBox(width: 8),
-            _buildFilterChip(context, loc.translate('status.pending'), false, theme),
+            _buildChoiceChip(
+              context,
+              label: loc.translate('projects.filters.createdByMe'),
+              selected: _filter == 'created_by_me',
+              onSelected: (_) {
+                setState(() => _filter = 'created_by_me');
+                final p = context.read<TasksApiProvider>();
+                p.filter = 'created_by_me';
+                p.fetchTasks();
+              },
+            ),
             const SizedBox(width: 8),
-            _buildFilterChip(context, loc.translate('status.inProgress'), false, theme),
+            _buildChoiceChip(
+              context,
+              label: loc.translate('projects.filters.assignedToMe'),
+              selected: _filter == 'assigned_to_me',
+              onSelected: (_) {
+                setState(() => _filter = 'assigned_to_me');
+                final p = context.read<TasksApiProvider>();
+                p.filter = 'assigned_to_me';
+                p.fetchTasks();
+              },
+            ),
+            const SizedBox(width: 16),
+            // Status filter chips
+            _buildChoiceChip(
+              context,
+              label: loc.translate('projects.status.all'),
+              selected: _statusId == null,
+              onSelected: (_) {
+                setState(() => _statusId = null);
+                final p = context.read<TasksApiProvider>();
+                p.status = null;
+                p.fetchTasks();
+              },
+            ),
             const SizedBox(width: 8),
-            _buildFilterChip(context, loc.translate('status.completed'), false, theme),
+            _buildChoiceChip(
+              context,
+              label: loc.translate('status.pending'),
+              selected: _statusId == _statusIdMap['pending'],
+              onSelected: (_) {
+                setState(() => _statusId = _statusIdMap['pending']);
+                final p = context.read<TasksApiProvider>();
+                p.status = _statusId;
+                p.fetchTasks();
+              },
+            ),
+            const SizedBox(width: 8),
+            _buildChoiceChip(
+              context,
+              label: loc.translate('status.inProgress'),
+              selected: _statusId == _statusIdMap['inProgress'],
+              onSelected: (_) {
+                setState(() => _statusId = _statusIdMap['inProgress']);
+                final p = context.read<TasksApiProvider>();
+                p.status = _statusId;
+                p.fetchTasks();
+              },
+            ),
+            const SizedBox(width: 8),
+            _buildChoiceChip(
+              context,
+              label: loc.translate('status.completed'),
+              selected: _statusId == _statusIdMap['completed'],
+              onSelected: (_) {
+                setState(() => _statusId = _statusIdMap['completed']);
+                final p = context.read<TasksApiProvider>();
+                p.status = _statusId;
+                p.fetchTasks();
+              },
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFilterChip(BuildContext context, String label, bool isSelected, ThemeData theme) {
+  Widget _buildChoiceChip(
+    BuildContext context, {
+    required String label,
+    required bool selected,
+    required ValueChanged<bool> onSelected,
+  }) {
+    final theme = Theme.of(context);
     return FilterChip(
       label: Text(label),
-      selected: isSelected,
-      onSelected: (value) {
-        // TODO: Filter tasks
-      },
+      selected: selected,
+      onSelected: (v) => onSelected(v),
       selectedColor: theme.colorScheme.primary.withOpacity(0.2),
       checkmarkColor: theme.colorScheme.primary,
     );
   }
 
-  Widget _buildTasksList(BuildContext context, AppLocalizations loc, ThemeData theme) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: 10, // Mock data
-      itemBuilder: (context, index) {
-        return _buildTaskCard(context, index, theme, loc);
-      },
+  Widget _buildEmptyState(BuildContext context, AppLocalizations loc, ThemeData theme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inbox_outlined, size: 48, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(height: 12),
+            Text(loc.translate('tasks.noTasks'), style: theme.textTheme.titleMedium),
+            const SizedBox(height: 6),
+            Text(
+              loc.translate('tasks.createFirstTask'),
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildTaskCard(BuildContext context, int index, ThemeData theme, AppLocalizations loc) {
-    final priorities = ['high', 'medium', 'low'];
-    final priority = priorities[index % 3];
-    final isCompleted = index % 4 == 0;
+  Widget _buildErrorState(BuildContext context, AppLocalizations loc, ThemeData theme, String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+            const SizedBox(height: 12),
+            Text(loc.translate('common.error'), style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.error)),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () => context.read<TasksApiProvider>().fetchTasks(),
+              icon: const Icon(Icons.refresh),
+              label: Text(loc.translate('common.retry')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTaskCard(BuildContext context, ApiTask task, ThemeData theme, AppLocalizations loc) {
+    final isCompleted = task.status?.id == _statusIdMap['completed'];
+    final deadline = task.deadline;
+    final projectName = task.project?.name ?? '';
+    final statusLabel = task.status?.label ?? '';
 
     return Card(
       elevation: 2,
@@ -87,12 +298,12 @@ class TasksScreen extends StatelessWidget {
                   Checkbox(
                     value: isCompleted,
                     onChanged: (value) {
-                      // TODO: Toggle task completion
+                      // TODO: Toggle task completion via API
                     },
                   ),
                   Expanded(
                     child: Text(
-                      '${loc.translate('tasks.title')} ${index + 1}: ${loc.translate('tasks.sampleTaskTitle')}',
+                      task.name,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         decoration: isCompleted ? TextDecoration.lineThrough : null,
@@ -100,16 +311,19 @@ class TasksScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  _buildPriorityChip(priority, theme, loc),
+                  if (statusLabel.isNotEmpty)
+                    _buildStatusChip(statusLabel, theme),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                loc.translate('tasks.sampleTaskDescription'),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              if (task.description != null && task.description!.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  task.description!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -120,7 +334,9 @@ class TasksScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${loc.translate('tasks.due')}: Dec ${index + 15}, 2024',
+                    deadline != null
+                        ? '${loc.translate('tasks.due')}: ${_formatDate(deadline)}'
+                        : loc.translate('tasks.due'),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -133,7 +349,7 @@ class TasksScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    loc.translate('tasks.sampleProjectName'),
+                    projectName.isEmpty ? '-' : projectName,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -147,28 +363,13 @@ class TasksScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPriorityChip(String priority, ThemeData theme, AppLocalizations loc) {
-    Color color;
-    String displayText;
-    
-    switch (priority) {
-      case 'high':
-        color = Colors.red;
-        displayText = loc.translate('priority.highChip');
-        break;
-      case 'medium':
-        color = Colors.orange;
-        displayText = loc.translate('priority.mediumChip');
-        break;
-      case 'low':
-        color = Colors.green;
-        displayText = loc.translate('priority.lowChip');
-        break;
-      default:
-        color = theme.colorScheme.primary;
-        displayText = priority.toUpperCase();
-    }
+  String _formatDate(DateTime dt) {
+    // Simple date formatting; can be replaced with intl if available
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  }
 
+  Widget _buildStatusChip(String label, ThemeData theme) {
+    final color = theme.colorScheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -177,7 +378,7 @@ class TasksScreen extends StatelessWidget {
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(
-        displayText,
+        label,
         style: theme.textTheme.labelSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.bold,

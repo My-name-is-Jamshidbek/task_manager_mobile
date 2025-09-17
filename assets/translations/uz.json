@@ -207,6 +207,7 @@
   },
   "tasks": {
     "title": "Vazifalar",
+    "searchHint": "Vazifalarni qidirish",
     "addTask": "Vazifa qo'shish",
     "editTask": "Vazifani tahrirlash",
     "deleteTask": "Vazifani o'chirish",

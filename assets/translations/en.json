@@ -208,6 +208,7 @@
   },
   "tasks": {
     "title": "Tasks",
+    "searchHint": "Search tasks",
     "addTask": "Add Task",
     "editTask": "Edit Task",
     "deleteTask": "Delete Task",
