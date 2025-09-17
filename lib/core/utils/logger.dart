@@ -41,6 +41,15 @@ class Logger {
     _log(message, _levelError, tag ?? _tag, error, stackTrace);
   }
 
+  /// Debug-only helper to force a crash for Crashlytics testing
+  static void forceCrashForTesting() {
+    assert(() {
+      // Only in debug: throw to simulate a crash
+      Future.microtask(() => throw StateError('Test Crashlytics crash'));
+      return true;
+    }());
+  }
+
   // Debug log
   static void debug(String message, [String? tag]) {
     _log(message, _levelDebug, tag ?? _tag);

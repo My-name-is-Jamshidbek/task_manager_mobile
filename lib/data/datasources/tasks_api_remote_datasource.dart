@@ -9,12 +9,14 @@ class TasksApiRemoteDataSource {
 
   Future<ApiResponse<List<ApiTask>>> getTasks({
     int? perPage,
+    int? page,
     String? filter, // created_by_me | assigned_to_me
     String? name, // search by name
     int? status, // status id
   }) async {
     final query = <String, String>{};
     if (perPage != null) query['per_page'] = perPage.toString();
+    if (page != null) query['page'] = page.toString();
     if (filter != null && filter.isNotEmpty) query['filter'] = filter;
     if (name != null && name.isNotEmpty) query['name'] = name;
     if (status != null) query['status'] = status.toString();

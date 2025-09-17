@@ -15,10 +15,11 @@ class ProjectsScreen extends StatefulWidget {
 class _ProjectsScreenState extends State<ProjectsScreen> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
+  final ScrollController _scrollController = ScrollController();
   // Filters: null => all, 'created_by_me', 'assigned_to_me'
   String? _currentFilter; // default to all
   int? _status = 1; // default status 1 = active; null means all
-  static const int _pageSizeAll = 1000; // large page size to approximate "all"
+  static const int _pageSize = 10;
   // Global error modal is handled by ApiClient.
 
   @override
@@ -26,58 +27,54 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     super.initState();
     // Initial load: all projects
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProjectsProvider>().fetchProjects(
-        perPage: _pageSizeAll,
-        filter: _currentFilter,
-        status: _status,
-        search: _searchController.text.trim().isEmpty
-            ? null
-            : _searchController.text.trim(),
-      );
+      final p = context.read<ProjectsProvider>();
+      p.perPage = _pageSize;
+      p.status = _status; // align provider with UI default (active)
+      p.refresh();
     });
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged(String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), () {
-      context.read<ProjectsProvider>().fetchProjects(
-        perPage: _pageSizeAll,
-        filter: _currentFilter,
-        status: _status,
-        search: value.trim().isEmpty ? null : value.trim(),
-      );
+      final p = context.read<ProjectsProvider>();
+      p.search = value.trim().isEmpty ? null : value.trim();
+      p.refresh();
     });
   }
 
   void _onFilterChanged(String? filter) {
     setState(() => _currentFilter = filter);
-    context.read<ProjectsProvider>().fetchProjects(
-      perPage: _pageSizeAll,
-      filter: _currentFilter,
-      status: _status,
-      search: _searchController.text.trim().isEmpty
-          ? null
-          : _searchController.text.trim(),
-    );
+    final p = context.read<ProjectsProvider>();
+    p.filter = _currentFilter;
+    p.refresh();
   }
 
   void _onStatusChanged(int? status) {
     setState(() => _status = status);
-    context.read<ProjectsProvider>().fetchProjects(
-      perPage: _pageSizeAll,
-      filter: _currentFilter,
-      status: _status,
-      search: _searchController.text.trim().isEmpty
-          ? null
-          : _searchController.text.trim(),
-    );
+    final p = context.read<ProjectsProvider>();
+    p.status = _status;
+    p.refresh();
+  }
+
+  void _onScroll() {
+    final p = context.read<ProjectsProvider>();
+    // Infinite scroll load more
+    if (!p.isLoading && p.hasMore) {
+      final offset = _scrollController.position.pixels;
+      if (offset >= _scrollController.position.maxScrollExtent - 200) {
+        p.loadMore();
+      }
+    }
   }
 
   @override
@@ -113,8 +110,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     FilledButton(
                       onPressed: () {
                         context.read<ProjectsProvider>().fetchProjects(
-                          perPage: _pageSizeAll,
+                          perPage: _pageSize,
                           filter: _currentFilter,
+                          status: _status,
                           search: _searchController.text.trim().isEmpty
                               ? null
                               : _searchController.text.trim(),
@@ -130,14 +128,43 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
           final projects = provider.projects;
           // No local error dialog state; rendering continues below.
-          return Column(
-            children: [
-              _buildControls(context, theme, loc, provider),
-              _buildProjectStats(context, loc, theme, projects),
-              Expanded(
-                child: _buildProjectsList(context, theme, loc, projects),
-              ),
-            ],
+          return RefreshIndicator(
+            onRefresh: () async =>
+                context.read<ProjectsProvider>().refresh(),
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverAppBar(
+                  floating: true,
+                  snap: true,
+                  pinned: false,
+                  automaticallyImplyLeading: false,
+                  toolbarHeight: 0,
+                  backgroundColor: theme.colorScheme.surface,
+                  surfaceTintColor: theme.colorScheme.surface,
+                  elevation: 1,
+                  scrolledUnderElevation: 2,
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(200),
+                    child: Material(
+                      color: theme.colorScheme.surface,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildControls(context, theme, loc, provider),
+                          _buildProjectStats(context, loc, theme, projects),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver:
+                      _buildProjectsSliverList(context, theme, loc, projects),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -267,7 +294,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 ? null
                 : () {
                     context.read<ProjectsProvider>().fetchProjects(
-                      perPage: _pageSizeAll,
+                      perPage: _pageSize,
                       filter: _currentFilter,
                       status: _status,
                       search: _searchController.text.trim().isEmpty
@@ -375,30 +402,47 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
   }
 
-  Widget _buildProjectsList(
+  
+
+  SliverList _buildProjectsSliverList(
     BuildContext context,
     ThemeData theme,
     AppLocalizations loc,
     List<Project> projects,
   ) {
     if (projects.isEmpty) {
-      return Center(
-        child: Text(
-          loc.translate('projects.empty'),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+      return SliverList(
+        delegate: SliverChildListDelegate([
+          Padding(
+            padding: const EdgeInsets.only(top: 48.0),
+            child: Center(
+              child: Text(
+                loc.translate('projects.empty'),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           ),
-        ),
+        ]),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: projects.length,
-      itemBuilder: (context, index) {
-        final project = projects[index];
-        return _buildProjectCard(context, project, theme, loc);
-      },
+    final provider = context.watch<ProjectsProvider>();
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          if (index >= projects.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          final project = projects[index];
+          return _buildProjectCard(context, project, theme, loc);
+        },
+        childCount: projects.length + (provider.hasMore ? 1 : 0),
+      ),
     );
   }
 

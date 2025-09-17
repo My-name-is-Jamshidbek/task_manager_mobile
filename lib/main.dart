@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 // import 'demo/coreui_demo_app.dart';
@@ -47,55 +50,84 @@ void main() async {
   // Note: AuthProvider initialization will be handled by AppManager
   Logger.info('✅ Basic services initialized successfully');
 
-  // (navigatorKey imported from navigation_service)
-  // Run Login Screen with theme and localization providers
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: themeService),
-        ChangeNotifierProvider.value(value: localizationService),
-        ChangeNotifierProvider.value(value: authProvider),
-        ChangeNotifierProvider.value(value: firebaseProvider),
-        ChangeNotifierProvider.value(value: projectsProvider),
-        ChangeNotifierProvider.value(value: tasksApiProvider),
-      ],
-      child:
-          Consumer4<
-            ThemeService,
-            LocalizationService,
-            AuthProvider,
-            FirebaseProvider
-          >(
-            builder:
-                (
-                  context,
-                  themeService,
-                  localizationService,
-                  authProvider,
-                  firebaseProvider,
-                  child,
-                ) {
-                  return MaterialApp(
-                    navigatorKey: navigatorKey,
-                    title: 'Task Manager',
-                    theme: themeService.lightTheme,
-                    darkTheme: themeService.darkTheme,
-                    themeMode: themeService.flutterThemeMode,
-                    locale: localizationService.currentLocale,
-                    localizationsDelegates: [
-                      AppLocalizationsDelegate(),
-                      GlobalMaterialLocalizations.delegate,
-                      GlobalWidgetsLocalizations.delegate,
-                      GlobalCupertinoLocalizations.delegate,
-                    ],
-                    supportedLocales: AppLocalizations.supportedLocales,
-                    home: Builder(
-                      builder: (context) => AppRoot(key: AppRootController.key),
-                    ), // Use Builder to ensure proper context
-                    debugShowCheckedModeBanner: false,
-                  );
-                },
-          ),
-    ),
+  // Initialize Crashlytics
+  // Capture unhandled Flutter framework errors
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    // Send to Crashlytics in all modes; collection is toggled below
+    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+  };
+
+  // Capture uncaught asynchronous errors from the platform dispatcher
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true; // error handled
+  };
+
+  // Enable Crashlytics collection in non-debug builds
+  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
+    !kDebugMode,
+  );
+
+  // Wrap in zone to capture all Dart errors
+  await runZonedGuarded<Future<void>>(
+    () async {
+      // (navigatorKey imported from navigation_service)
+      // Run Login Screen with theme and localization providers
+      runApp(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: themeService),
+            ChangeNotifierProvider.value(value: localizationService),
+            ChangeNotifierProvider.value(value: authProvider),
+            ChangeNotifierProvider.value(value: firebaseProvider),
+            ChangeNotifierProvider.value(value: projectsProvider),
+            ChangeNotifierProvider.value(value: tasksApiProvider),
+          ],
+          child:
+              Consumer4<
+                ThemeService,
+                LocalizationService,
+                AuthProvider,
+                FirebaseProvider
+              >(
+                builder:
+                    (
+                      context,
+                      themeService,
+                      localizationService,
+                      authProvider,
+                      firebaseProvider,
+                      child,
+                    ) {
+                      return MaterialApp(
+                        navigatorKey: navigatorKey,
+                        title: 'Task Manager',
+                        theme: themeService.lightTheme,
+                        darkTheme: themeService.darkTheme,
+                        themeMode: themeService.flutterThemeMode,
+                        locale: localizationService.currentLocale,
+                        localizationsDelegates: [
+                          AppLocalizationsDelegate(),
+                          GlobalMaterialLocalizations.delegate,
+                          GlobalWidgetsLocalizations.delegate,
+                          GlobalCupertinoLocalizations.delegate,
+                        ],
+                        supportedLocales: AppLocalizations.supportedLocales,
+                        home: Builder(
+                          builder: (context) =>
+                              AppRoot(key: AppRootController.key),
+                        ), // Use Builder to ensure proper context
+                        debugShowCheckedModeBanner: false,
+                      );
+                    },
+              ),
+        ),
+      );
+    },
+    (Object error, StackTrace stack) async {
+      // Report all uncaught zones errors
+      await FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    },
   );
 }

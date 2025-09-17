@@ -15,6 +15,9 @@ class TasksScreen extends StatefulWidget {
 class _TasksScreenState extends State<TasksScreen> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
+  final ScrollController _scrollController = ScrollController();
+  bool _headersVisible = true;
+  double _lastOffset = 0.0;
 
   // Filters
   String? _filter; // created_by_me | assigned_to_me
@@ -35,15 +38,17 @@ class _TasksScreenState extends State<TasksScreen> {
     // Initial fetch
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<TasksApiProvider>();
-      provider.perPage = 20;
-      provider.fetchTasks();
+      provider.perPage = 10;
+      provider.refresh();
     });
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -52,8 +57,29 @@ class _TasksScreenState extends State<TasksScreen> {
     _debounce = Timer(const Duration(milliseconds: 400), () {
       final provider = context.read<TasksApiProvider>();
       provider.name = value.trim().isEmpty ? null : value.trim();
-      provider.fetchTasks();
+      provider.refresh();
     });
+  }
+
+  void _onScroll() {
+    final provider = context.read<TasksApiProvider>();
+    final offset = _scrollController.position.pixels;
+    final delta = offset - _lastOffset;
+
+    // Hide headers when scrolling down, show when scrolling up or near top
+    if (delta > 8 && offset > 80 && _headersVisible) {
+      setState(() => _headersVisible = false);
+    } else if ((delta < -8 && !_headersVisible) ||
+        (offset < 40 && !_headersVisible)) {
+      setState(() => _headersVisible = true);
+    }
+
+    if (!provider.isLoading && provider.hasMore) {
+      if (offset >= _scrollController.position.maxScrollExtent - 200) {
+        provider.loadMore();
+      }
+    }
+    _lastOffset = offset;
   }
 
   @override
@@ -64,22 +90,33 @@ class _TasksScreenState extends State<TasksScreen> {
     return SafeArea(
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: loc.translate('tasks.searchHint'),
-                prefixIcon: const Icon(Icons.search),
-                isDense: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+          AnimatedCrossFade(
+            firstChild: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: loc.translate('tasks.searchHint'),
+                      prefixIcon: const Icon(Icons.search),
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onChanged: _onSearchChanged,
+                  ),
                 ),
-              ),
-              onChanged: _onSearchChanged,
+                _buildFilterRow(context, loc, theme),
+              ],
             ),
+            secondChild: const SizedBox.shrink(),
+            crossFadeState: _headersVisible
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            duration: const Duration(milliseconds: 200),
           ),
-          _buildFilterRow(context, loc, theme),
           Expanded(
             child: Consumer<TasksApiProvider>(
               builder: (context, provider, _) {
@@ -93,14 +130,23 @@ class _TasksScreenState extends State<TasksScreen> {
                   return _buildEmptyState(context, loc, theme);
                 }
                 return RefreshIndicator(
-                  onRefresh: () async => provider.fetchTasks(),
+                  onRefresh: () async => provider.refresh(),
                   child: ListView.builder(
+                    controller: _scrollController,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    itemCount: provider.tasks.length,
+                    itemCount:
+                        provider.tasks.length + (provider.hasMore ? 1 : 0),
                     itemBuilder: (context, index) {
+                      if (index >= provider.tasks.length) {
+                        // Bottom loader for next page
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
                       return _buildTaskCard(
                         context,
                         provider.tasks[index],
@@ -138,7 +184,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 setState(() => _filter = null);
                 final p = context.read<TasksApiProvider>();
                 p.filter = null;
-                p.fetchTasks();
+                p.refresh();
               },
             ),
             const SizedBox(width: 8),
@@ -150,7 +196,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 setState(() => _filter = 'created_by_me');
                 final p = context.read<TasksApiProvider>();
                 p.filter = 'created_by_me';
-                p.fetchTasks();
+                p.refresh();
               },
             ),
             const SizedBox(width: 8),
@@ -162,7 +208,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 setState(() => _filter = 'assigned_to_me');
                 final p = context.read<TasksApiProvider>();
                 p.filter = 'assigned_to_me';
-                p.fetchTasks();
+                p.refresh();
               },
             ),
             const SizedBox(width: 16),
@@ -175,7 +221,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 setState(() => _statusId = null);
                 final p = context.read<TasksApiProvider>();
                 p.status = null;
-                p.fetchTasks();
+                p.refresh();
               },
             ),
             const SizedBox(width: 8),
@@ -187,7 +233,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 setState(() => _statusId = _statusIdMap['pending']);
                 final p = context.read<TasksApiProvider>();
                 p.status = _statusId;
-                p.fetchTasks();
+                p.refresh();
               },
             ),
             const SizedBox(width: 8),
@@ -199,7 +245,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 setState(() => _statusId = _statusIdMap['inProgress']);
                 final p = context.read<TasksApiProvider>();
                 p.status = _statusId;
-                p.fetchTasks();
+                p.refresh();
               },
             ),
             const SizedBox(width: 8),
@@ -211,7 +257,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 setState(() => _statusId = _statusIdMap['completed']);
                 final p = context.read<TasksApiProvider>();
                 p.status = _statusId;
-                p.fetchTasks();
+                p.refresh();
               },
             ),
           ],

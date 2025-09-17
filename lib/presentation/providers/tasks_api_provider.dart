@@ -8,9 +8,11 @@ class TasksApiProvider extends ChangeNotifier {
   bool _loading = false;
   String? _error;
   List<ApiTask> _tasks = [];
+  int _page = 1;
+  bool _hasMore = true;
 
   // Filters
-  int? perPage;
+  int? perPage = 10;
   String? filter; // created_by_me | assigned_to_me
   String? name; // search text
   int? status; // status id
@@ -21,6 +23,8 @@ class TasksApiProvider extends ChangeNotifier {
   bool get isLoading => _loading;
   String? get error => _error;
   List<ApiTask> get tasks => _tasks;
+  bool get hasMore => _hasMore;
+  int get page => _page;
 
   Future<void> fetchTasks({
     int? perPage,
@@ -33,16 +37,31 @@ class TasksApiProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
+    // Reset paging when core filters change via parameters
+    final effectivePerPage = perPage ?? this.perPage;
+    final effectiveFilter = filter ?? this.filter;
+    final effectiveName = name ?? this.name;
+    final effectiveStatus = status ?? this.status;
+
     final res = await _remote.getTasks(
-      perPage: perPage ?? this.perPage,
-      filter: filter ?? this.filter,
-      name: name ?? this.name,
-      status: status ?? this.status,
+      perPage: effectivePerPage,
+      page: _page,
+      filter: effectiveFilter,
+      name: effectiveName,
+      status: effectiveStatus,
     );
 
     if (res.isSuccess) {
-      _tasks = res.data ?? [];
-      Logger.info('🧾 TasksApiProvider: Loaded ${_tasks.length} tasks');
+      final items = res.data ?? [];
+      if (_page == 1) {
+        _tasks = items;
+      } else {
+        _tasks = [..._tasks, ...items];
+      }
+      _hasMore = items.length == (effectivePerPage ?? 10);
+      Logger.info(
+        '🧾 TasksApiProvider: Page $_page, +${items.length}, total ${_tasks.length}, hasMore=$_hasMore',
+      );
     } else {
       _error = res.error ?? 'Unknown error';
       Logger.warning('⚠️ TasksApiProvider: Error - $_error');
@@ -50,5 +69,17 @@ class TasksApiProvider extends ChangeNotifier {
 
     _loading = false;
     notifyListeners();
+  }
+
+  Future<void> refresh() async {
+    _page = 1;
+    _hasMore = true;
+    await fetchTasks();
+  }
+
+  Future<void> loadMore() async {
+    if (_loading || !_hasMore) return;
+    _page += 1;
+    await fetchTasks();
   }
 }

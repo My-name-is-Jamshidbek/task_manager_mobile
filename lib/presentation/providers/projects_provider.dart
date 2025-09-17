@@ -8,6 +8,14 @@ class ProjectsProvider extends ChangeNotifier {
   bool _loading = false;
   String? _error;
   List<Project> _projects = [];
+  int _page = 1;
+  bool _hasMore = true;
+
+  // Filters/state (persist last used)
+  String? search;
+  int? perPage = 10;
+  String? filter; // 'created_by_me' | 'assigned_to_me' | null
+  int? status; // 1..4 | null
 
   ProjectsProvider({ProjectRemoteDataSource? remote})
     : _remote = remote ?? ProjectRemoteDataSource();
@@ -15,6 +23,8 @@ class ProjectsProvider extends ChangeNotifier {
   bool get isLoading => _loading;
   String? get error => _error;
   List<Project> get projects => _projects;
+  bool get hasMore => _hasMore;
+  int get page => _page;
 
   Future<void> fetchProjects({
     String? search,
@@ -27,16 +37,37 @@ class ProjectsProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
+    // Use effective criteria: provided or persisted
+    final effectiveSearch = search ?? this.search;
+    final effectivePerPage = perPage ?? this.perPage;
+    final effectiveFilter = filter ?? this.filter;
+    final effectiveStatus = status ?? this.status;
+
+    // Persist criteria for subsequent paging
+    this.search = effectiveSearch;
+    this.perPage = effectivePerPage;
+    this.filter = effectiveFilter;
+    this.status = effectiveStatus;
+
     final res = await _remote.getProjects(
-      search: search,
-      perPage: perPage,
-      filter: filter,
-      status: status,
+      search: effectiveSearch,
+      perPage: effectivePerPage,
+      page: _page,
+      filter: effectiveFilter,
+      status: effectiveStatus,
     );
 
     if (res.isSuccess) {
-      _projects = res.data ?? [];
-      Logger.info('📁 ProjectsProvider: Loaded ${_projects.length} projects');
+      final items = res.data ?? [];
+      if (_page == 1) {
+        _projects = items;
+      } else {
+        _projects = [..._projects, ...items];
+      }
+      _hasMore = items.length == (effectivePerPage ?? 10);
+      Logger.info(
+        '📁 ProjectsProvider: Page $_page, +${items.length}, total ${_projects.length}, hasMore=$_hasMore',
+      );
     } else {
       _error = res.error ?? 'Unknown error';
       Logger.warning('⚠️ ProjectsProvider: Error - $_error');
@@ -44,5 +75,17 @@ class ProjectsProvider extends ChangeNotifier {
 
     _loading = false;
     notifyListeners();
+  }
+
+  Future<void> refresh() async {
+    _page = 1;
+    _hasMore = true;
+    await fetchProjects();
+  }
+
+  Future<void> loadMore() async {
+    if (_loading || !_hasMore) return;
+    _page += 1;
+    await fetchProjects();
   }
 }
