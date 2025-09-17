@@ -129,8 +129,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           final projects = provider.projects;
           // No local error dialog state; rendering continues below.
           return RefreshIndicator(
-            onRefresh: () async =>
-                context.read<ProjectsProvider>().refresh(),
+            onRefresh: () async => context.read<ProjectsProvider>().refresh(),
             child: CustomScrollView(
               controller: _scrollController,
               slivers: [
@@ -160,8 +159,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver:
-                      _buildProjectsSliverList(context, theme, loc, projects),
+                  sliver: _buildProjectsSliverList(
+                    context,
+                    theme,
+                    loc,
+                    projects,
+                  ),
                 ),
               ],
             ),
@@ -402,8 +405,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
   }
 
-  
-
   SliverList _buildProjectsSliverList(
     BuildContext context,
     ThemeData theme,
@@ -430,19 +431,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
     final provider = context.watch<ProjectsProvider>();
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          if (index >= projects.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          final project = projects[index];
-          return _buildProjectCard(context, project, theme, loc);
-        },
-        childCount: projects.length + (provider.hasMore ? 1 : 0),
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        if (index >= projects.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final project = projects[index];
+        return _buildProjectCard(context, project, theme, loc);
+      }, childCount: projects.length + (provider.hasMore ? 1 : 0)),
     );
   }
 
