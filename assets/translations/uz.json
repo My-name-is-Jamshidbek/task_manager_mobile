@@ -333,7 +333,10 @@
     "error": "Xato",
     "success": "Muvaffaqiyat",
     "warning": "Ogohlantirish",
-    "info": "Ma'lumot"
+    "info": "Ma'lumot",
+    "close": "Yopish",
+    "more": "Batafsil",
+    "details": "Tafsilotlar"
   },
   "validation": {
     "required": "Bu maydon talab qilinadi",

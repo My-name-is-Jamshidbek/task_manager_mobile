@@ -334,7 +334,10 @@
     "error": "Error",
     "success": "Success",
     "warning": "Warning",
-    "info": "Information"
+    "info": "Information",
+    "close": "Close",
+    "more": "More",
+    "details": "Details"
   },
   "validation": {
     "required": "This field is required",

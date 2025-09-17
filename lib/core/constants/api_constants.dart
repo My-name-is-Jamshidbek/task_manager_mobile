@@ -17,6 +17,9 @@ class ApiConstants {
   static const String deleteTask = '/tasks'; // + /{id}
   static const String taskById = '/tasks'; // + /{id}
 
+  // Projects endpoints
+  static const String projects = '/projects';
+
   // User endpoints
   static const String profile = '/profile';
   static const String updateProfile = '/profile/update-details';

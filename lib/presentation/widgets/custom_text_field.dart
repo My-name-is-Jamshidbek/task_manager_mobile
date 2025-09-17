@@ -123,6 +123,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
             hintText: widget.hint,
             prefixIcon: widget.prefixIcon,
             suffixIcon: _buildSuffixIcon(),
+            prefixIconColor: _hasFocus
+                ? theme.colorScheme.primary
+                : theme.iconTheme.color,
+            suffixIconColor: _hasFocus
+                ? theme.colorScheme.primary
+                : theme.iconTheme.color,
             errorText: widget.errorText,
             counterText: widget.showCounter ? null : '',
             border: OutlineInputBorder(
@@ -164,7 +170,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
             ),
             filled: true,
             fillColor: widget.enabled
-                ? theme.colorScheme.surface
+                ? (_hasFocus
+                      ? theme.colorScheme.surface.withOpacity(0.98)
+                      : theme.colorScheme.surface)
                 : theme.colorScheme.surface.withOpacity(0.5),
           ),
         ),

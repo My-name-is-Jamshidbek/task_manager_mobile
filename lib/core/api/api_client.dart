@@ -3,6 +3,9 @@ import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 import '../utils/logger.dart';
 import '../utils/multilingual_message.dart';
+import '../utils/navigation_service.dart';
+import '../../presentation/widgets/error_modal.dart';
+import '../localization/app_localizations.dart';
 
 // Callback type for handling authentication failures
 typedef AuthFailureCallback = void Function();
@@ -14,6 +17,7 @@ class ApiClient {
 
   final http.Client _client = http.Client();
   String? _authToken;
+  bool _isShowingErrorDialog = false;
 
   // Callback to handle authentication failures (401 responses)
   AuthFailureCallback? _onAuthFailure;
@@ -65,6 +69,7 @@ class ApiClient {
     Map<String, String>? queryParams,
     Map<String, String>? headers,
     T Function(Map<String, dynamic>)? fromJson,
+    T Function(List<dynamic>)? fromJsonList,
   }) async {
     final String requestId = _generateRequestId();
     try {
@@ -90,7 +95,12 @@ class ApiClient {
       Logger.info(
         '⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms',
       );
-      return _handleResponse<T>(response, fromJson, requestId);
+      return _handleResponse<T>(
+        response,
+        fromJson,
+        requestId,
+        fromJsonList: fromJsonList,
+      );
     } catch (e, stackTrace) {
       Logger.error(
         '❌ [$requestId] GET Request Failed',
@@ -369,8 +379,9 @@ class ApiClient {
   ApiResponse<T> _handleResponse<T>(
     http.Response response,
     T Function(Map<String, dynamic>)? fromJson,
-    String requestId,
-  ) {
+    String requestId, {
+    T Function(List<dynamic>)? fromJsonList,
+  }) {
     Logger.info('📥 [$requestId] Response Status: ${response.statusCode}');
     Logger.info('📥 [$requestId] Response Headers: ${response.headers}');
 
@@ -381,15 +392,39 @@ class ApiClient {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       Logger.info('✅ [$requestId] Request Successful');
       try {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        final dynamic decoded = jsonDecode(response.body);
 
-        if (fromJson != null) {
-          final data = fromJson(jsonData);
-          Logger.info('🎯 [$requestId] Data Parsed Successfully');
-          return ApiResponse.success(data);
+        if (decoded is List) {
+          if (fromJsonList != null) {
+            final data = fromJsonList(decoded);
+            Logger.info('🎯 [$requestId] List Parsed Successfully');
+            return ApiResponse.success(data);
+          }
+          Logger.info('🎯 [$requestId] Raw JSON List Returned');
+          return ApiResponse.success(decoded as T);
+        } else if (decoded is Map<String, dynamic>) {
+          // If caller expects a list (provided fromJsonList) but server
+          // returned an envelope like { data: [...], meta: {...} }
+          if (fromJsonList != null) {
+            final dynamic maybeList = decoded['data'];
+            if (maybeList is List) {
+              final data = fromJsonList(maybeList);
+              Logger.info('🎯 [$requestId] Envelope List Parsed Successfully');
+              return ApiResponse.success(data);
+            }
+          }
+          if (fromJson != null) {
+            final data = fromJson(decoded);
+            Logger.info('🎯 [$requestId] Object Parsed Successfully');
+            return ApiResponse.success(data);
+          }
+          Logger.info('🎯 [$requestId] Raw JSON Object Returned');
+          return ApiResponse.success(decoded as T);
         } else {
-          Logger.info('🎯 [$requestId] Raw JSON Returned');
-          return ApiResponse.success(jsonData as T);
+          Logger.warning(
+            '⚠️ [$requestId] Unexpected JSON type: ${decoded.runtimeType}',
+          );
+          return ApiResponse.error('Unexpected response type');
         }
       } catch (e, stackTrace) {
         Logger.error(
@@ -397,6 +432,14 @@ class ApiClient {
           'ApiClient',
           e,
           stackTrace,
+        );
+        final ctx = navigatorKey.currentContext;
+        final loc = ctx != null ? AppLocalizations.of(ctx) : null;
+        _showGlobalError(
+          title: loc?.translate('common.error') ?? 'Error',
+          message:
+              loc?.translate('messages.unexpectedError') ?? 'Unexpected error',
+          details: 'Request: $requestId\n${response.body}',
         );
         return ApiResponse.error('Failed to parse response');
       }
@@ -426,13 +469,58 @@ class ApiClient {
         }
 
         Logger.error('❌ [$requestId] Error Message: $message');
+        if (response.statusCode != 401) {
+          final ctx = navigatorKey.currentContext;
+          final loc = ctx != null ? AppLocalizations.of(ctx) : null;
+          _showGlobalError(
+            title: loc?.translate('common.error') ?? 'Error',
+            message: message,
+            details:
+                'HTTP ${response.statusCode}: ${_truncateLog(response.body, 1000)}',
+          );
+        }
         return ApiResponse.error(message);
       } catch (e) {
         final errorMessage =
             'HTTP ${response.statusCode}: ${response.reasonPhrase}';
         Logger.error('❌ [$requestId] Error: $errorMessage');
+        if (response.statusCode != 401) {
+          final ctx = navigatorKey.currentContext;
+          final loc = ctx != null ? AppLocalizations.of(ctx) : null;
+          _showGlobalError(
+            title: loc?.translate('common.error') ?? 'Error',
+            message: errorMessage,
+            details:
+                'HTTP ${response.statusCode}: ${_truncateLog(response.body, 1000)}',
+          );
+        }
         return ApiResponse.error(errorMessage);
       }
+    }
+  }
+
+  void _showGlobalError({
+    required String title,
+    required String message,
+    String? details,
+  }) async {
+    if (_isShowingErrorDialog) return;
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null) return;
+    _isShowingErrorDialog = true;
+    try {
+      await showErrorModal(
+        ctx,
+        title: title,
+        message: message,
+        details: details,
+        onMore: null,
+        onClose: () {},
+      );
+    } catch (e) {
+      Logger.error('❌ ApiClient: Failed to show error dialog', 'ApiClient', e);
+    } finally {
+      _isShowingErrorDialog = false;
     }
   }
 

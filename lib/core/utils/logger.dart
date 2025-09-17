@@ -1,5 +1,4 @@
 import 'dart:developer' as developer;
-import 'dart:io';
 
 class Logger {
   static const String _tag = 'TaskManager';
@@ -62,7 +61,7 @@ class Logger {
 
     // Use both print and developer.log for maximum visibility
     print(logMessage);
-    
+
     switch (level) {
       case _levelInfo:
         developer.log(logMessage, name: tag, level: 800);

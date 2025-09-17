@@ -10,6 +10,7 @@ import 'core/localization/app_localizations.dart';
 import 'core/utils/logger.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/firebase_provider.dart';
+import 'presentation/providers/projects_provider.dart';
 import 'presentation/widgets/app_root.dart';
 import 'core/utils/navigation_service.dart';
 
@@ -35,6 +36,7 @@ void main() async {
   final localizationService = LocalizationService();
   final authProvider = AuthProvider();
   final firebaseProvider = FirebaseProvider();
+  final projectsProvider = ProjectsProvider();
 
   Logger.info('⚙️ Initializing basic services...');
   await themeService.initialize();
@@ -52,6 +54,7 @@ void main() async {
         ChangeNotifierProvider.value(value: localizationService),
         ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider.value(value: firebaseProvider),
+        ChangeNotifierProvider.value(value: projectsProvider),
       ],
       child:
           Consumer4<

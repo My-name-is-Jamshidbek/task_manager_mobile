@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../utils/logger.dart';
 import '../utils/navigation_service.dart';
 import '../api/api_client.dart';
 import '../localization/app_localizations.dart';
 import '../../presentation/providers/auth_provider.dart';
-import '../../presentation/screens/auth/login_screen.dart';
+import 'package:provider/provider.dart';
+import '../../presentation/widgets/app_root.dart';
 
 /// Service to handle automatic logout and navigation when authentication fails
 class AuthenticationManager {
@@ -55,23 +55,11 @@ class AuthenticationManager {
       Logger.info('🔓 AuthenticationManager: Performing logout...');
       await authProvider.logout();
 
-      // Navigate to login screen and clear all previous routes
-      Logger.info('🔄 AuthenticationManager: Navigating to login screen...');
-
-      if (navigatorKey.currentState != null) {
-        navigatorKey.currentState!.pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => LoginScreen(
-              onAuthSuccess: () {
-                // After successful login, we don't need to navigate anywhere
-                // The AppRoot will handle the state change and show the appropriate screen
-                Logger.info('✅ AuthenticationManager: Login successful');
-              },
-            ),
-          ),
-          (route) => false, // Remove all previous routes
-        );
-      }
+      // Transition via AppRoot state machine for consistency
+      Logger.info(
+        '🔄 AuthenticationManager: Setting unauthenticated in AppRoot',
+      );
+      AppRootController.setUnauthenticated();
 
       // Show a snackbar to inform the user
       _showAuthFailureMessage(context);

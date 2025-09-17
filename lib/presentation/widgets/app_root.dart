@@ -64,6 +64,20 @@ class AppRootController {
     if (state == null) return;
     await state._initializeApp();
   }
+
+  /// Force app to show login screen (used on 401 auto logout)
+  static void setUnauthenticated() {
+    final state = key.currentState;
+    if (state == null) return;
+    state._forceUnauthenticated();
+  }
+
+  /// Force app to show main screen (rarely used; normally done via onAuthSuccess)
+  static void setAuthenticated() {
+    final state = key.currentState;
+    if (state == null) return;
+    state._forceAuthenticated();
+  }
 }
 
 /// Root widget that manages app-wide state and routing based on AppManager
@@ -85,6 +99,27 @@ class _AppRootState extends State<AppRoot> {
   void initState() {
     super.initState();
     _initializeApp();
+  }
+
+  // Force transition helpers (public via AppRootController)
+  void _forceUnauthenticated() {
+    Logger.info('🚫 AppRoot: Forcing unauthenticated state');
+    if (mounted) {
+      setState(() {
+        _currentState = AppState.unauthenticated;
+        _isInitializing = false;
+      });
+    }
+  }
+
+  void _forceAuthenticated() {
+    Logger.info('🔓 AppRoot: Forcing authenticated state');
+    if (mounted) {
+      setState(() {
+        _currentState = AppState.authenticated;
+        _isInitializing = false;
+      });
+    }
   }
 
   /// Initialize the app and determine initial state

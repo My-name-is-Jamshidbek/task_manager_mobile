@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../widgets/platform_version_widget.dart';
 // ...existing imports...
@@ -46,7 +45,7 @@ class _LoadingScreenState extends State<LoadingScreen>
     _fadeController.repeat(reverse: true);
     _pulseController.repeat(reverse: true);
 
-  // ...existing code... (no FCM registration here)
+    // ...existing code... (no FCM registration here)
   }
 
   @override
