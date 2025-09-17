@@ -9,6 +9,8 @@ class Project {
   final TaskStats? taskStats;
   final List<FileAttachment> files;
   final DateTime createdAt;
+  final int? status; // 1=active,2=completed,3=expired,4=rejected
+  final String? statusLabel; // optional label from API
 
   const Project({
     required this.id,
@@ -18,6 +20,8 @@ class Project {
     required this.taskStats,
     required this.files,
     required this.createdAt,
+    required this.status,
+    required this.statusLabel,
   });
 
   factory Project.fromJson(Map<String, dynamic> json) {
@@ -33,6 +37,8 @@ class Project {
           .map((e) => FileAttachment.fromJson(e as Map<String, dynamic>))
           .toList(),
       createdAt: _parseDateTime(json['created_at']),
+      status: (json['status'] as num?)?.toInt(),
+      statusLabel: json['status_label'] as String?,
     );
   }
 }

@@ -32,6 +32,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       p.status = _status; // align provider with UI default (active)
       p.refresh();
     });
+    // Rebuild to show/hide clear icon in search field
+    _searchController.addListener(() => setState(() {}));
     _scrollController.addListener(_onScroll);
   }
 
@@ -479,14 +481,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.blue,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                  _buildAvatar(project.creator.avatarUrl, project.creator.name),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -494,22 +489,74 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Icon(
-                    Icons.more_vert,
-                    color: theme.colorScheme.onSurfaceVariant,
+                  if (project.status != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4.0),
+                      child: _buildStatusChip(context, project, loc),
+                    ),
+                  IconButton(
+                    tooltip: loc.translate('common.more'),
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    onPressed: () {
+                      // TODO: Show project actions bottom sheet
+                    },
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                project.description ?? '',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+              // Friendly compact info pills
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildInfoPill(
+                    context,
+                    icon: Icons.person,
+                    label: project.creator.name,
+                  ),
+                  _buildInfoPill(
+                    context,
+                    icon: Icons.calendar_today,
+                    label: _formatDate(project.createdAt),
+                  ),
+                  if ((project.files).isNotEmpty)
+                    _buildInfoPill(
+                      context,
+                      icon: Icons.attach_file,
+                      label: '${project.files.length}',
+                    ),
+                  _buildInfoPill(
+                    context,
+                    icon: Icons.checklist,
+                    label: '${project.taskStats?.total ?? 0}',
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              if ((project.description ?? '').trim().isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Divider(
+                  height: 1,
+                  thickness: 0.75,
+                  color: theme.colorScheme.outlineVariant,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  project.description ?? '',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -562,6 +609,128 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoPill(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar(String? avatarUrl, String name) {
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      return CircleAvatar(
+        radius: 12,
+        backgroundImage: NetworkImage(avatarUrl),
+        backgroundColor: Colors.transparent,
+      );
+    }
+    final initials = _initials(name);
+    return CircleAvatar(
+      radius: 12,
+      child: Text(
+        initials,
+        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r"\s+"));
+    if (parts.isEmpty) return '';
+    if (parts.length == 1) {
+      return parts.first.substring(0, 1).toUpperCase();
+    }
+    final first = parts.first.substring(0, 1).toUpperCase();
+    final last = parts.last.substring(0, 1).toUpperCase();
+    return '$first$last';
+  }
+
+  String _formatDate(DateTime dt) {
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildStatusChip(
+    BuildContext context,
+    Project project,
+    AppLocalizations loc,
+  ) {
+    final theme = Theme.of(context);
+    final int code = project.status ?? 0;
+    // Map numeric status to label and color. 1=active,2=completed,3=expired,4=rejected
+    late final String label;
+    late final Color color;
+    switch (code) {
+      case 1:
+        label = project.statusLabel ?? loc.translate('projects.status.active');
+        color = Colors.blue;
+        break;
+      case 2:
+        label =
+            project.statusLabel ?? loc.translate('projects.status.completed');
+        color = Colors.green;
+        break;
+      case 3:
+        label = project.statusLabel ?? loc.translate('projects.status.expired');
+        color = Colors.orange;
+        break;
+      case 4:
+        label =
+            project.statusLabel ?? loc.translate('projects.status.rejected');
+        color = Colors.red;
+        break;
+      default:
+        label = project.statusLabel ?? loc.translate('projects.status.all');
+        color = theme.colorScheme.outline;
+    }
+
+    final bg = color.withOpacity(0.12);
+    final fg = color; // keep colored text for emphasis
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.circle, size: 8, color: fg),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: fg,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
