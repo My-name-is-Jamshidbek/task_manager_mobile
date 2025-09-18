@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../providers/projects_provider.dart';
 import '../../../data/models/project_models.dart';
@@ -505,7 +507,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                     onPressed: () {
-                      // TODO: Show project actions bottom sheet
+                      _showProjectActionsSheet(context, project, loc);
                     },
                   ),
                 ],
@@ -531,6 +533,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       context,
                       icon: Icons.attach_file,
                       label: '${project.files.length}',
+                      onTap: () => _showFilesSheet(context, project),
                     ),
                   _buildInfoPill(
                     context,
@@ -617,27 +620,38 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     BuildContext context, {
     required IconData icon,
     required String label,
+    VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
-    return Container(
+    final content = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+    final pill = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-        ],
+      child: content,
+    );
+    if (onTap == null) return pill;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: onTap,
+        child: pill,
       ),
     );
   }
@@ -711,6 +725,23 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
     final bg = color.withOpacity(0.12);
     final fg = color; // keep colored text for emphasis
+    final IconData statusIcon;
+    switch (code) {
+      case 1:
+        statusIcon = Icons.play_circle_fill;
+        break;
+      case 2:
+        statusIcon = Icons.check_circle;
+        break;
+      case 3:
+        statusIcon = Icons.timer;
+        break;
+      case 4:
+        statusIcon = Icons.cancel;
+        break;
+      default:
+        statusIcon = Icons.info_outline;
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -721,7 +752,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.circle, size: 8, color: fg),
+          Icon(statusIcon, size: 14, color: fg),
           const SizedBox(width: 6),
           Text(
             label,
@@ -733,5 +764,150 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         ],
       ),
     );
+  }
+
+  void _showProjectActionsSheet(
+    BuildContext context,
+    Project project,
+    AppLocalizations loc,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: Text(loc.translate('common.edit')),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  // TODO: Navigate to edit screen
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share),
+                title: Text(loc.translate('common.share')),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _shareProject(project);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: Text(loc.translate('common.delete')),
+                textColor: Theme.of(context).colorScheme.error,
+                iconColor: Theme.of(context).colorScheme.error,
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _confirmDelete(context, project, loc);
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showFilesSheet(BuildContext context, Project project) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        if (project.files.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return SafeArea(
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemBuilder: (context, index) {
+              final f = project.files[index];
+              return ListTile(
+                leading: const Icon(Icons.insert_drive_file),
+                title: Text(
+                  f.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  f.url,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onTap: () {
+                  _openUrl(f.url);
+                },
+              );
+            },
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemCount: project.files.length,
+          ),
+        );
+      },
+    );
+  }
+
+  void _shareProject(Project project) {
+    final text = '📁 ${project.name}\n${project.description ?? ''}'.trim();
+    Share.share(text);
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    Project project,
+    AppLocalizations loc,
+  ) async {
+    final theme = Theme.of(context);
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.translate('common.delete')),
+        content: Text(loc.translate('common.confirmDelete')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(loc.translate('common.cancel')),
+          ),
+          FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              foregroundColor: theme.colorScheme.onErrorContainer,
+              backgroundColor: theme.colorScheme.errorContainer,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(loc.translate('common.delete')),
+          ),
+        ],
+      ),
+    );
+    if (result == true) {
+      // TODO: Call provider/remote to delete, then refresh list
+      // context.read<ProjectsProvider>().deleteProject(project.id);
+    }
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      // Could not launch, optionally show a snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Could not open link')));
+      }
+    }
   }
 }
