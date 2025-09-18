@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:curved_labeled_navigation_bar/curved_navigation_bar.dart';
+import 'package:curved_labeled_navigation_bar/curved_navigation_bar_item.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../widgets/language_selector.dart';
 import '../../widgets/theme_settings_sheet.dart';
@@ -70,7 +72,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
       drawer: _buildDrawer(context, loc, theme),
       body: IndexedStack(index: _currentIndex, children: _screens),
-      bottomNavigationBar: _buildBottomNavigationBar(loc, theme),
+      bottomNavigationBar: _buildCurvedNavBar(loc, theme),
     );
   }
 
@@ -89,35 +91,64 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  Widget _buildBottomNavigationBar(AppLocalizations loc, ThemeData theme) {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      currentIndex: _currentIndex,
-      onTap: _onTabTapped,
-      selectedItemColor: theme.colorScheme.primary,
-      unselectedItemColor: theme.colorScheme.onSurfaceVariant,
-      items: [
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.home_outlined),
-          activeIcon: const Icon(Icons.home),
-          label: loc.translate('navigation.home'),
-        ),
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.task_outlined),
-          activeIcon: const Icon(Icons.task),
-          label: loc.translate('navigation.tasks'),
-        ),
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.folder_outlined),
-          activeIcon: const Icon(Icons.folder),
-          label: loc.translate('navigation.projects'),
-        ),
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.person_outline),
-          activeIcon: const Icon(Icons.person),
-          label: loc.translate('navigation.profile'),
-        ),
-      ],
+  Widget _buildCurvedNavBar(AppLocalizations loc, ThemeData theme) {
+    final baseColor = theme.colorScheme.surface;
+    final activeColor = theme.colorScheme.primary;
+    final labelStyle = theme.textTheme.labelSmall;
+    return Theme(
+      // Ensure icons/text use proper contrast inside nav bar
+      data: theme.copyWith(iconTheme: IconThemeData(color: activeColor)),
+      child: CurvedNavigationBar(
+        index: _currentIndex,
+        onTap: _onTabTapped,
+        backgroundColor: Colors.transparent,
+        color: baseColor,
+        buttonBackgroundColor: activeColor,
+        animationCurve: Curves.easeOutCubic,
+        animationDuration: const Duration(milliseconds: 360),
+        items: [
+          CurvedNavigationBarItem(
+            child: Icon(
+              _currentIndex == 0 ? Icons.home : Icons.home_outlined,
+              color: _currentIndex == 0
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+            label: loc.translate('navigation.home'),
+            labelStyle: labelStyle,
+          ),
+          CurvedNavigationBarItem(
+            child: Icon(
+              _currentIndex == 1 ? Icons.task : Icons.task_outlined,
+              color: _currentIndex == 1
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+            label: loc.translate('navigation.tasks'),
+            labelStyle: labelStyle,
+          ),
+          CurvedNavigationBarItem(
+            child: Icon(
+              _currentIndex == 2 ? Icons.folder : Icons.folder_outlined,
+              color: _currentIndex == 2
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+            label: loc.translate('navigation.projects'),
+            labelStyle: labelStyle,
+          ),
+          CurvedNavigationBarItem(
+            child: Icon(
+              _currentIndex == 3 ? Icons.person : Icons.person_outline,
+              color: _currentIndex == 3
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+            label: loc.translate('navigation.profile'),
+            labelStyle: labelStyle,
+          ),
+        ],
+      ),
     );
   }
 

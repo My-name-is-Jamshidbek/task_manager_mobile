@@ -6,7 +6,6 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-// import 'demo/coreui_demo_app.dart';
 import 'core/theme/theme_service.dart';
 import 'core/localization/localization_service.dart';
 import 'core/localization/app_localizations.dart';

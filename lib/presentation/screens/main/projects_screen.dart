@@ -35,7 +35,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       final p = context.read<ProjectsProvider>();
       p.perPage = _pageSize;
       p.status = _status; // align provider with UI default (active)
-      p.refresh();
+      // Skip refresh if prefetch already populated list
+      if (p.projects.isEmpty) {
+        p.refresh();
+      }
     });
     // Rebuild to show/hide clear icon in search field
     _searchController.addListener(() => setState(() {}));

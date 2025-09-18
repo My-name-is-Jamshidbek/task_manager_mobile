@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/app_localizations.dart';
-import '../../widgets/platform_version_widget.dart';
+// Removed platform version display for cleaner minimal loading UI
+import '../../widgets/animated_fade_lottie_loader.dart';
 // ...existing imports...
 
-/// Loading screen shown during app initialization
+/// Minimal loading screen with a whole-screen fade-in (and graceful fade-out when disposed)
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
 
@@ -12,188 +13,74 @@ class LoadingScreen extends StatefulWidget {
 }
 
 class _LoadingScreenState extends State<LoadingScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late AnimationController _pulseController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _pulseAnimation;
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 360),
+  );
+
+  late final Animation<double> _opacity = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
+
+  bool _fadingOut = false;
 
   @override
   void initState() {
     super.initState();
+    // Start fade in on next frame to avoid build jank.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _controller.forward());
+  }
 
-    // Set up fade animation for loading text
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
+  // Try to catch removal from tree to animate out.
+  @override
+  void deactivate() {
+    // If we're still mounted and not already fading out, start reverse.
+    if (!_fadingOut && _controller.isCompleted) {
+      _fadingOut = true;
+      _controller.reverse();
+    }
+    super.deactivate();
+  }
 
-    _fadeAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
-    );
-
-    // Set up subtle pulse animation for logo
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    );
-
-    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-
-    _fadeController.repeat(reverse: true);
-    _pulseController.repeat(reverse: true);
-
-    // ...existing code... (no FCM registration here)
+  // Optionally expose a static method to trigger fade out before navigation if needed later.
+  Future<void> fadeOutIfMounted({Duration? duration}) async {
+    if (!mounted || _fadingOut) return;
+    _fadingOut = true;
+    if (duration != null) _controller.duration = duration;
+    await _controller.reverse();
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
-    _pulseController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Keep localization reference (unused now) for future micro-copy
+    // ignore: unused_local_variable
     final loc = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Softly animated App Logo (pulse effect)
-              AnimatedBuilder(
-                animation: _pulseAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _pulseAnimation.value,
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.1),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.task_alt,
-                        size: 64,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 32),
-
-              // App Name
-              Text(
-                loc.translate('app.title'),
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 48),
-
-              // Loading Indicator with enhanced animation
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Outer circle
-                  SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        theme.colorScheme.primary.withOpacity(0.3),
-                      ),
-                    ),
-                  ),
-                  // Inner circle
-                  SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // Animated Loading Text
-              AnimatedBuilder(
-                animation: _fadeAnimation,
-                builder: (context, child) {
-                  return Opacity(
-                    opacity: _fadeAnimation.value,
-                    child: Text(
-                      loc.translate('common.loading'),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 24),
-
-              // Loading progress dots
-              AnimatedBuilder(
-                animation: _fadeController,
-                builder: (context, child) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(3, (index) {
-                      final delay = index * 0.3;
-                      final progress = (_fadeController.value + delay) % 1.0;
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withOpacity(
-                            0.3 + (progress * 0.7),
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                      );
-                    }),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 80),
-
-              // Platform-specific Version Info
-              FullPlatformVersion(
-                textStyle: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.5),
-                ),
-              ),
-            ],
+      body: AnimatedBuilder(
+        animation: _opacity,
+        builder: (context, child) =>
+            Opacity(opacity: _opacity.value, child: child),
+        child: SafeArea(
+          child: Center(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final shortestSide = MediaQuery.of(context).size.shortestSide;
+                final double size = (shortestSide * 0.42).clamp(180, 260);
+                return AnimatedFadeLottieLoader(visible: true, size: size);
+              },
+            ),
           ),
         ),
       ),

@@ -8,6 +8,8 @@ import '../../core/localization/app_localizations.dart';
 import '../../core/services/authentication_manager.dart';
 import '../../core/services/update_service.dart';
 import '../providers/auth_provider.dart';
+import '../providers/projects_provider.dart';
+import '../providers/tasks_api_provider.dart';
 import '../screens/loading/loading_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/main/main_screen.dart';
@@ -170,11 +172,37 @@ class _AppRootState extends State<AppRoot> {
         return;
       }
 
-      // If user is authenticated, load their profile data
+      // If user is authenticated, load their profile data + prefetch domain lists
       if (state == AppState.authenticated && authProvider.isLoggedIn) {
         Logger.info('👤 AppRoot: Loading user profile data');
         await authProvider.loadUserProfile();
         Logger.info('✅ AppRoot: User profile data loaded');
+
+        try {
+          // Prefetch tasks & projects in parallel so main screen shows ready content
+          final projectsProvider = Provider.of<ProjectsProvider>(
+            context,
+            listen: false,
+          );
+          final tasksProvider = Provider.of<TasksApiProvider>(
+            context,
+            listen: false,
+          );
+
+          Logger.info('🚀 AppRoot: Prefetching projects & tasks');
+          await Future.wait([
+            projectsProvider.projects.isEmpty
+                ? projectsProvider.fetchProjects()
+                : Future.value(),
+            tasksProvider.tasks.isEmpty
+                ? tasksProvider.fetchTasks()
+                : Future.value(),
+          ]);
+          Logger.info('✅ AppRoot: Prefetch complete');
+        } catch (e, st) {
+          Logger.warning('⚠️ AppRoot: Prefetch failed: $e');
+          Logger.debug(st.toString());
+        }
       }
 
       // Check for app updates after initialization

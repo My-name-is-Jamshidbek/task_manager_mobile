@@ -39,7 +39,9 @@ class _TasksScreenState extends State<TasksScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<TasksApiProvider>();
       provider.perPage = 10;
-      provider.refresh();
+      if (provider.tasks.isEmpty) {
+        provider.refresh();
+      }
     });
     _scrollController.addListener(_onScroll);
   }
