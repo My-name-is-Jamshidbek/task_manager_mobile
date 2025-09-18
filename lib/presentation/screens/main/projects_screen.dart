@@ -6,6 +6,9 @@ import '../../../core/localization/app_localizations.dart';
 import '../../providers/projects_provider.dart';
 import '../../../data/models/project_models.dart';
 import 'dart:async';
+import '../projects/project_detail_screen.dart';
+import '../../providers/project_detail_provider.dart';
+import '../../widgets/project_widgets.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -473,7 +476,15 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
-          // TODO: Navigate to project detail
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (ctx) => ChangeNotifierProvider(
+                create: (_) =>
+                    ProjectDetailProvider(initial: project)..load(project.id),
+                child: ProjectDetailScreen(projectId: project.id),
+              ),
+            ),
+          );
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -495,11 +506,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (project.status != null) const SizedBox(width: 4),
                   if (project.status != null)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4.0),
-                      child: _buildStatusChip(context, project, loc),
-                    ),
+                    ProjectStatusChip(project: project),
                   IconButton(
                     tooltip: loc.translate('common.more'),
                     icon: Icon(
@@ -518,25 +527,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _buildInfoPill(
-                    context,
-                    icon: Icons.person,
-                    label: project.creator.name,
-                  ),
-                  _buildInfoPill(
-                    context,
+                  InfoPill(icon: Icons.person, label: project.creator.name),
+                  InfoPill(
                     icon: Icons.calendar_today,
                     label: _formatDate(project.createdAt),
                   ),
-                  if ((project.files).isNotEmpty)
-                    _buildInfoPill(
-                      context,
+                  if (project.files.isNotEmpty)
+                    InfoPill(
                       icon: Icons.attach_file,
                       label: '${project.files.length}',
                       onTap: () => _showFilesSheet(context, project),
                     ),
-                  _buildInfoPill(
-                    context,
+                  InfoPill(
                     icon: Icons.checklist,
                     label: '${project.taskStats?.total ?? 0}',
                   ),
@@ -616,46 +618,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
   }
 
-  Widget _buildInfoPill(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    VoidCallback? onTap,
-  }) {
-    final theme = Theme.of(context);
-    final content = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-      ],
-    );
-    final pill = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: content,
-    );
-    if (onTap == null) return pill;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: onTap,
-        child: pill,
-      ),
-    );
-  }
-
   Widget _buildAvatar(String? avatarUrl, String name) {
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
       return CircleAvatar(
@@ -689,82 +651,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildStatusChip(
-    BuildContext context,
-    Project project,
-    AppLocalizations loc,
-  ) {
-    final theme = Theme.of(context);
-    final int code = project.status ?? 0;
-    // Map numeric status to label and color. 1=active,2=completed,3=expired,4=rejected
-    late final String label;
-    late final Color color;
-    switch (code) {
-      case 1:
-        label = project.statusLabel ?? loc.translate('projects.status.active');
-        color = Colors.blue;
-        break;
-      case 2:
-        label =
-            project.statusLabel ?? loc.translate('projects.status.completed');
-        color = Colors.green;
-        break;
-      case 3:
-        label = project.statusLabel ?? loc.translate('projects.status.expired');
-        color = Colors.orange;
-        break;
-      case 4:
-        label =
-            project.statusLabel ?? loc.translate('projects.status.rejected');
-        color = Colors.red;
-        break;
-      default:
-        label = project.statusLabel ?? loc.translate('projects.status.all');
-        color = theme.colorScheme.outline;
-    }
-
-    final bg = color.withOpacity(0.12);
-    final fg = color; // keep colored text for emphasis
-    final IconData statusIcon;
-    switch (code) {
-      case 1:
-        statusIcon = Icons.play_circle_fill;
-        break;
-      case 2:
-        statusIcon = Icons.check_circle;
-        break;
-      case 3:
-        statusIcon = Icons.timer;
-        break;
-      case 4:
-        statusIcon = Icons.cancel;
-        break;
-      default:
-        statusIcon = Icons.info_outline;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(statusIcon, size: 14, color: fg),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: fg,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // _buildInfoPill and _buildStatusChip removed in favor of shared widgets (InfoPill, ProjectStatusChip)
 
   void _showProjectActionsSheet(
     BuildContext context,
@@ -904,9 +791,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       // Could not launch, optionally show a snackbar
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Could not open link')));
+        final loc = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.translate('errors.cannotOpenLink'))),
+        );
       }
     }
   }

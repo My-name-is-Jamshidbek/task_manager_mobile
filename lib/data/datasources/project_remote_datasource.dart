@@ -35,4 +35,20 @@ class ProjectRemoteDataSource {
       },
     );
   }
+
+  Future<ApiResponse<Project>> getProject(int id) async {
+    return _apiClient.get<Project>(
+      '${ApiConstants.projects}/$id',
+      fromJson: (obj) {
+        // obj is Map<String,dynamic> per ApiClient contract
+        if (obj['data'] is Map<String, dynamic>) {
+          return Project.fromJson(obj['data'] as Map<String, dynamic>);
+        }
+        if (obj['id'] != null) {
+          return Project.fromJson(obj);
+        }
+        throw Exception('Invalid project response structure');
+      },
+    );
+  }
 }

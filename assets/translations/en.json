@@ -356,6 +356,9 @@
     "more": "More",
     "details": "Details"
   },
+  "errors": {
+    "cannotOpenLink": "Could not open link"
+  },
   "validation": {
     "required": "This field is required",
     "emailInvalid": "Please enter a valid email",
