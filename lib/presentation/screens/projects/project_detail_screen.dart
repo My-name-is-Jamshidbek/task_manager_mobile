@@ -151,8 +151,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   Widget _description(Project project, ThemeData theme) {
-    if ((project.description ?? '').trim().isEmpty)
+    if ((project.description ?? '').trim().isEmpty) {
       return const SizedBox.shrink();
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

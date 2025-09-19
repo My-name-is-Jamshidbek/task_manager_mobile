@@ -7,6 +7,7 @@ import '../../providers/projects_provider.dart';
 import '../../../data/models/project_models.dart';
 import 'dart:async';
 import '../projects/project_detail_screen.dart';
+import '../projects/create_project_screen.dart';
 import '../../providers/project_detail_provider.dart';
 import '../../widgets/project_widgets.dart';
 
@@ -315,6 +316,20 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           : _searchController.text.trim(),
                     );
                   },
+          ),
+          const SizedBox(width: 8),
+          FilledButton.icon(
+            icon: const Icon(Icons.add),
+            label: Text(loc.translate('projects.createShort')),
+            onPressed: () async {
+              final ctx = context;
+              await Navigator.of(ctx).push(
+                MaterialPageRoute(builder: (_) => const CreateProjectScreen()),
+              );
+              if (!ctx.mounted) return;
+              // On return, refresh projects list to include the new one
+              ctx.read<ProjectsProvider>().refresh();
+            },
           ),
         ],
       ),
