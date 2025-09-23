@@ -1,3 +1,5 @@
+import 'project_models.dart';
+
 class ApiTaskStatusRef {
   final int id;
   final String? label;
@@ -33,6 +35,17 @@ class ApiUserRef {
   );
 }
 
+class ApiTimeProgress {
+  final String id;
+  final String? label;
+  const ApiTimeProgress({required this.id, this.label});
+  factory ApiTimeProgress.fromJson(Map<String, dynamic> json) =>
+      ApiTimeProgress(
+        id: json['id']?.toString() ?? '',
+        label: json['label'] as String?,
+      );
+}
+
 class ApiProjectRef {
   final int id;
   final String name;
@@ -64,6 +77,9 @@ class ApiTask {
   final ApiTaskTypeRef? taskType;
   final ApiProjectRef? project;
   final ApiUserRef? creator;
+  final ApiTimeProgress? timeProgress;
+  final List<ApiUserRef> workers;
+  final List<FileAttachment> files;
   const ApiTask({
     required this.id,
     required this.name,
@@ -73,6 +89,9 @@ class ApiTask {
     this.taskType,
     this.project,
     this.creator,
+    this.timeProgress,
+    this.workers = const [],
+    this.files = const [],
   });
 
   factory ApiTask.fromJson(Map<String, dynamic> json) => ApiTask(
@@ -94,5 +113,18 @@ class ApiTask {
     creator: json['creator'] is Map<String, dynamic>
         ? ApiUserRef.fromJson(json['creator'] as Map<String, dynamic>)
         : null,
+    timeProgress: json['time_progress'] is Map<String, dynamic>
+        ? ApiTimeProgress.fromJson(
+            json['time_progress'] as Map<String, dynamic>,
+          )
+        : null,
+    workers: (json['workers'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ApiUserRef.fromJson)
+        .toList(),
+    files: (json['files'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(FileAttachment.fromJson)
+        .toList(),
   );
 }

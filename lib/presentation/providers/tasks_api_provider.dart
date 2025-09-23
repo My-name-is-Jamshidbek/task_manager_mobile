@@ -16,6 +16,7 @@ class TasksApiProvider extends ChangeNotifier {
   String? filter; // created_by_me | assigned_to_me
   String? name; // search text
   int? status; // status id
+  int? projectId; // project filter
 
   TasksApiProvider({TasksApiRemoteDataSource? remote})
     : _remote = remote ?? TasksApiRemoteDataSource();
@@ -31,6 +32,7 @@ class TasksApiProvider extends ChangeNotifier {
     String? filter,
     String? name,
     int? status,
+    int? projectId,
   }) async {
     if (_loading) return;
     _loading = true;
@@ -42,6 +44,7 @@ class TasksApiProvider extends ChangeNotifier {
     final effectiveFilter = filter ?? this.filter;
     final effectiveName = name ?? this.name;
     final effectiveStatus = status ?? this.status;
+    final effectiveProjectId = projectId ?? this.projectId;
 
     final res = await _remote.getTasks(
       perPage: effectivePerPage,
@@ -49,6 +52,7 @@ class TasksApiProvider extends ChangeNotifier {
       filter: effectiveFilter,
       name: effectiveName,
       status: effectiveStatus,
+      projectId: effectiveProjectId,
     );
 
     if (res.isSuccess) {

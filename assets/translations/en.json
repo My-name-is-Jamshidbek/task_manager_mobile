@@ -1,4 +1,18 @@
 {
+  "attachments": "Attachments",
+  "noAttachments": "No attachments",
+  "addFile": "Add File",
+  "deleteFile": "Delete File",
+  "viewFile": "View File",
+  "deleteFileTitle": "Delete File",
+  "deleteFileConfirmation": "Are you sure you want to delete this file?",
+  "couldNotOpenFile": "Could not open file",
+  "unknownFile": "Unknown File",
+  "image": "Image",
+  "wordDocument": "Word Document",
+  "excelDocument": "Excel Document",
+  "textFile": "Text File",
+  "file": "File",
   "app": {
     "title": "Task Manager",
     "version": "Version 1.0.0",
@@ -210,8 +224,13 @@
     "title": "Tasks",
     "searchHint": "Search tasks",
     "addTask": "Add Task",
+    "addTaskWithFiles": "Add Task with Files",
     "editTask": "Edit Task",
     "deleteTask": "Delete Task",
+    "details": "Task Details",
+    "meta": "Task Info",
+    "workers": "Assignees",
+    "files": "Files",
     "taskTitle": "Task Title",
     "taskDescription": "Task Description",
     "dueDate": "Due Date",
@@ -229,7 +248,11 @@
     "due": "Due",
     "sampleTaskTitle": "Complete the mobile app design",
     "sampleTaskDescription": "Design the main screens for the task manager application including login, dashboard, and task views.",
-    "sampleProjectName": "Mobile App"
+    "sampleProjectName": "Mobile App",
+    "toWhom": "Assign To (user IDs)",
+    "toWhomHelper": "Enter user IDs separated by comma, e.g., 10,22,35",
+    "fileIdsLabel": "File IDs (comma separated)",
+    "fileIdsHelper": "Enter uploaded file IDs separated by comma, e.g., 12,45,78"
   },
   "projects": {
     "title": "Projects",
@@ -363,7 +386,8 @@
     "details": "Details"
   },
   "errors": {
-    "cannotOpenLink": "Could not open link"
+    "cannotOpenLink": "Could not open link",
+    "unknown": "An unknown error occurred"
   },
   "validation": {
     "required": "This field is required",
@@ -371,7 +395,11 @@
     "passwordMinLength": "Password must be at least 6 characters",
     "passwordsNotMatch": "Passwords do not match",
     "passwordsDoNotMatch": "Passwords do not match",
-    "phoneInvalid": "Please enter a valid phone number"
+    "phoneInvalid": "Please enter a valid phone number",
+    "invalidDateTime": "Invalid date-time format",
+    "futureDateTime": "Please select a future date and time",
+    "projectRequired": "Project is required",
+    "deadlineRequired": "Deadline is required"
   },
   "messages": {
     "taskCreated": "Task created successfully",

@@ -6,6 +6,10 @@ import '../../../data/models/project_models.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../widgets/project_widgets.dart';
+import '../tasks/create_task_screen.dart';
+import '../../providers/tasks_api_provider.dart';
+// Removed direct task detail imports; navigation is handled by TaskListItem
+import '../../widgets/task_list_item.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final int projectId;
@@ -32,6 +36,29 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       appBar: AppBar(
         title: Text(loc.translate('common.details')),
         actions: [
+          Consumer<ProjectDetailProvider>(
+            builder: (context, provider, _) {
+              final project = provider.project;
+              if (project == null) return const SizedBox.shrink();
+              return IconButton(
+                tooltip: loc.translate('tasks.addTask'),
+                icon: const Icon(Icons.add_task),
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CreateTaskScreen(projectId: project.id),
+                    ),
+                  );
+                  if (!context.mounted) return;
+                  // After creating a task, reload project details and refresh tasks
+                  context.read<ProjectDetailProvider>().load(project.id);
+                  final tasksProvider = context.read<TasksApiProvider?>();
+                  tasksProvider?.projectId = project.id;
+                  await tasksProvider?.refresh();
+                },
+              );
+            },
+          ),
           Consumer<ProjectDetailProvider>(
             builder: (context, provider, _) {
               final project = provider.project;
@@ -78,20 +105,61 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             );
           }
           final project = provider.project!;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _header(context, project, theme, loc),
-                const SizedBox(height: 16),
-                _description(project, theme),
-                const SizedBox(height: 24),
-                _taskStats(project, theme, loc),
-                const SizedBox(height: 24),
-                _filesSection(project, theme, loc),
-                const SizedBox(height: 32),
-              ],
+          return ChangeNotifierProvider(
+            create: (_) => TasksApiProvider()
+              ..perPage = 10
+              ..projectId = project.id
+              ..refresh(),
+            child: Builder(
+              builder: (context) {
+                final tasksProvider = context.watch<TasksApiProvider>();
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    tasksProvider.projectId = project.id;
+                    await tasksProvider.refresh();
+                    // Optionally also refresh project details to update stats
+                    await context.read<ProjectDetailProvider>().load(
+                      project.id,
+                    );
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _header(context, project, theme, loc),
+                      const SizedBox(height: 16),
+                      _description(project, theme),
+                      const SizedBox(height: 24),
+                      _taskStats(project, theme, loc),
+                      const SizedBox(height: 24),
+                      _projectTasksSection(context, loc, theme, tasksProvider),
+                      const SizedBox(height: 24),
+                      _filesSection(project, theme, loc),
+                      const SizedBox(height: 32),
+                      if (tasksProvider.hasMore)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: ElevatedButton.icon(
+                              onPressed: tasksProvider.isLoading
+                                  ? null
+                                  : () => tasksProvider.loadMore(),
+                              icon: tasksProvider.isLoading
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.expand_more),
+                              label: Text(loc.translate('common.loadMore')),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
             ),
           );
         },
@@ -220,6 +288,97 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             );
           },
         ),
+      ],
+    );
+  }
+
+  Widget _projectTasksSection(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+    TasksApiProvider tasksProvider,
+  ) {
+    if (tasksProvider.isLoading && tasksProvider.tasks.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (tasksProvider.error != null && tasksProvider.tasks.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            loc.translate('projects.tasks'),
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 36,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(tasksProvider.error!, textAlign: TextAlign.center),
+                  const SizedBox(height: 8),
+                  FilledButton(
+                    onPressed: () => tasksProvider.refresh(),
+                    child: Text(loc.translate('common.retry')),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              loc.translate('projects.tasks'),
+              style: theme.textTheme.titleMedium,
+            ),
+            const Spacer(),
+            IconButton(
+              tooltip: loc.translate('common.refresh'),
+              onPressed: tasksProvider.isLoading
+                  ? null
+                  : () => tasksProvider.refresh(),
+              icon: tasksProvider.isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (tasksProvider.tasks.isEmpty)
+          Text(
+            loc.translate('tasks.noTasks'),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: tasksProvider.tasks.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final t = tasksProvider.tasks[index];
+              return TaskListItem(task: t);
+            },
+          ),
       ],
     );
   }

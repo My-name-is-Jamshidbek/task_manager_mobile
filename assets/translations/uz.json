@@ -1,4 +1,18 @@
 {
+  "attachments": "Ilovalar",
+  "noAttachments": "Ilovalar yo'q",
+  "addFile": "Fayl qo'shish",
+  "deleteFile": "Faylni o'chirish",
+  "viewFile": "Faylni ko'rish",
+  "deleteFileTitle": "Faylni o'chirish",
+  "deleteFileConfirmation": "Ushbu faylni o'chirishga ishonchingiz komilmi?",
+  "couldNotOpenFile": "Faylni ochib bo'lmadi",
+  "unknownFile": "Noma'lum fayl",
+  "image": "Rasm",
+  "wordDocument": "Word hujjati",
+  "excelDocument": "Excel hujjati",
+  "textFile": "Matn fayli",
+  "file": "Fayl",
   "app": {
     "title": "Vazifa Boshqaruvchisi",
     "version": "Versiya 1.0.0",
@@ -209,8 +223,13 @@
     "title": "Vazifalar",
     "searchHint": "Vazifalarni qidirish",
     "addTask": "Vazifa qo'shish",
+    "addTaskWithFiles": "Fayllar bilan vazifa qo'shish",
     "editTask": "Vazifani tahrirlash",
     "deleteTask": "Vazifani o'chirish",
+    "details": "Vazifa tafsilotlari",
+    "meta": "Vazifa ma'lumotlari",
+    "workers": "Ijrochilar",
+    "files": "Fayllar",
     "taskTitle": "Vazifa nomi",
     "taskDescription": "Vazifa tavsifi",
     "dueDate": "Oxirgi muddat",
@@ -228,7 +247,11 @@
     "due": "Muddati",
     "sampleTaskTitle": "Mobil ilovaning dizaynini yakunlash",
     "sampleTaskDescription": "Vazifa boshqaruvchi ilovasining asosiy ekranlarini loyihalash: kirish, boshqaruv paneli va vazifalar ko'rinishi.",
-    "sampleProjectName": "Mobil Ilova"
+    "sampleProjectName": "Mobil Ilova",
+    "toWhom": "Kimga biriktiriladi (foydalanuvchi IDlari)",
+    "toWhomHelper": "Foydalanuvchi ID-larini vergul bilan kiriting, masalan: 10,22,35",
+    "fileIdsLabel": "Fayl ID-lari (vergul bilan)",
+    "fileIdsHelper": "Yuklangan fayl ID-larini vergul bilan kiriting, masalan: 12,45,78"
   },
   "projects": {
     "title": "Loyihalar",
@@ -363,11 +386,19 @@
   },
   "validation": {
     "required": "Bu maydon talab qilinadi",
-    "emailInvalid": "To'g'ri elektron pochta manzilini kiriting",
-    "passwordMinLength": "Parol kamida 6 ta belgidan iborat bo'lishi kerak",
+    "emailInvalid": "Iltimos, to'g'ri elektron pochta kiriting",
+    "passwordMinLength": "Parol kamida 6 belgidan iborat bo'lishi kerak",
     "passwordsNotMatch": "Parollar mos kelmaydi",
     "passwordsDoNotMatch": "Parollar mos kelmaydi",
-    "phoneInvalid": "To'g'ri telefon raqamini kiriting"
+    "phoneInvalid": "Iltimos, to'g'ri telefon raqamini kiriting",
+    "invalidDateTime": "Sana-vaqt formati noto'g'ri",
+    "futureDateTime": "Iltimos, kelajakdagi sana va vaqtni tanlang",
+    "projectRequired": "Loyiha talab qilinadi",
+    "deadlineRequired": "Muddat talab qilinadi"
+  },
+  "errors": {
+    "cannotOpenLink": "Havolani ochib bo'lmadi",
+    "unknown": "Noma'lum xatolik yuz berdi"
   },
   "messages": {
     "taskCreated": "Vazifa muvaffaqiyatli yaratildi",

@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../providers/tasks_api_provider.dart';
 import '../../../data/models/api_task_models.dart';
+import '../tasks/task_detail_screen.dart';
+import '../../providers/task_detail_provider.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -376,7 +378,14 @@ class _TasksScreenState extends State<TasksScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
-          // TODO: Navigate to task detail
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ChangeNotifierProvider(
+                create: (_) => TaskDetailProvider(),
+                child: TaskDetailScreen(taskId: task.id),
+              ),
+            ),
+          );
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(

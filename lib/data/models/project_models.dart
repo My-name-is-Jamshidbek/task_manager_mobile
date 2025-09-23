@@ -93,7 +93,7 @@ class ByStatus {
   });
 
   factory ByStatus.fromJson(Map<String, dynamic> json) => ByStatus(
-    status: json['status'] as String,
+    status: (json['status'])?.toString() ?? '',
     label: json['label'] as String?,
     count: (json['count'] as num).toInt(),
   );
