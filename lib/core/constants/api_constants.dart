@@ -20,6 +20,12 @@ class ApiConstants {
   // Projects endpoints
   static const String projects = '/projects';
 
+  // Dashboard endpoints
+  static const String userStats = '/dashboard/user-stats';
+  static const String projectStatsByStatus =
+      '/dashboard/project-stats-by-status';
+  static const String taskStatsByStatus = '/dashboard/task-stats-by-status';
+
   // User endpoints
   static const String profile = '/profile';
   static const String updateProfile = '/profile/update-details';

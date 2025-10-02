@@ -8,6 +8,8 @@ import '../../widgets/logout_confirmation_dialog.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
 import '../debug/firebase_notification_debug_screen.dart';
+import '../../providers/dashboard_provider.dart';
+import '../theme_settings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final Future<void> Function()? onLogout;
@@ -22,6 +24,8 @@ class ProfileScreen extends StatelessWidget {
       onRefresh: () async {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final success = await authProvider.loadUserProfile();
+        // Also refresh stats
+        await Provider.of<DashboardProvider>(context, listen: false).refresh();
         if (!success && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -139,41 +143,156 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildStatsCards(BuildContext context, ThemeData theme) {
     final loc = AppLocalizations.of(context);
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            context,
-            icon: Icons.task_alt,
-            title: loc.translate('profile.completed'),
-            count: '45',
-            color: Colors.green,
-            theme: theme,
-          ),
+    return Consumer<DashboardProvider>(
+      builder: (context, provider, _) {
+        // Trigger initial load once when widget builds and no data yet
+        if (provider.stats == null && !provider.isLoading) {
+          // schedule microtask to avoid setState in build
+          Future.microtask(() => provider.fetchUserStats());
+        }
+
+        if (provider.isLoading && provider.stats == null) {
+          return Row(
+            children: [
+              Expanded(child: _buildLoadingStat(theme)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildLoadingStat(theme)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildLoadingStat(theme)),
+            ],
+          );
+        }
+
+        if (provider.error != null && provider.stats == null) {
+          return _buildErrorStats(context, theme, provider.error!, () {
+            provider.fetchUserStats();
+          });
+        }
+
+        final stats = provider.stats;
+        return Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                context,
+                icon: Icons.task_alt,
+                title: loc.translate('profile.completed'),
+                count: (stats?.completedTasksCount ?? 0).toString(),
+                color: Colors.green,
+                theme: theme,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                context,
+                icon: Icons.pending_actions,
+                title: loc.translate('profile.pending'),
+                count: (stats?.pendingTasksCount ?? 0).toString(),
+                color: Colors.orange,
+                theme: theme,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                context,
+                icon: Icons.folder,
+                title: loc.translate('profile.projects'),
+                count: (stats?.totalProjectsCount ?? 0).toString(),
+                color: Colors.blue,
+                theme: theme,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildLoadingStat(ThemeData theme) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: 22,
+              width: 40,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              height: 14,
+              width: 80,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            context,
-            icon: Icons.pending_actions,
-            title: loc.translate('profile.pending'),
-            count: '12',
-            color: Colors.orange,
-            theme: theme,
-          ),
+      ),
+    );
+  }
+
+  Widget _buildErrorStats(
+    BuildContext context,
+    ThemeData theme,
+    String message,
+    VoidCallback onRetry,
+  ) {
+    final loc = AppLocalizations.of(context);
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Icon(Icons.error_outline, color: theme.colorScheme.error),
+            const SizedBox(height: 8),
+            Text(
+              loc.translate('common.error'),
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.error,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              message,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: Text(loc.translate('common.retry')),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            context,
-            icon: Icons.folder,
-            title: loc.translate('profile.projects'),
-            count: '8',
-            color: Colors.blue,
-            theme: theme,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -287,7 +406,11 @@ class ProfileScreen extends StatelessWidget {
             icon: Icons.color_lens_outlined,
             title: loc.translate('settings.theme'),
             onTap: () {
-              // TODO: Navigate to theme settings
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ThemeSettingsScreen(),
+                ),
+              );
             },
             theme: theme,
           ),

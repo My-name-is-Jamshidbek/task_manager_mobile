@@ -345,6 +345,11 @@
     "completed": "Bajarilgan",
     "pending": "Kutilayotgan",
     "projects": "Loyihalar",
+    "stats": {
+      "completedTasks": "Bajarilgan vazifalar",
+      "pendingTasks": "Kutilayotgan vazifalar",
+      "totalProjects": "Jami loyihalar"
+    },
     "sampleUser": {
       "name": "Jon Do",
       "email": "jon.do@example.com"

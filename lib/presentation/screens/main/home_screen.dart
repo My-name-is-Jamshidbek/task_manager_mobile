@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../projects/create_project_screen.dart';
+import '../tasks/create_task_screen.dart';
+import 'package:provider/provider.dart';
+import '../../providers/projects_provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -26,7 +30,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWelcomeCard(BuildContext context, AppLocalizations loc, ThemeData theme) {
+  Widget _buildWelcomeCard(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+  ) {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -73,7 +81,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context, AppLocalizations loc, ThemeData theme) {
+  Widget _buildQuickActions(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -92,9 +104,7 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.add_task,
                 title: loc.translate('tasks.addTask'),
                 color: theme.colorScheme.primary,
-                onTap: () {
-                  // TODO: Navigate to add task
-                },
+                onTap: () => _pickProjectAndCreateTask(context, loc),
               ),
             ),
             const SizedBox(width: 12),
@@ -104,8 +114,14 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.create_new_folder,
                 title: loc.translate('home.newProject'),
                 color: theme.colorScheme.secondary,
-                onTap: () {
-                  // TODO: Navigate to add project
+                onTap: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const CreateProjectScreen(),
+                    ),
+                  );
+                  if (!context.mounted) return;
+                  await context.read<ProjectsProvider>().refresh();
                 },
               ),
             ),
@@ -133,11 +149,7 @@ class HomeScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Icon(
-                icon,
-                size: 32,
-                color: color,
-              ),
+              Icon(icon, size: 32, color: color),
               const SizedBox(height: 8),
               Text(
                 title,
@@ -153,7 +165,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentItems(BuildContext context, AppLocalizations loc, ThemeData theme) {
+  Widget _buildRecentItems(
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -207,11 +223,7 @@ class HomeScreen extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: color.withOpacity(0.1),
-          child: Icon(
-            icon,
-            color: color,
-            size: 20,
-          ),
+          child: Icon(icon, color: color, size: 20),
         ),
         title: Text(
           title,
@@ -228,6 +240,89 @@ class HomeScreen extends StatelessWidget {
           // TODO: Navigate to item detail
         },
       ),
+    );
+  }
+
+  Future<void> _pickProjectAndCreateTask(
+    BuildContext context,
+    AppLocalizations loc,
+  ) async {
+    final projectsProvider = context.read<ProjectsProvider>();
+    if (projectsProvider.projects.isEmpty && !projectsProvider.isLoading) {
+      await projectsProvider.refresh();
+    }
+    if (!context.mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        final projects = context.watch<ProjectsProvider>().projects;
+        final loading = context.watch<ProjectsProvider>().isLoading;
+        if (loading && projects.isEmpty) {
+          return const SizedBox(
+            height: 220,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (projects.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(loc.translate('projects.empty')),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const CreateProjectScreen(),
+                      ),
+                    );
+                    if (!context.mounted) return;
+                    await context.read<ProjectsProvider>().refresh();
+                  },
+                  icon: const Icon(Icons.create_new_folder),
+                  label: Text(loc.translate('projects.createShort')),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          );
+        }
+        return SafeArea(
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: projects.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (_, i) {
+              final p = projects[i];
+              return ListTile(
+                leading: const Icon(Icons.folder),
+                title: Text(
+                  p.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CreateTaskScreen(projectId: p.id),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

@@ -6,6 +6,7 @@ import '../../providers/tasks_api_provider.dart';
 import '../../../data/models/api_task_models.dart';
 import '../tasks/task_detail_screen.dart';
 import '../../providers/task_detail_provider.dart';
+import '../../providers/dashboard_provider.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -18,32 +19,26 @@ class _TasksScreenState extends State<TasksScreen> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
   final ScrollController _scrollController = ScrollController();
-  bool _headersVisible = true;
-  double _lastOffset = 0.0;
-
+  static const int _pageSize = 10;
   // Filters
   String? _filter; // created_by_me | assigned_to_me
-  int?
-  _statusId; // 1=pending, 2=in progress, 3=completed, 4=cancelled (assumption)
-
-  // Assumed mapping for backend status ids
-  static const Map<String, int> _statusIdMap = {
-    'pending': 1,
-    'inProgress': 2,
-    'completed': 3,
-    'cancelled': 4,
-  };
+  int? _statusId; // backend ids 0..5 as per API
+  // Collapsible UI
+  bool _filtersExpanded = false;
+  bool _statsExpanded = false;
 
   @override
   void initState() {
     super.initState();
     // Initial fetch
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<TasksApiProvider>();
-      provider.perPage = 10;
-      if (provider.tasks.isEmpty) {
-        provider.refresh();
+      final p = context.read<TasksApiProvider>();
+      p.perPage = _pageSize;
+      if (p.tasks.isEmpty) {
+        p.refresh();
       }
+      // Prefetch task stats
+      context.read<DashboardProvider>().fetchTaskStatsByStatus();
     });
     _scrollController.addListener(_onScroll);
   }
@@ -68,22 +63,11 @@ class _TasksScreenState extends State<TasksScreen> {
   void _onScroll() {
     final provider = context.read<TasksApiProvider>();
     final offset = _scrollController.position.pixels;
-    final delta = offset - _lastOffset;
-
-    // Hide headers when scrolling down, show when scrolling up or near top
-    if (delta > 8 && offset > 80 && _headersVisible) {
-      setState(() => _headersVisible = false);
-    } else if ((delta < -8 && !_headersVisible) ||
-        (offset < 40 && !_headersVisible)) {
-      setState(() => _headersVisible = true);
-    }
-
     if (!provider.isLoading && provider.hasMore) {
       if (offset >= _scrollController.position.maxScrollExtent - 200) {
         provider.loadMore();
       }
     }
-    _lastOffset = offset;
   }
 
   @override
@@ -92,232 +76,592 @@ class _TasksScreenState extends State<TasksScreen> {
     final theme = Theme.of(context);
 
     return SafeArea(
-      child: Column(
-        children: [
-          AnimatedCrossFade(
-            firstChild: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: loc.translate('tasks.searchHint'),
-                      prefixIcon: const Icon(Icons.search),
-                      isDense: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onChanged: _onSearchChanged,
+      child: Consumer<TasksApiProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading && provider.tasks.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (provider.error != null && provider.tasks.isEmpty) {
+            return _buildErrorState(context, loc, theme, provider.error!);
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              await Future.wait([
+                context.read<TasksApiProvider>().refresh(),
+                context.read<DashboardProvider>().refreshTaskStats(),
+              ]);
+            },
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              controller: _scrollController,
+              slivers: [
+                SliverAppBar(
+                  floating: true,
+                  snap: true,
+                  pinned: false,
+                  automaticallyImplyLeading: false,
+                  toolbarHeight: 0,
+                  backgroundColor: theme.colorScheme.surface,
+                  surfaceTintColor: theme.colorScheme.surface,
+                  elevation: 1,
+                  scrolledUnderElevation: 2,
+                ),
+                SliverToBoxAdapter(
+                  child: _buildCollapsibleSection(
+                    context,
+                    icon: Icons.tune,
+                    title: 'Filters',
+                    expanded: _filtersExpanded,
+                    onToggle: () =>
+                        setState(() => _filtersExpanded = !_filtersExpanded),
+                    child: _buildControls(context, theme, loc, provider),
                   ),
                 ),
-                _buildFilterRow(context, loc, theme),
+                SliverToBoxAdapter(
+                  child: _buildCollapsibleSection(
+                    context,
+                    icon: Icons.dashboard_outlined,
+                    title: 'Dashboard',
+                    expanded: _statsExpanded,
+                    onToggle: () =>
+                        setState(() => _statsExpanded = !_statsExpanded),
+                    child: _buildTaskStats(context, loc, theme),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: _buildTasksSliverList(context, theme, loc, provider),
+                ),
               ],
             ),
-            secondChild: const SizedBox.shrink(),
-            crossFadeState: _headersVisible
-                ? CrossFadeState.showFirst
-                : CrossFadeState.showSecond,
-            duration: const Duration(milliseconds: 200),
-          ),
-          Expanded(
-            child: Consumer<TasksApiProvider>(
-              builder: (context, provider, _) {
-                if (provider.isLoading && provider.tasks.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (provider.error != null && provider.tasks.isEmpty) {
-                  return _buildErrorState(context, loc, theme, provider.error!);
-                }
-                if (provider.tasks.isEmpty) {
-                  return _buildEmptyState(context, loc, theme);
-                }
-                return RefreshIndicator(
-                  onRefresh: () async => provider.refresh(),
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildControls(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations loc,
+    TasksApiProvider provider,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SizedBox(
+                width: constraints.maxWidth >= 720 ? 420 : 320,
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  decoration: InputDecoration(
+                    hintText: loc.translate('tasks.searchHint'),
+                    prefixIcon: const Icon(Icons.search),
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              _onSearchChanged('');
+                            },
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+              // Refresh
+              IconButton(
+                tooltip: loc.translate('common.refresh'),
+                icon: provider.isLoading
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.colorScheme.primary,
+                        ),
+                      )
+                    : const Icon(Icons.refresh),
+                onPressed: provider.isLoading
+                    ? null
+                    : () {
+                        context.read<TasksApiProvider>().fetchTasks(
+                          perPage: _pageSize,
+                          filter: _filter,
+                          status: _statusId,
+                          name: _searchController.text.trim().isEmpty
+                              ? null
+                              : _searchController.text.trim(),
+                        );
+                      },
+              ),
+              // Filter dropdowns: created/assigned and status
+              SizedBox(
+                width: 220,
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
                       vertical: 8,
                     ),
-                    itemCount:
-                        provider.tasks.length + (provider.hasMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index >= provider.tasks.length) {
-                        // Bottom loader for next page
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-                      return _buildTaskCard(
-                        context,
-                        provider.tasks[index],
-                        theme,
-                        loc,
-                      );
-                    },
                   ),
-                );
-              },
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String?>(
+                      value: _filter,
+                      isDense: true,
+                      borderRadius: BorderRadius.circular(12),
+                      onChanged: (value) {
+                        setState(() => _filter = value);
+                        final p = context.read<TasksApiProvider>();
+                        p.filter = value;
+                        p.refresh();
+                      },
+                      items:
+                          <({String? val, String label})>[
+                                (
+                                  val: null,
+                                  label: loc.translate('projects.filters.all'),
+                                ),
+                                (
+                                  val: 'created_by_me',
+                                  label: loc.translate(
+                                    'projects.filters.createdByMe',
+                                  ),
+                                ),
+                                (
+                                  val: 'assigned_to_me',
+                                  label: loc.translate(
+                                    'projects.filters.assignedToMe',
+                                  ),
+                                ),
+                              ]
+                              .map(
+                                (e) => DropdownMenuItem<String?>(
+                                  value: e.val,
+                                  child: Text(e.label),
+                                ),
+                              )
+                              .toList(),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 220,
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int?>(
+                      value: _statusId,
+                      isDense: true,
+                      borderRadius: BorderRadius.circular(12),
+                      onChanged: (value) {
+                        setState(() => _statusId = value);
+                        final p = context.read<TasksApiProvider>();
+                        p.status = value;
+                        p.refresh();
+                      },
+                      items:
+                          <({int? val, String label})>[
+                                (
+                                  val: null,
+                                  label: loc.translate('projects.filters.all'),
+                                ),
+                                (val: 0, label: 'Accept'),
+                                (val: 1, label: 'In progress'),
+                                (val: 2, label: 'Completed'),
+                                (val: 3, label: 'Checked finished'),
+                                (val: 4, label: 'Rejected'),
+                                (val: 5, label: 'Rejected confirmed'),
+                              ]
+                              .map(
+                                (e) => DropdownMenuItem<int?>(
+                                  value: e.val,
+                                  child: Text(e.label),
+                                ),
+                              )
+                              .toList(),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCollapsibleSection(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required bool expanded,
+    required VoidCallback onToggle,
+    required Widget child,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: theme.colorScheme.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: expanded ? 'Hide' : 'Show',
+                onPressed: onToggle,
+                icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
+              ),
+            ],
+          ),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 200),
+            crossFadeState: expanded
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            firstChild: Card(
+              elevation: 1,
+              margin: const EdgeInsets.only(top: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(padding: const EdgeInsets.all(8.0), child: child),
             ),
+            secondChild: const SizedBox.shrink(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterRow(
+  Widget _buildTaskStats(
     BuildContext context,
     AppLocalizations loc,
     ThemeData theme,
   ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            // Created/Assigned filter
-            _buildChoiceChip(
-              context,
-              label: loc.translate('projects.filters.all'),
-              selected: _filter == null,
-              onSelected: (_) {
-                setState(() => _filter = null);
-                final p = context.read<TasksApiProvider>();
-                p.filter = null;
-                p.refresh();
-              },
-            ),
-            const SizedBox(width: 8),
-            _buildChoiceChip(
-              context,
-              label: loc.translate('projects.filters.createdByMe'),
-              selected: _filter == 'created_by_me',
-              onSelected: (_) {
-                setState(() => _filter = 'created_by_me');
-                final p = context.read<TasksApiProvider>();
-                p.filter = 'created_by_me';
-                p.refresh();
-              },
-            ),
-            const SizedBox(width: 8),
-            _buildChoiceChip(
-              context,
-              label: loc.translate('projects.filters.assignedToMe'),
-              selected: _filter == 'assigned_to_me',
-              onSelected: (_) {
-                setState(() => _filter = 'assigned_to_me');
-                final p = context.read<TasksApiProvider>();
-                p.filter = 'assigned_to_me';
-                p.refresh();
-              },
-            ),
-            const SizedBox(width: 16),
-            // Status filter chips
-            _buildChoiceChip(
-              context,
-              label: loc.translate('projects.status.all'),
-              selected: _statusId == null,
-              onSelected: (_) {
-                setState(() => _statusId = null);
-                final p = context.read<TasksApiProvider>();
-                p.status = null;
-                p.refresh();
-              },
-            ),
-            const SizedBox(width: 8),
-            _buildChoiceChip(
-              context,
-              label: loc.translate('status.pending'),
-              selected: _statusId == _statusIdMap['pending'],
-              onSelected: (_) {
-                setState(() => _statusId = _statusIdMap['pending']);
-                final p = context.read<TasksApiProvider>();
-                p.status = _statusId;
-                p.refresh();
-              },
-            ),
-            const SizedBox(width: 8),
-            _buildChoiceChip(
-              context,
-              label: loc.translate('status.inProgress'),
-              selected: _statusId == _statusIdMap['inProgress'],
-              onSelected: (_) {
-                setState(() => _statusId = _statusIdMap['inProgress']);
-                final p = context.read<TasksApiProvider>();
-                p.status = _statusId;
-                p.refresh();
-              },
-            ),
-            const SizedBox(width: 8),
-            _buildChoiceChip(
-              context,
-              label: loc.translate('status.completed'),
-              selected: _statusId == _statusIdMap['completed'],
-              onSelected: (_) {
-                setState(() => _statusId = _statusIdMap['completed']);
-                final p = context.read<TasksApiProvider>();
-                p.status = _statusId;
-                p.refresh();
-              },
-            ),
-          ],
-        ),
-      ),
+    return Consumer<DashboardProvider>(
+      builder: (context, dash, _) {
+        if (dash.isTaskStatsLoading && dash.taskStats.isEmpty) {
+          return _buildTaskStatsLoading(theme);
+        }
+        if (dash.taskStatsError != null && dash.taskStats.isEmpty) {
+          return _buildTaskStatsError(
+            context,
+            theme,
+            dash.taskStatsError!,
+            () => dash.fetchTaskStatsByStatus(),
+          );
+        }
+
+        // Map counts by status id 0..5
+        int accept = 0,
+            inProgress = 0,
+            completed = 0,
+            checkedFinished = 0,
+            rejected = 0,
+            rejectedConfirmed = 0;
+
+        for (final s in dash.taskStats) {
+          switch (s.statusId) {
+            case 0:
+              accept = s.count;
+              break;
+            case 1:
+              inProgress = s.count;
+              break;
+            case 2:
+              completed = s.count;
+              break;
+            case 3:
+              checkedFinished = s.count;
+              break;
+            case 4:
+              rejected = s.count;
+              break;
+            case 5:
+              rejectedConfirmed = s.count;
+              break;
+            default:
+              break;
+          }
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 2.1,
+            children: [
+              _buildStatCard(
+                context,
+                title: 'Accept',
+                count: '$accept',
+                color: theme.colorScheme.primary,
+                theme: theme,
+              ),
+              _buildStatCard(
+                context,
+                title: 'In progress',
+                count: '$inProgress',
+                color: Colors.blue,
+                theme: theme,
+              ),
+              _buildStatCard(
+                context,
+                title: 'Completed',
+                count: '$completed',
+                color: Colors.green,
+                theme: theme,
+              ),
+              _buildStatCard(
+                context,
+                title: 'Checked finished',
+                count: '$checkedFinished',
+                color: Colors.purple,
+                theme: theme,
+              ),
+              _buildStatCard(
+                context,
+                title: 'Rejected',
+                count: '$rejected',
+                color: Colors.red,
+                theme: theme,
+              ),
+              _buildStatCard(
+                context,
+                title: 'Rejected confirmed',
+                count: '$rejectedConfirmed',
+                color: Colors.orange,
+                theme: theme,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildChoiceChip(
-    BuildContext context, {
-    required String label,
-    required bool selected,
-    required ValueChanged<bool> onSelected,
-  }) {
-    final theme = Theme.of(context);
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (v) => onSelected(v),
-      selectedColor: theme.colorScheme.primary.withOpacity(0.2),
-      checkmarkColor: theme.colorScheme.primary,
-    );
-  }
-
-  Widget _buildEmptyState(
-    BuildContext context,
-    AppLocalizations loc,
-    ThemeData theme,
-  ) {
-    return Center(
+  Widget _buildTaskStatsLoading(ThemeData theme) {
+    Widget skeletonCard() => Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 48,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              loc.translate('tasks.noTasks'),
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              loc.translate('tasks.createFirstTask'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            Container(
+              height: 36,
+              width: 60,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
               ),
-              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: 14,
+              width: 80,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           ],
         ),
       ),
+    );
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: GridView.count(
+        crossAxisCount: 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 2.1,
+        children: [
+          skeletonCard(),
+          skeletonCard(),
+          skeletonCard(),
+          skeletonCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    BuildContext context, {
+    required String title,
+    required String count,
+    required Color color,
+    required ThemeData theme,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                count,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTaskStatsError(
+    BuildContext context,
+    ThemeData theme,
+    String message,
+    VoidCallback onRetry,
+  ) {
+    final loc = AppLocalizations.of(context);
+    return Container(
+      margin: const EdgeInsets.all(16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(Icons.error_outline, color: theme.colorScheme.error),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      loc.translate('common.error'),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.error,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              TextButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: Text(loc.translate('common.retry')),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  SliverList _buildTasksSliverList(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations loc,
+    TasksApiProvider provider,
+  ) {
+    if (provider.tasks.isEmpty) {
+      return SliverList(
+        delegate: SliverChildListDelegate([
+          Padding(
+            padding: const EdgeInsets.only(top: 48.0),
+            child: Center(
+              child: Text(
+                loc.translate('tasks.noTasks'),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+        ]),
+      );
+    }
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        if (index >= provider.tasks.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return _buildTaskCard(context, provider.tasks[index], theme, loc);
+      }, childCount: provider.tasks.length + (provider.hasMore ? 1 : 0)),
     );
   }
 
@@ -367,7 +711,8 @@ class _TasksScreenState extends State<TasksScreen> {
     ThemeData theme,
     AppLocalizations loc,
   ) {
-    final isCompleted = task.status?.id == _statusIdMap['completed'];
+    // Treat status id 2 as Completed according to dropdown mapping
+    final isCompleted = task.status?.id == 2;
     final deadline = task.deadline;
     final projectName = task.project?.name ?? '';
     final statusLabel = task.status?.label ?? '';

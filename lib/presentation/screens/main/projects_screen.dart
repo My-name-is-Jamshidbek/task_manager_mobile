@@ -10,6 +10,7 @@ import '../projects/project_detail_screen.dart';
 import '../projects/create_project_screen.dart';
 import '../../providers/project_detail_provider.dart';
 import '../../widgets/project_widgets.dart';
+import '../../providers/dashboard_provider.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -27,6 +28,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   int? _status = 1; // default status 1 = active; null means all
   static const int _pageSize = 10;
   // Global error modal is handled by ApiClient.
+  bool _filtersExpanded = false;
+  bool _statsExpanded = false;
 
   @override
   void initState() {
@@ -40,6 +43,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       if (p.projects.isEmpty) {
         p.refresh();
       }
+      // Fetch project status stats
+      context.read<DashboardProvider>().fetchProjectStatsByStatus();
     });
     // Rebuild to show/hide clear icon in search field
     _searchController.addListener(() => setState(() {}));
@@ -67,13 +72,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     setState(() => _currentFilter = filter);
     final p = context.read<ProjectsProvider>();
     p.filter = _currentFilter;
-    p.refresh();
-  }
-
-  void _onStatusChanged(int? status) {
-    setState(() => _status = status);
-    final p = context.read<ProjectsProvider>();
-    p.status = _status;
     p.refresh();
   }
 
@@ -140,8 +138,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           final projects = provider.projects;
           // No local error dialog state; rendering continues below.
           return RefreshIndicator(
-            onRefresh: () async => context.read<ProjectsProvider>().refresh(),
+            onRefresh: () async {
+              await Future.wait([
+                context.read<ProjectsProvider>().refresh(),
+                context.read<DashboardProvider>().refreshProjectStats(),
+              ]);
+            },
             child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
               controller: _scrollController,
               slivers: [
                 SliverAppBar(
@@ -154,18 +160,29 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   surfaceTintColor: theme.colorScheme.surface,
                   elevation: 1,
                   scrolledUnderElevation: 2,
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(200),
-                    child: Material(
-                      color: theme.colorScheme.surface,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildControls(context, theme, loc, provider),
-                          _buildProjectStats(context, loc, theme, projects),
-                        ],
-                      ),
-                    ),
+                ),
+                // Collapsible Filters section
+                SliverToBoxAdapter(
+                  child: _buildCollapsibleSection(
+                    context,
+                    icon: Icons.tune,
+                    title: 'Filters',
+                    expanded: _filtersExpanded,
+                    onToggle: () =>
+                        setState(() => _filtersExpanded = !_filtersExpanded),
+                    child: _buildControls(context, theme, loc, provider),
+                  ),
+                ),
+                // Collapsible Dashboard stats section
+                SliverToBoxAdapter(
+                  child: _buildCollapsibleSection(
+                    context,
+                    icon: Icons.dashboard_outlined,
+                    title: 'Dashboard',
+                    expanded: _statsExpanded,
+                    onToggle: () =>
+                        setState(() => _statsExpanded = !_statsExpanded),
+                    child: _buildProjectStats(context, loc, theme),
                   ),
                 ),
                 SliverPadding(
@@ -193,205 +210,434 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Row(
-        children: [
-          // Search field
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              decoration: InputDecoration(
-                hintText: loc.translate('projects.searchHint'),
-                prefixIcon: const Icon(Icons.search),
-                isDense: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _onSearchChanged('');
-                        },
-                      )
-                    : null,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Status dropdown: All / Active / Completed / Expired / Rejected
-          DropdownButtonHideUnderline(
-            child: DropdownButton<int?>(
-              value: _status,
-              isDense: true,
-              borderRadius: BorderRadius.circular(12),
-              onChanged: (value) => _onStatusChanged(value),
-              items:
-                  <({int? val, String label})>[
-                        (
-                          val: null,
-                          label: loc.translate('projects.status.all'),
-                        ),
-                        (
-                          val: 1,
-                          label: loc.translate('projects.status.active'),
-                        ),
-                        (
-                          val: 2,
-                          label: loc.translate('projects.status.completed'),
-                        ),
-                        (
-                          val: 3,
-                          label: loc.translate('projects.status.expired'),
-                        ),
-                        (
-                          val: 4,
-                          label: loc.translate('projects.status.rejected'),
-                        ),
-                      ]
-                      .map(
-                        (e) => DropdownMenuItem<int?>(
-                          value: e.val,
-                          child: Text(e.label),
-                        ),
-                      )
-                      .toList(),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Filter dropdown: All / Created / Assigned
-          DropdownButtonHideUnderline(
-            child: DropdownButton<String?>(
-              value: _currentFilter,
-              isDense: true,
-              borderRadius: BorderRadius.circular(12),
-              onChanged: (value) => _onFilterChanged(value),
-              items:
-                  <({String? val, String label})>[
-                        (
-                          val: null,
-                          label: loc.translate('projects.filters.all'),
-                        ),
-                        (
-                          val: 'created_by_me',
-                          label: loc.translate('projects.filters.createdByMe'),
-                        ),
-                        (
-                          val: 'assigned_to_me',
-                          label: loc.translate('projects.filters.assignedToMe'),
-                        ),
-                      ]
-                      .map(
-                        (e) => DropdownMenuItem<String?>(
-                          value: e.val,
-                          child: Text(e.label),
-                        ),
-                      )
-                      .toList(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            tooltip: loc.translate('common.refresh'),
-            icon: provider.isLoading
-                ? SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: theme.colorScheme.primary,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SizedBox(
+                width: constraints.maxWidth >= 720 ? 420 : 320,
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  decoration: InputDecoration(
+                    hintText: loc.translate('projects.searchHint'),
+                    prefixIcon: const Icon(Icons.search),
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  )
-                : const Icon(Icons.refresh),
-            onPressed: provider.isLoading
-                ? null
-                : () {
-                    context.read<ProjectsProvider>().fetchProjects(
-                      perPage: _pageSize,
-                      filter: _currentFilter,
-                      status: _status,
-                      search: _searchController.text.trim().isEmpty
-                          ? null
-                          : _searchController.text.trim(),
-                    );
-                  },
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              _onSearchChanged('');
+                            },
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+              // 2) Refresh button
+              IconButton(
+                tooltip: loc.translate('common.refresh'),
+                icon: provider.isLoading
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.colorScheme.primary,
+                        ),
+                      )
+                    : const Icon(Icons.refresh),
+                onPressed: provider.isLoading
+                    ? null
+                    : () {
+                        context.read<ProjectsProvider>().fetchProjects(
+                          perPage: _pageSize,
+                          filter: _currentFilter,
+                          status: _status,
+                          search: _searchController.text.trim().isEmpty
+                              ? null
+                              : _searchController.text.trim(),
+                        );
+                      },
+              ),
+              SizedBox(
+                width: 220,
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String?>(
+                      value: _currentFilter,
+                      isDense: true,
+                      borderRadius: BorderRadius.circular(12),
+                      onChanged: (value) => _onFilterChanged(value),
+                      items:
+                          <({String? val, String label})>[
+                                (
+                                  val: null,
+                                  label: loc.translate('projects.filters.all'),
+                                ),
+                                (
+                                  val: 'created_by_me',
+                                  label: loc.translate(
+                                    'projects.filters.createdByMe',
+                                  ),
+                                ),
+                                (
+                                  val: 'assigned_to_me',
+                                  label: loc.translate(
+                                    'projects.filters.assignedToMe',
+                                  ),
+                                ),
+                              ]
+                              .map(
+                                (e) => DropdownMenuItem<String?>(
+                                  value: e.val,
+                                  child: Text(e.label),
+                                ),
+                              )
+                              .toList(),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 220,
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int?>(
+                      value: _status,
+                      isDense: true,
+                      borderRadius: BorderRadius.circular(12),
+                      onChanged: (value) => _onStatusChanged(value),
+                      items:
+                          <({int? val, String label})>[
+                                (
+                                  val: null,
+                                  label: loc.translate('projects.filters.all'),
+                                ),
+                                (
+                                  val: 1,
+                                  label: loc.translate('projects.active'),
+                                ),
+                                (
+                                  val: 2,
+                                  label: loc.translate('projects.completed'),
+                                ),
+                                (
+                                  val: 3,
+                                  label: loc.translate(
+                                    'projects.status.expired',
+                                  ),
+                                ),
+                                (
+                                  val: 4,
+                                  label: loc.translate(
+                                    'projects.status.rejected',
+                                  ),
+                                ),
+                              ]
+                              .map(
+                                (e) => DropdownMenuItem<int?>(
+                                  value: e.val,
+                                  child: Text(e.label),
+                                ),
+                              )
+                              .toList(),
+                    ),
+                  ),
+                ),
+              ),
+              FilledButton.icon(
+                icon: const Icon(Icons.add),
+                label: Text(loc.translate('projects.createShort')),
+                onPressed: () async {
+                  final ctx = context;
+                  await Navigator.of(ctx).push(
+                    MaterialPageRoute(
+                      builder: (_) => const CreateProjectScreen(),
+                    ),
+                  );
+                  if (!ctx.mounted) return;
+                  // On return, refresh projects list to include the new one
+                  ctx.read<ProjectsProvider>().refresh();
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCollapsibleSection(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required bool expanded,
+    required VoidCallback onToggle,
+    required Widget child,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: theme.colorScheme.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: expanded ? 'Hide' : 'Show',
+                onPressed: onToggle,
+                icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          FilledButton.icon(
-            icon: const Icon(Icons.add),
-            label: Text(loc.translate('projects.createShort')),
-            onPressed: () async {
-              final ctx = context;
-              await Navigator.of(ctx).push(
-                MaterialPageRoute(builder: (_) => const CreateProjectScreen()),
-              );
-              if (!ctx.mounted) return;
-              // On return, refresh projects list to include the new one
-              ctx.read<ProjectsProvider>().refresh();
-            },
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 200),
+            crossFadeState: expanded
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            firstChild: Card(
+              elevation: 1,
+              margin: const EdgeInsets.only(top: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(padding: const EdgeInsets.all(8.0), child: child),
+            ),
+            secondChild: const SizedBox.shrink(),
           ),
         ],
       ),
     );
   }
 
+  void _onStatusChanged(int? status) {
+    setState(() => _status = status);
+    final p = context.read<ProjectsProvider>();
+    p.status = _status;
+    p.refresh();
+  }
+
   Widget _buildProjectStats(
     BuildContext context,
     AppLocalizations loc,
     ThemeData theme,
-    List<Project> projects,
   ) {
-    // Simple derived stats
-    final total = projects.length;
-    final completed = projects
-        .where(
-          (p) =>
-              (p.taskStats?.byStatus.any((s) => s.status == 'completed') ??
-              false),
-        )
-        .length;
-    final onHold = projects
-        .where(
-          (p) =>
-              (p.taskStats?.byStatus.any((s) => s.status == 'on_hold') ??
-              false),
-        )
-        .length;
+    return Consumer<DashboardProvider>(
+      builder: (context, dash, _) {
+        if (dash.isProjectStatsLoading && dash.projectStats.isEmpty) {
+          return _buildProjectStatsLoading(theme);
+        }
+        if (dash.projectStatsError != null && dash.projectStats.isEmpty) {
+          return _buildProjectStatsError(
+            context,
+            theme,
+            dash.projectStatsError!,
+            () => dash.fetchProjectStatsByStatus(),
+          );
+        }
+
+        // Map counts by status id/key (backend provides ids 1..4)
+        int active = 0, completed = 0, expired = 0, rejected = 0;
+        for (final s in dash.projectStats) {
+          switch (s.statusId) {
+            case 1:
+              active = s.count;
+              break;
+            case 2:
+              completed = s.count;
+              break;
+            case 3:
+              expired = s.count;
+              break;
+            case 4:
+              rejected = s.count;
+              break;
+            default:
+              break;
+          }
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 2.1,
+            children: [
+              _buildStatCard(
+                context,
+                title: loc.translate('projects.active'),
+                count: '$active',
+                color: theme.colorScheme.primary,
+                theme: theme,
+              ),
+              _buildStatCard(
+                context,
+                title: loc.translate('projects.completed'),
+                count: '$completed',
+                color: Colors.green,
+                theme: theme,
+              ),
+              _buildStatCard(
+                context,
+                title: loc.translate('projects.status.expired'),
+                count: '$expired',
+                color: Colors.purple,
+                theme: theme,
+              ),
+              _buildStatCard(
+                context,
+                title: loc.translate('projects.status.rejected'),
+                count: '$rejected',
+                color: Colors.red,
+                theme: theme,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProjectStatsLoading(ThemeData theme) {
+    Widget skeletonCard() => Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              height: 36,
+              width: 60,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: 14,
+              width: 80,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: GridView.count(
+        crossAxisCount: 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 2.1,
+        children: [
+          skeletonCard(),
+          skeletonCard(),
+          skeletonCard(),
+          skeletonCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProjectStatsError(
+    BuildContext context,
+    ThemeData theme,
+    String message,
+    VoidCallback onRetry,
+  ) {
+    final loc = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatCard(
-              context,
-              title: loc.translate('projects.active'),
-              count: '$total',
-              color: theme.colorScheme.primary,
-              theme: theme,
-            ),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(Icons.error_outline, color: theme.colorScheme.error),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      loc.translate('common.error'),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.error,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              TextButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: Text(loc.translate('common.retry')),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              context,
-              title: loc.translate('projects.completed'),
-              count: '$completed',
-              color: Colors.green,
-              theme: theme,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              context,
-              title: loc.translate('projects.onHold'),
-              count: '$onHold',
-              color: Colors.orange,
-              theme: theme,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -14,6 +14,7 @@ import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/firebase_provider.dart';
 import 'presentation/providers/projects_provider.dart';
 import 'presentation/providers/tasks_api_provider.dart';
+import 'presentation/providers/dashboard_provider.dart';
 import 'presentation/widgets/app_root.dart';
 import 'core/utils/navigation_service.dart';
 
@@ -41,6 +42,7 @@ void main() async {
   final firebaseProvider = FirebaseProvider();
   final projectsProvider = ProjectsProvider();
   final tasksApiProvider = TasksApiProvider();
+  final dashboardProvider = DashboardProvider();
 
   Logger.info('⚙️ Initializing basic services...');
   await themeService.initialize();
@@ -82,6 +84,7 @@ void main() async {
             ChangeNotifierProvider.value(value: firebaseProvider),
             ChangeNotifierProvider.value(value: projectsProvider),
             ChangeNotifierProvider.value(value: tasksApiProvider),
+            ChangeNotifierProvider.value(value: dashboardProvider),
           ],
           child:
               Consumer4<

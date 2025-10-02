@@ -345,6 +345,11 @@
     "completed": "Завершено",
     "pending": "В ожидании",
     "projects": "Проекты",
+    "stats": {
+      "completedTasks": "Выполненные задачи",
+      "pendingTasks": "Ожидающие задачи",
+      "totalProjects": "Всего проектов"
+    },
     "sampleUser": {
       "name": "Иван Иванов",
       "email": "ivan.ivanov@example.com"

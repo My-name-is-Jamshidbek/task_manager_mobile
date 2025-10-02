@@ -346,6 +346,11 @@
     "completed": "Completed",
     "pending": "Pending",
     "projects": "Projects",
+    "stats": {
+      "completedTasks": "Completed tasks",
+      "pendingTasks": "Pending tasks",
+      "totalProjects": "Total projects"
+    },
     "sampleUser": {
       "name": "John Doe",
       "email": "john.doe@example.com"
