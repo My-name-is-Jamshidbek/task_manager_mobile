@@ -61,8 +61,8 @@ class TasksApiRemoteDataSource {
       if (description != null && description.trim().isNotEmpty)
         'description': description.trim(),
       if (parentTaskId != null) 'parent_task_id': parentTaskId.toString(),
-      // Backend expects the group reference under 'file_id' (singular) for tasks
-      if (fileGroupId != null) 'file_id': fileGroupId.toString(),
+      // Backend expects the group reference under 'file_group_id' for tasks
+      if (fileGroupId != null) 'file_group_id': fileGroupId.toString(),
     };
 
     final files = <String, http.MultipartFile>{};

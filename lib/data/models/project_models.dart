@@ -188,11 +188,15 @@ class ByStatus {
 class FileAttachment {
   final String name;
   final String url;
+  final int? id;
 
-  const FileAttachment({required this.name, required this.url});
+  const FileAttachment({required this.name, required this.url, this.id});
 
-  factory FileAttachment.fromJson(Map<String, dynamic> json) =>
-      FileAttachment(name: json['name'] as String, url: json['url'] as String);
+  factory FileAttachment.fromJson(Map<String, dynamic> json) => FileAttachment(
+    name: json['name'] as String? ?? '',
+    url: json['url'] as String? ?? '',
+    id: json['id'] as int?,
+  );
 }
 
 DateTime _parseDateTime(dynamic v) {

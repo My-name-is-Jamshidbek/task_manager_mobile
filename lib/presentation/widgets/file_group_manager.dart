@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/file_models.dart';
 import '../providers/file_group_provider.dart';
 import '../../core/localization/app_localizations.dart';
+import 'file_viewer_dialog.dart';
 
 class FileGroupManager extends StatefulWidget {
   final int? fileGroupId;
@@ -43,13 +43,15 @@ class _FileGroupManagerState extends State<FileGroupManager> {
   Future<void> _initializeFileGroup() async {
     if (!_isInitialized) {
       final provider = Provider.of<FileGroupProvider>(context, listen: false);
-      
+
       if (widget.fileGroupId != null) {
         await provider.loadFileGroup(widget.fileGroupId!);
       } else if (widget.allowEditing) {
         // Create a new file group if none provided and editing is allowed
         final success = await provider.createFileGroup(widget.groupName);
-        if (success && provider.fileGroup != null && widget.onFileGroupCreated != null) {
+        if (success &&
+            provider.fileGroup != null &&
+            widget.onFileGroupCreated != null) {
           // Notify parent after the current frame to avoid rebuild-in-build errors
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
@@ -57,9 +59,9 @@ class _FileGroupManagerState extends State<FileGroupManager> {
           });
         }
       }
-      
+
       _isInitialized = true;
-      
+
       // Notify parent about current files if needed, deferred to next frame
       if (widget.onFilesUpdated != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -72,33 +74,35 @@ class _FileGroupManagerState extends State<FileGroupManager> {
 
   Future<void> _pickFile() async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-      
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+      );
+
       if (pickedFile == null) return;
-      
+
       final provider = Provider.of<FileGroupProvider>(context, listen: false);
       final fileName = pickedFile.name;
       final fileBytes = await pickedFile.readAsBytes();
-      
+
       final success = await provider.addFile(fileName, fileBytes);
-      
+
       if (success && widget.onFilesUpdated != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           widget.onFilesUpdated!(provider.files);
         });
       }
-      
+
       if (!success && mounted && provider.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(provider.error!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(provider.error!)));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -106,7 +110,7 @@ class _FileGroupManagerState extends State<FileGroupManager> {
   Future<void> _deleteFile(FileAttachment file) async {
     final provider = Provider.of<FileGroupProvider>(context, listen: false);
     final loc = AppLocalizations.of(context);
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -124,21 +128,21 @@ class _FileGroupManagerState extends State<FileGroupManager> {
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       final success = await provider.deleteFile(file);
-      
+
       if (success && widget.onFilesUpdated != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           widget.onFilesUpdated!(provider.files);
         });
       }
-      
+
       if (!success && mounted && provider.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(provider.error!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(provider.error!)));
       }
     }
   }
@@ -146,8 +150,18 @@ class _FileGroupManagerState extends State<FileGroupManager> {
   Future<void> _viewFile(FileAttachment file) async {
     final provider = Provider.of<FileGroupProvider>(context, listen: false);
     final loc = AppLocalizations.of(context);
+    if (file.id != null) {
+      await showFileViewer(
+        context,
+        fileId: file.id!,
+        fileName: file.name,
+        fileUrl: file.url.isNotEmpty ? file.url : null,
+      );
+      return;
+    }
+
     final url = provider.getDownloadUrl(file);
-    
+
     try {
       if (await canLaunchUrl(Uri.parse(url))) {
         await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
@@ -158,9 +172,9 @@ class _FileGroupManagerState extends State<FileGroupManager> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -184,7 +198,7 @@ class _FileGroupManagerState extends State<FileGroupManager> {
               ),
               const SizedBox(height: 8),
             ],
-            
+
             // File list
             if (provider.hasFiles)
               ListView.builder(
@@ -197,8 +211,11 @@ class _FileGroupManagerState extends State<FileGroupManager> {
                 },
               )
             else
-              Text(loc.translate('noAttachments'), style: Theme.of(context).textTheme.bodyMedium),
-              
+              Text(
+                loc.translate('noAttachments'),
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+
             // Add file button
             if (widget.allowEditing) ...[
               const SizedBox(height: 16),
@@ -218,16 +235,12 @@ class _FileGroupManagerState extends State<FileGroupManager> {
     final loc = AppLocalizations.of(context);
     String fileTypeName = _getFileTypeName(file.name);
     IconData fileIcon = _getFileIcon(file.name);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: Icon(fileIcon, size: 36),
-        title: Text(
-          file.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: Text(file.name, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(fileTypeName),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -248,53 +261,53 @@ class _FileGroupManagerState extends State<FileGroupManager> {
       ),
     );
   }
-  
+
   String _getFileTypeName(String? fileName) {
     final loc = AppLocalizations.of(context);
     if (fileName == null) return loc.translate('unknownFile');
-    
+
     final extension = fileName.split('.').last.toLowerCase();
-    
+
     switch (extension) {
-      case 'jpg': 
-      case 'jpeg': 
-      case 'png': 
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
         return loc.translate('image');
-      case 'pdf': 
+      case 'pdf':
         return 'PDF';
-      case 'doc': 
-      case 'docx': 
+      case 'doc':
+      case 'docx':
         return loc.translate('wordDocument');
-      case 'xls': 
-      case 'xlsx': 
+      case 'xls':
+      case 'xlsx':
         return loc.translate('excelDocument');
-      case 'txt': 
+      case 'txt':
         return loc.translate('textFile');
       default:
         return loc.translate('file');
     }
   }
-  
+
   IconData _getFileIcon(String? fileName) {
     if (fileName == null) return Icons.insert_drive_file;
-    
+
     final extension = fileName.split('.').last.toLowerCase();
-    
+
     switch (extension) {
-      case 'jpg': 
-      case 'jpeg': 
-      case 'png': 
-      case 'gif': 
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
         return Icons.image;
-      case 'pdf': 
+      case 'pdf':
         return Icons.picture_as_pdf;
-      case 'doc': 
-      case 'docx': 
+      case 'doc':
+      case 'docx':
         return Icons.description;
-      case 'xls': 
-      case 'xlsx': 
+      case 'xls':
+      case 'xlsx':
         return Icons.table_chart;
-      case 'txt': 
+      case 'txt':
         return Icons.text_snippet;
       default:
         return Icons.insert_drive_file;

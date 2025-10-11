@@ -4,8 +4,8 @@ import '../../../core/localization/app_localizations.dart';
 import '../../providers/project_detail_provider.dart';
 import '../../../data/models/project_models.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../widgets/project_widgets.dart';
+import '../../widgets/file_viewer_dialog.dart';
 import '../tasks/create_task_screen.dart';
 // Removed direct task detail imports; navigation is handled by TaskListItem
 import '../../widgets/task_list_item.dart';
@@ -284,7 +284,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                onTap: () => _openUrl(f.url),
+                onTap: () => showFileViewer(
+                  context,
+                  fileId: f.id ?? 0, // Use file ID if available
+                  fileName: f.name,
+                  fileUrl: f.url,
+                ),
               );
             },
           ),
@@ -396,10 +401,4 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   String _formatDate(DateTime dt) =>
       '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-
-  Future<void> _openUrl(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
 }

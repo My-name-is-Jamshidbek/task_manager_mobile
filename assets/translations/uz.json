@@ -440,5 +440,19 @@
     "noneAvailable": "Mavjud ishchilar topilmadi",
     "addFailed": "Ishchini qo'shish muvaffaqiyatsiz",
     "removeFailed": "Ishchini olib tashlash muvaffaqiyatsiz"
+  },
+  "files": {
+    "download": "Yuklab olish",
+    "downloading": "Yuklab olinyapti...",
+    "open": "Ochish",
+    "downloadSuccess": "Fayl muvaffaqiyatli yuklab olindi",
+    "downloadError": "Faylni yuklab bo'lmadi",
+    "openError": "Faylni ochib bo'lmadi",
+    "loading": "Fayl yuklanmoqda...",
+    "loadFailed": "Faylni yuklab bo'lmadi",
+    "previewNotAvailable": "Bu turdagi fayl uchun ko'rish imkoni yo'q",
+    "fileSize": "Fayl hajmi",
+    "contentType": "Kontent turi",
+    "savedTo": "Saqlangan manzil"
   }
 }

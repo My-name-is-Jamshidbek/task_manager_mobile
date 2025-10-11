@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 import '../utils/logger.dart';
@@ -109,6 +110,65 @@ class ApiClient {
         stackTrace,
       );
       return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  Future<ApiResponse<BinaryDownloadResult>> downloadBinary(
+    String endpoint, {
+    Map<String, String>? headers,
+  }) async {
+    final String requestId = _generateRequestId();
+    try {
+      final uri = _buildUri(endpoint);
+      final finalHeaders = {..._headers};
+      if (headers != null) {
+        finalHeaders.addAll(headers);
+      }
+
+      Logger.info('🚀 [$requestId] BINARY DOWNLOAD Started');
+      Logger.info('📍 [$requestId] URL: $uri');
+      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(finalHeaders)}');
+
+      final stopwatch = Stopwatch()..start();
+      final response = await _client.get(uri, headers: finalHeaders);
+      stopwatch.stop();
+
+      Logger.info(
+        '⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms',
+      );
+      Logger.info('📥 [$requestId] Response Status: ${response.statusCode}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final contentType = response.headers['content-type'];
+        final fileName = _extractFileName(
+          response.headers['content-disposition'],
+        );
+        Logger.info('✅ [$requestId] Binary download successful');
+        return ApiResponse.success(
+          BinaryDownloadResult(
+            bytes: response.bodyBytes,
+            contentType: contentType,
+            fileName: fileName,
+          ),
+        );
+      }
+
+      if (response.statusCode == 401) {
+        _handleAuthFailure();
+      }
+
+      final errorMessage =
+          'Download failed with status ${response.statusCode}: ${response.reasonPhrase}';
+      Logger.warning('⚠️ [$requestId] $errorMessage');
+      return ApiResponse.error(errorMessage);
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ [$requestId] BINARY DOWNLOAD Failed',
+        'ApiClient',
+        e,
+        stackTrace,
+      );
+      return ApiResponse.error('Binary download error: $e');
     }
   }
 
@@ -528,6 +588,17 @@ class ApiClient {
   void dispose() {
     _client.close();
   }
+
+  String? _extractFileName(String? contentDisposition) {
+    if (contentDisposition == null) return null;
+    final segments = contentDisposition.split(';').map((s) => s.trim());
+    for (final segment in segments) {
+      if (segment.toLowerCase().startsWith('filename=')) {
+        return segment.substring(9).replaceAll('"', '');
+      }
+    }
+    return null;
+  }
 }
 
 // API Response wrapper class
@@ -545,4 +616,16 @@ class ApiResponse<T> {
   factory ApiResponse.error(String error) {
     return ApiResponse._(error: error, isSuccess: false);
   }
+}
+
+class BinaryDownloadResult {
+  final Uint8List bytes;
+  final String? contentType;
+  final String? fileName;
+
+  const BinaryDownloadResult({
+    required this.bytes,
+    this.contentType,
+    this.fileName,
+  });
 }

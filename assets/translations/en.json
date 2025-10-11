@@ -441,5 +441,19 @@
     "noneAvailable": "No available workers",
     "addFailed": "Failed to add worker",
     "removeFailed": "Failed to remove worker"
+  },
+  "files": {
+    "download": "Download",
+    "downloading": "Downloading...",
+    "open": "Open",
+    "downloadSuccess": "File downloaded successfully",
+    "downloadError": "Failed to download file",
+    "openError": "Unable to open file",
+    "loading": "Loading file...",
+    "loadFailed": "Unable to load file",
+    "previewNotAvailable": "Preview not available for this file type",
+    "fileSize": "File size",
+    "contentType": "Content type",
+    "savedTo": "Saved to"
   }
 }
