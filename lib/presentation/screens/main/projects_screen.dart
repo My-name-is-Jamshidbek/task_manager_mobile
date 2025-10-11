@@ -743,8 +743,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (ctx) => ChangeNotifierProvider(
-                create: (_) =>
-                    ProjectDetailProvider(initial: project)..load(project.id),
+                create: (_) => ProjectDetailProvider()..load(project.id),
                 child: ProjectDetailScreen(projectId: project.id),
               ),
             ),

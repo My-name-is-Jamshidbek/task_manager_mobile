@@ -225,6 +225,7 @@
     "searchHint": "Search tasks",
     "addTask": "Add Task",
     "addTaskWithFiles": "Add Task with Files",
+  "createSubtask": "Create Subtask",
     "editTask": "Edit Task",
     "deleteTask": "Delete Task",
     "details": "Task Details",
@@ -249,10 +250,16 @@
     "sampleTaskTitle": "Complete the mobile app design",
     "sampleTaskDescription": "Design the main screens for the task manager application including login, dashboard, and task views.",
     "sampleProjectName": "Mobile App",
+  "parentTask": "Parent Task",
+  "parentTaskOptional": "Parent task (optional)",
+  "parentTaskRequired": "Parent task (required for you)",
+  "parentTaskRequiredShort": "Parent task required",
+  "noParent": "No parent",
+    "subtasks": "Subtasks",
+    "noSubtasks": "No subtasks",
     "toWhom": "Assign To (user IDs)",
-    "toWhomHelper": "Enter user IDs separated by comma, e.g., 10,22,35",
-    "fileIdsLabel": "File IDs (comma separated)",
-    "fileIdsHelper": "Enter uploaded file IDs separated by comma, e.g., 12,45,78"
+  "toWhomHelper": "Enter user IDs separated by comma, e.g., 10,22,35"
+    
   },
   "projects": {
     "title": "Projects",
@@ -267,8 +274,6 @@
   "createTitle": "Create Project",
   "name": "Name",
   "description": "Description",
-  "fileIds": "File IDs (comma separated)",
-  "fileIdsHelper": "Enter uploaded file IDs separated by comma, e.g., 12,45,78",
   "createShort": "Create",
     "filters": {
       "all": "All",
@@ -427,5 +432,14 @@
     "unknownError": "Unknown error",
     "sessionExpired": "Your session has expired. Please log in again.",
     "sessionExpiredTitle": "Session Expired"
+  },
+  "workers": {
+    "selectTitle": "Select Workers",
+    "assigned": "Assigned Workers",
+    "available": "Available Workers",
+    "noneAssigned": "No workers assigned",
+    "noneAvailable": "No available workers",
+    "addFailed": "Failed to add worker",
+    "removeFailed": "Failed to remove worker"
   }
 }

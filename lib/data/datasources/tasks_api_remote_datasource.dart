@@ -2,6 +2,7 @@ import 'package:http/http.dart' as http;
 import '../../core/api/api_client.dart';
 import '../../core/constants/api_constants.dart';
 import '../models/api_task_models.dart';
+import '../models/worker_models.dart';
 
 class TasksApiRemoteDataSource {
   final ApiClient _apiClient;
@@ -50,6 +51,7 @@ class TasksApiRemoteDataSource {
     List<int>? toWhomUserIds,
     int? parentTaskId,
     List<String>? fileIds,
+    int? fileGroupId,
   }) async {
     final fields = <String, String>{
       'project_id': projectId.toString(),
@@ -59,6 +61,8 @@ class TasksApiRemoteDataSource {
       if (description != null && description.trim().isNotEmpty)
         'description': description.trim(),
       if (parentTaskId != null) 'parent_task_id': parentTaskId.toString(),
+      // Backend expects the group reference under 'file_id' (singular) for tasks
+      if (fileGroupId != null) 'file_id': fileGroupId.toString(),
     };
 
     final files = <String, http.MultipartFile>{};
@@ -103,5 +107,72 @@ class TasksApiRemoteDataSource {
         return ApiTask.fromJson(map);
       },
     );
+  }
+
+  // ---------------- Worker assignment endpoints ----------------
+  Future<ApiResponse<List<WorkerUser>>> getTaskWorkers(int taskId) async {
+    final endpoint = '${ApiConstants.tasks}/$taskId/workers';
+    return _apiClient.get<List<WorkerUser>>(
+      endpoint,
+      fromJson: (obj) {
+        final list =
+            (obj['data'] as List<dynamic>? ?? obj as List<dynamic>? ?? [])
+                .whereType<Map<String, dynamic>>()
+                .map(WorkerUser.fromJson)
+                .toList();
+        return list;
+      },
+      fromJsonList: (list) => list
+          .whereType<Map<String, dynamic>>()
+          .map(WorkerUser.fromJson)
+          .toList(),
+    );
+  }
+
+  Future<ApiResponse<List<WorkerUser>>> getTaskAvailableWorkers(
+    int taskId, {
+    int? page,
+    int? perPage,
+  }) async {
+    final endpoint = '${ApiConstants.tasks}/$taskId/available-workers';
+    final query = <String, String>{};
+    if (page != null) query['page'] = page.toString();
+    if (perPage != null) query['per_page'] = perPage.toString();
+    return _apiClient.get<List<WorkerUser>>(
+      endpoint,
+      queryParams: query.isEmpty ? null : query,
+      fromJson: (obj) {
+        final list =
+            (obj['data'] as List<dynamic>? ?? obj as List<dynamic>? ?? [])
+                .whereType<Map<String, dynamic>>()
+                .map(WorkerUser.fromJson)
+                .toList();
+        return list;
+      },
+      fromJsonList: (list) => list
+          .whereType<Map<String, dynamic>>()
+          .map(WorkerUser.fromJson)
+          .toList(),
+    );
+  }
+
+  Future<ApiResponse<void>> addTaskWorker({
+    required int taskId,
+    required int userId,
+  }) async {
+    final endpoint = '${ApiConstants.tasks}/$taskId/workers';
+    return _apiClient.post<void>(
+      endpoint,
+      body: {'user_id': userId},
+      fromJson: (_) {},
+    );
+  }
+
+  Future<ApiResponse<void>> removeTaskWorker({
+    required int taskId,
+    required int userId,
+  }) async {
+    final endpoint = '${ApiConstants.tasks}/$taskId/workers/$userId';
+    return _apiClient.delete<void>(endpoint, fromJson: (_) {});
   }
 }

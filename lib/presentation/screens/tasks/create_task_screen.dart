@@ -4,12 +4,25 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/logger.dart';
 import '../../../data/datasources/tasks_api_remote_datasource.dart';
 import '../../providers/tasks_api_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/file_group_provider.dart';
 import '../../widgets/file_group_manager.dart';
+import '../../providers/task_workers_provider.dart';
+import 'select_task_workers_screen.dart';
 
 class CreateTaskScreen extends StatefulWidget {
   final int projectId;
-  const CreateTaskScreen({super.key, required this.projectId});
+  final int? fixedParentTaskId; // when creating a subtask from a parent
+  final bool lockParentSelection;
+  // Explicit project creator user id (if known). If current user matches this, parent task selection becomes optional.
+  final int? projectCreatorId;
+  const CreateTaskScreen({
+    super.key,
+    required this.projectId,
+    this.fixedParentTaskId,
+    this.lockParentSelection = true,
+    this.projectCreatorId,
+  });
 
   @override
   State<CreateTaskScreen> createState() => _CreateTaskScreenState();
@@ -20,25 +33,30 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   final _nameCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _deadlineCtrl = TextEditingController();
-  final _toWhomCtrl = TextEditingController();
-  // File group integration
-  int? _fileGroupId;
+  // File attachments tracking (we no longer use group id directly)
   int _taskType = 1; // 1-low, 2-medium, 3-high
   DateTime? _deadline;
   bool _submitting = false;
+  int? _parentTaskId; // optional unless user not project creator or fixed
+  final List<int> _attachedFileIds = []; // capture real file attachment IDs
+  int? _fileGroupId; // new file group id if created via FileGroupManager
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _descCtrl.dispose();
     _deadlineCtrl.dispose();
-    _toWhomCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    // Initialize parent if fixed provided (only once)
+    if (widget.fixedParentTaskId != null &&
+        _parentTaskId != widget.fixedParentTaskId) {
+      _parentTaskId = widget.fixedParentTaskId;
+    }
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(loc.translate('tasks.addTask'))),
@@ -121,16 +139,78 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
               ),
               const SizedBox(height: 12),
 
-              // To Whom (IDs)
-              TextFormField(
-                controller: _toWhomCtrl,
-                decoration: InputDecoration(
-                  labelText: loc.translate('tasks.toWhom'),
-                  helperText: loc.translate('tasks.toWhomHelper'),
-                  border: const OutlineInputBorder(),
+              // Parent Task (Subtask logic) - hidden if fixed
+              if (widget.fixedParentTaskId == null)
+                Consumer2<TasksApiProvider, AuthProvider>(
+                  builder: (context, tasksProv, authProv, _) {
+                    // Filter tasks belonging to this.projectId
+                    final projectTasks = tasksProv.tasks
+                        .where((t) => t.project?.id == widget.projectId)
+                        .where(
+                          (t) => t.parentTaskId == null,
+                        ) // only top-level can be parent
+                        .toList();
+                    final currentUserId = authProv.currentUser?.id;
+                    // Determine if current user is project creator.
+                    // Priority: explicit projectCreatorId if supplied; otherwise fallback heuristic based on any top-level task creator id.
+                    bool isCreator = false;
+                    if (currentUserId != null) {
+                      if (widget.projectCreatorId != null) {
+                        isCreator = widget.projectCreatorId == currentUserId;
+                      } else {
+                        // Fallback: heuristic using existing tasks (may be empty for new project)
+                        isCreator = projectTasks.any(
+                          (t) => t.creator?.id == currentUserId,
+                        );
+                      }
+                    }
+
+                    return DropdownButtonFormField<int?>(
+                      initialValue: _parentTaskId,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(
+                          context,
+                        ).t('tasks.parentTask'),
+                        border: const OutlineInputBorder(),
+                        helperText: isCreator
+                            ? AppLocalizations.of(
+                                context,
+                              ).t('tasks.parentTaskOptional')
+                            : AppLocalizations.of(
+                                context,
+                              ).t('tasks.parentTaskRequired'),
+                      ),
+                      items: [
+                        if (isCreator)
+                          DropdownMenuItem<int?>(
+                            value: null,
+                            child: Text(
+                              AppLocalizations.of(context).t('tasks.noParent'),
+                            ),
+                          ),
+                        ...projectTasks.map(
+                          (t) => DropdownMenuItem<int?>(
+                            value: t.id,
+                            child: Text('#${t.id}  ${t.name}'),
+                          ),
+                        ),
+                      ],
+                      validator: (val) {
+                        if (!isCreator && (val == null)) {
+                          return AppLocalizations.of(
+                            context,
+                          ).t('tasks.parentTaskRequiredShort');
+                        }
+                        return null;
+                      },
+                      onChanged: widget.lockParentSelection
+                          ? null
+                          : (val) => setState(() => _parentTaskId = val),
+                    );
+                  },
                 ),
-              ),
-              const SizedBox(height: 12),
+              if (widget.fixedParentTaskId == null) const SizedBox(height: 12),
 
               // Attachments widget
               ChangeNotifierProvider(
@@ -138,6 +218,13 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                 child: FileGroupManager(
                   groupName: 'Task Files',
                   onFileGroupCreated: (id) => _fileGroupId = id,
+                  onFilesUpdated: (files) {
+                    _attachedFileIds
+                      ..clear()
+                      ..addAll(
+                        files.where((f) => f.id != null).map((f) => f.id!),
+                      );
+                  },
                 ),
               ),
               const SizedBox(height: 24),
@@ -168,7 +255,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     setState(() => _submitting = true);
     try {
       final ds = TasksApiRemoteDataSource();
-      final toWhom = _parseIntList(_toWhomCtrl.text);
       final res = await ds.createTask(
         projectId: widget.projectId,
         taskTypeId: _taskType,
@@ -178,10 +264,13 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
             : _descCtrl.text.trim(),
         deadlineIso:
             _deadline?.toUtc().toIso8601String() ?? _deadlineCtrl.text.trim(),
-        toWhomUserIds: toWhom.isEmpty ? null : toWhom,
-        parentTaskId: null,
-        // Backend expects a list of file ids; here we pass the single created group id if present
-        fileIds: _fileGroupId != null ? [_fileGroupId.toString()] : null,
+        toWhomUserIds: null, // handled later via worker selection screen
+        parentTaskId: _parentTaskId,
+        // Prefer single group id field (file_id) if available; fallback to individual file ids
+        fileGroupId: _fileGroupId,
+        fileIds: _fileGroupId == null && _attachedFileIds.isNotEmpty
+            ? _attachedFileIds.map((e) => e.toString()).toList()
+            : null,
       );
 
       if (!mounted) return;
@@ -191,7 +280,19 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         // We could refresh tasks list from server or optimistically add if relevant
         await provider.refresh();
         if (!mounted) return;
-        Navigator.of(context).pop(true);
+        final createdId = res.data?.id;
+        if (createdId != null) {
+          // Navigate to worker selection screen
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ChangeNotifierProvider(
+                create: (_) => TaskWorkersProvider(taskId: createdId),
+                child: SelectTaskWorkersScreen(taskId: createdId),
+              ),
+            ),
+          );
+        }
+        if (mounted) Navigator.of(context).pop(true);
       } else {
         final msg = res.error ?? 'Failed to create task';
         Logger.warning('CreateTask error: $msg');
@@ -209,15 +310,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     }
   }
 
-  List<int> _parseIntList(String input) {
-    return input
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .map((e) => int.tryParse(e))
-        .whereType<int>()
-        .toList();
-  }
+  // Removed parse list logic with new worker flow.
 
   Future<void> _pickDeadline() async {
     final now = DateTime.now();

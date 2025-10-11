@@ -53,27 +53,34 @@ class ProjectRemoteDataSource {
     );
   }
 
+  /// Fetch project detail expecting embedded tasks array under 'tasks'.
+  Future<ApiResponse<ProjectWithTasks>> getProjectWithTasks(int id) async {
+    return _apiClient.get<ProjectWithTasks>(
+      '${ApiConstants.projects}/$id',
+      fromJson: (obj) {
+        final map = obj['data'] is Map<String, dynamic>
+            ? obj['data'] as Map<String, dynamic>
+            : obj;
+        return ProjectWithTasks.fromJson(map);
+      },
+    );
+  }
+
   Future<ApiResponse<Project>> createProject({
     required String name,
     String? description,
-    List<String>? fileIds,
+    int? fileGroupId,
   }) async {
     // Build simple fields
     final fields = <String, String>{
       'name': name,
       if (description != null && description.trim().isNotEmpty)
         'description': description.trim(),
+      if (fileGroupId != null) 'file_group_id': fileGroupId.toString(),
     };
 
-    // Build repeated fields for file_id[] using MultipartFile.fromString
+    // No individual file IDs for project creation; only reference group id.
     final files = <String, http.MultipartFile>{};
-    if (fileIds != null && fileIds.isNotEmpty) {
-      for (var i = 0; i < fileIds.length; i++) {
-        final id = fileIds[i].trim();
-        if (id.isEmpty) continue;
-        files['file_id_$i'] = http.MultipartFile.fromString('file_id[]', id);
-      }
-    }
 
     return _apiClient.uploadMultipart<Project>(
       ApiConstants.projects,

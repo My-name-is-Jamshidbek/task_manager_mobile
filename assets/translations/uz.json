@@ -224,6 +224,7 @@
     "searchHint": "Vazifalarni qidirish",
     "addTask": "Vazifa qo'shish",
     "addTaskWithFiles": "Fayllar bilan vazifa qo'shish",
+  "createSubtask": "Ost vazifa yaratish",
     "editTask": "Vazifani tahrirlash",
     "deleteTask": "Vazifani o'chirish",
     "details": "Vazifa tafsilotlari",
@@ -248,10 +249,16 @@
     "sampleTaskTitle": "Mobil ilovaning dizaynini yakunlash",
     "sampleTaskDescription": "Vazifa boshqaruvchi ilovasining asosiy ekranlarini loyihalash: kirish, boshqaruv paneli va vazifalar ko'rinishi.",
     "sampleProjectName": "Mobil Ilova",
+  "parentTask": "Ota vazifa",
+  "parentTaskOptional": "Ota vazifa (ixtiyoriy)",
+  "parentTaskRequired": "Ota vazifa (siz uchun majburiy)",
+  "parentTaskRequiredShort": "Ota vazifa majburiy",
+  "noParent": "Ota vazifasiz",
+    "subtasks": "Ost vazifalar",
+    "noSubtasks": "Ost vazifalar yo'q",
     "toWhom": "Kimga biriktiriladi (foydalanuvchi IDlari)",
-    "toWhomHelper": "Foydalanuvchi ID-larini vergul bilan kiriting, masalan: 10,22,35",
-    "fileIdsLabel": "Fayl ID-lari (vergul bilan)",
-    "fileIdsHelper": "Yuklangan fayl ID-larini vergul bilan kiriting, masalan: 12,45,78"
+  "toWhomHelper": "Foydalanuvchi ID-larini vergul bilan kiriting, masalan: 10,22,35"
+    
   },
   "projects": {
     "title": "Loyihalar",
@@ -266,8 +273,6 @@
   "createTitle": "Loyiha yaratish",
   "name": "Nomi",
   "description": "Tavsif",
-  "fileIds": "Fayl ID-lari (vergul bilan)",
-  "fileIdsHelper": "Yuklangan fayl ID-larini vergul bilan kiriting, masalan: 12,45,78",
   "createShort": "Yaratish",
     "filters": {
       "all": "Hammasi",
@@ -426,5 +431,14 @@
     "unknownError": "Noma'lum xato",
     "sessionExpired": "Sessiya muddati tugadi. Iltimos, qayta kiring.",
     "sessionExpiredTitle": "Sessiya tugadi"
+  },
+  "workers": {
+    "selectTitle": "Ishchilarni tanlash",
+    "assigned": "Biriktirilgan ishchilar",
+    "available": "Mavjud ishchilar",
+    "noneAssigned": "Biriktirilgan ishchilar yo'q",
+    "noneAvailable": "Mavjud ishchilar topilmadi",
+    "addFailed": "Ishchini qo'shish muvaffaqiyatsiz",
+    "removeFailed": "Ishchini olib tashlash muvaffaqiyatsiz"
   }
 }

@@ -4,6 +4,8 @@ import '../../../core/localization/app_localizations.dart';
 import '../../providers/task_detail_provider.dart';
 import '../../../data/models/api_task_models.dart';
 import '../../widgets/project_widgets.dart';
+import 'create_task_screen.dart';
+import '../../../data/datasources/tasks_api_remote_datasource.dart';
 
 class TaskDetailScreen extends StatefulWidget {
   final int taskId;
@@ -14,6 +16,105 @@ class TaskDetailScreen extends StatefulWidget {
 }
 
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
+  final TasksApiRemoteDataSource _ds = TasksApiRemoteDataSource();
+  final List<ApiTask> _parentChain = []; // from root -> immediate parent
+  bool _loadingParents = false;
+  final Map<int, ApiTask> _taskCache = {}; // simple in-memory cache
+  String? _parentError;
+  bool _loadingChildren = false;
+  List<ApiTask> _childSubtasks = [];
+  String? _childrenError;
+
+  Color _alpha(Color base, double opacity) => base.withValues(alpha: opacity);
+
+  Future<void> _buildParentChain(ApiTask task) async {
+    // Clear and rebuild if parent exists
+    if (task.parentTaskId == null) {
+      setState(() {
+        _parentChain.clear();
+        _parentError = null;
+      });
+      return;
+    }
+    if (_loadingParents) return;
+    _loadingParents = true;
+    final chain = <ApiTask>[];
+    int? currentParentId = task.parentTaskId;
+    // Safety depth limit to avoid accidental loops
+    int depth = 0;
+    String? error;
+    try {
+      while (currentParentId != null && depth < 10) {
+        if (_taskCache.containsKey(currentParentId)) {
+          final cached = _taskCache[currentParentId]!;
+          chain.insert(0, cached);
+          currentParentId = cached.parentTaskId;
+          depth++;
+          continue;
+        }
+        final res = await _ds.getTaskById(currentParentId);
+        if (!res.isSuccess || res.data == null) {
+          error = 'Failed to load parent task #$currentParentId';
+          break;
+        }
+        final parentTask = res.data!;
+        _taskCache[parentTask.id] = parentTask;
+        chain.insert(0, parentTask); // root-first order
+        currentParentId = parentTask.parentTaskId;
+        depth++;
+      }
+    } catch (e) {
+      error = e.toString();
+    }
+    if (mounted) {
+      setState(() {
+        if (error != null) {
+          _parentError = error;
+        } else {
+          _parentError = null;
+        }
+        _parentChain
+          ..clear()
+          ..addAll(chain);
+      });
+    }
+    _loadingParents = false;
+  }
+
+  Future<void> _loadChildren(ApiTask task) async {
+    if (_loadingChildren) return;
+    _loadingChildren = true;
+    setState(() {
+      _childrenError = null;
+      _childSubtasks = [];
+    });
+    try {
+      // Reuse getTasks filtering by project then local filter (API lacks direct parent filter param)
+      if (task.project?.id != null) {
+        final res = await _ds.getTasks(
+          projectId: task.project!.id,
+          perPage: 100,
+        );
+        if (res.isSuccess && res.data != null) {
+          final list = res.data!;
+          final children = list
+              .where((t) => t.parentTaskId == task.id)
+              .toList();
+          if (mounted) {
+            setState(() {
+              _childSubtasks = children;
+            });
+          }
+        } else if (mounted) {
+          setState(() => _childrenError = 'Failed to load subtasks');
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _childrenError = e.toString());
+    }
+    _loadingChildren = false;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -58,12 +159,45 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             );
           }
           final task = provider.task!;
+          // Build chain + children once task loads (and when task id changes)
+          _buildParentChain(task);
+          _loadChildren(task);
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _header(context, theme, task),
+                if (task.parentTaskId != null) ...[
+                  const SizedBox(height: 12),
+                  _breadcrumb(theme, task, AppLocalizations.of(context)),
+                  if (_parentError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 16,
+                            color: theme.colorScheme.error,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              _parentError!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => _buildParentChain(task),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
                 const SizedBox(height: 16),
                 _meta(theme, task, loc),
                 const SizedBox(height: 16),
@@ -74,6 +208,27 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 const SizedBox(height: 24),
                 _files(theme, task, loc),
                 const SizedBox(height: 24),
+                _childrenSection(theme, task, loc),
+                const SizedBox(height: 24),
+                if (task.project?.id != null && task.project!.id != 0)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.call_split),
+                      onPressed: () async {
+                        final projectId = task.project!.id;
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => CreateTaskScreen(
+                              projectId: projectId,
+                              fixedParentTaskId: task.id,
+                            ),
+                          ),
+                        );
+                      },
+                      label: Text(loc.translate('tasks.createSubtask')),
+                    ),
+                  ),
               ],
             ),
           );
@@ -119,6 +274,63 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _breadcrumb(ThemeData theme, ApiTask current, AppLocalizations loc) {
+    // Combine parent chain + current
+    final full = [..._parentChain, current];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (int i = 0; i < full.length; i++) ...[
+            GestureDetector(
+              onTap: i == full.length - 1
+                  ? null
+                  : () {
+                      final target = full[i];
+                      if (target.id == current.id) return;
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (_) => ChangeNotifierProvider(
+                            create: (_) => TaskDetailProvider(),
+                            child: TaskDetailScreen(taskId: target.id),
+                          ),
+                        ),
+                      );
+                    },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: i == full.length - 1
+                      ? _alpha(theme.colorScheme.primary, 0.1)
+                      : _alpha(theme.colorScheme.surfaceContainerHighest, 0.5),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '#${full[i].id}  ${full[i].name}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: i == full.length - 1 ? FontWeight.bold : null,
+                    color: i == full.length - 1
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ),
+            if (i < full.length - 1)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Icon(
+                  Icons.chevron_right,
+                  size: 16,
+                  color: _alpha(theme.colorScheme.onSurface, 0.6),
+                ),
+              ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -210,6 +422,75 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             );
           },
         ),
+      ],
+    );
+  }
+
+  Widget _childrenSection(ThemeData theme, ApiTask task, AppLocalizations loc) {
+    if (_loadingChildren) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_childrenError != null) {
+      return Row(
+        children: [
+          Icon(Icons.error_outline, size: 18, color: theme.colorScheme.error),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _childrenError!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => _loadChildren(task),
+            child: Text(loc.translate('common.retry')),
+          ),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          loc.translate('tasks.subtasks'),
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        if (_childSubtasks.isEmpty)
+          Text(
+            loc.translate('tasks.noSubtasks'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _childSubtasks.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final st = _childSubtasks[index];
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.subdirectory_arrow_right),
+                title: Text(st.name),
+                subtitle: Text('#${st.id}'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ChangeNotifierProvider(
+                        create: (_) => TaskDetailProvider(),
+                        child: TaskDetailScreen(taskId: st.id),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
       ],
     );
   }

@@ -314,7 +314,11 @@ class HomeScreen extends StatelessWidget {
                   Navigator.of(ctx).pop();
                   await Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => CreateTaskScreen(projectId: p.id),
+                      builder: (_) => CreateTaskScreen(
+                        projectId: p.id,
+                        // Project model from projects provider may or may not expose creator id; if not available skip.
+                        projectCreatorId: null,
+                      ),
                     ),
                   );
                 },

@@ -5,10 +5,24 @@ import '../../../core/utils/logger.dart';
 import '../../../data/api/project_service.dart';
 import '../../../data/models/project_models.dart';
 import '../../providers/project_detail_provider.dart';
+import '../../providers/file_group_provider.dart';
+import '../../widgets/file_group_manager.dart';
 import 'project_detail_screen.dart';
 
 class CreateProjectScreen extends StatefulWidget {
-  const CreateProjectScreen({super.key});
+  final ProjectService? projectService; // injectable for tests
+  final List<int>? initialFileIds; // preload attachments (ids already uploaded)
+  final bool showAttachments; // allow hiding attachments in specialized flows
+  final void Function(Project)?
+  onCreated; // callback instead of navigation (tests)
+
+  const CreateProjectScreen({
+    super.key,
+    this.projectService,
+    this.initialFileIds,
+    this.showAttachments = true,
+    this.onCreated,
+  });
 
   @override
   State<CreateProjectScreen> createState() => _CreateProjectScreenState();
@@ -18,14 +32,23 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  final _fileIdsCtrl = TextEditingController();
+  // Attachment tracking list (mirrors task creation pattern). Can be preloaded via initialFileIds.
+  final List<int> _attachedFileIds = [];
+  int? _fileGroupId; // backend expects file_group_id for project creation
   bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialFileIds != null && widget.initialFileIds!.isNotEmpty) {
+      _attachedFileIds.addAll(widget.initialFileIds!);
+    }
+  }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _descCtrl.dispose();
-    _fileIdsCtrl.dispose();
     super.dispose();
   }
 
@@ -65,15 +88,23 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                 maxLines: 6,
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _fileIdsCtrl,
-                decoration: InputDecoration(
-                  labelText: loc.translate('projects.fileIds'),
-                  helperText: loc.translate('projects.fileIdsHelper'),
-                  border: const OutlineInputBorder(),
+              if (widget.showAttachments) ...[
+                ChangeNotifierProvider(
+                  create: (_) => FileGroupProvider(),
+                  child: FileGroupManager(
+                    groupName: 'Project Files',
+                    onFileGroupCreated: (gid) => _fileGroupId = gid,
+                    onFilesUpdated: (files) {
+                      _attachedFileIds
+                        ..clear()
+                        ..addAll(
+                          files.where((f) => f.id != null).map((f) => f.id!),
+                        );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
+              ],
               FilledButton.icon(
                 onPressed: _submitting ? null : _onSubmit,
                 icon: _submitting
@@ -99,29 +130,31 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _submitting = true);
     try {
-      final service = ProjectService();
-      final fileIds = _parseFileIds(_fileIdsCtrl.text);
+      final service = widget.projectService ?? ProjectService();
       final res = await service.createProject(
         name: _nameCtrl.text.trim(),
         description: _descCtrl.text.trim().isEmpty
             ? null
             : _descCtrl.text.trim(),
-        fileIds: fileIds.isEmpty ? null : fileIds,
+        fileGroupId: _fileGroupId,
       );
       if (!mounted) return;
       if (res.isSuccess && res.data != null) {
         final Project project = res.data!;
         Logger.info('✅ Project created: ${project.id}');
-        // Navigate to detail page with optimistic provider
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (ctx) => ChangeNotifierProvider(
-              create: (_) =>
-                  ProjectDetailProvider(initial: project)..load(project.id),
-              child: ProjectDetailScreen(projectId: project.id),
+        if (widget.onCreated != null) {
+          widget.onCreated!(project);
+        } else {
+          // Navigate to detail page with optimistic provider
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (ctx) => ChangeNotifierProvider(
+                create: (_) => ProjectDetailProvider()..load(project.id),
+                child: ProjectDetailScreen(projectId: project.id),
+              ),
             ),
-          ),
-        );
+          );
+        }
       } else {
         final snack = SnackBar(
           content: Text(res.error ?? 'Failed to create project'),
@@ -136,13 +169,5 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
-  }
-
-  List<String> _parseFileIds(String input) {
-    return input
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
   }
 }

@@ -80,6 +80,7 @@ class ApiTask {
   final ApiTimeProgress? timeProgress;
   final List<ApiUserRef> workers;
   final List<FileAttachment> files;
+  final int? parentTaskId;
   const ApiTask({
     required this.id,
     required this.name,
@@ -92,6 +93,7 @@ class ApiTask {
     this.timeProgress,
     this.workers = const [],
     this.files = const [],
+    this.parentTaskId,
   });
 
   factory ApiTask.fromJson(Map<String, dynamic> json) => ApiTask(
@@ -126,5 +128,6 @@ class ApiTask {
         .whereType<Map<String, dynamic>>()
         .map(FileAttachment.fromJson)
         .toList(),
+    parentTaskId: json['parent_task_id'] as int?,
   );
 }

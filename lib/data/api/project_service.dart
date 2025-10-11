@@ -12,22 +12,16 @@ class ProjectService {
   Future<ApiResponse<Project>> createProject({
     required String name,
     String? description,
-    List<String>? fileIds,
+    int? fileGroupId,
   }) async {
     final fields = <String, String>{
       'name': name,
       if (description != null && description.trim().isNotEmpty)
         'description': description.trim(),
+      if (fileGroupId != null) 'file_group_id': fileGroupId.toString(),
     };
-
+    // No file parts; backend expects file_group_id reference only for project creation.
     final files = <String, http.MultipartFile>{};
-    if (fileIds != null && fileIds.isNotEmpty) {
-      for (var i = 0; i < fileIds.length; i++) {
-        final id = fileIds[i].trim();
-        if (id.isEmpty) continue;
-        files['file_id_$i'] = http.MultipartFile.fromString('file_id[]', id);
-      }
-    }
 
     return _apiClient.uploadMultipart<Project>(
       ApiConstants.projects,

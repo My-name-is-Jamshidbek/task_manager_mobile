@@ -11,7 +11,8 @@ class CreateTaskWithFilesScreen extends StatefulWidget {
   const CreateTaskWithFilesScreen({super.key, this.projectId});
 
   @override
-  State<CreateTaskWithFilesScreen> createState() => _CreateTaskWithFilesScreenState();
+  State<CreateTaskWithFilesScreen> createState() =>
+      _CreateTaskWithFilesScreenState();
 }
 
 class _CreateTaskWithFilesScreenState extends State<CreateTaskWithFilesScreen> {
@@ -76,33 +77,50 @@ class _CreateTaskWithFilesScreenState extends State<CreateTaskWithFilesScreen> {
     if (_formKey.currentState?.validate() != true) return;
     if (widget.projectId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).translate('validation.projectRequired'))),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(
+              context,
+            ).translate('validation.projectRequired'),
+          ),
+        ),
       );
       return;
     }
     if (_deadline == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).translate('validation.deadlineRequired'))),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(
+              context,
+            ).translate('validation.deadlineRequired'),
+          ),
+        ),
       );
       return;
     }
 
     final remote = TasksApiRemoteDataSource();
-    
+
     final result = await remote.createTask(
       projectId: widget.projectId!,
       taskTypeId: 1, // Assuming default task type
       name: _titleController.text,
       description: _descriptionController.text,
       deadlineIso: _deadline!.toIso8601String(),
-      fileIds: _fileGroupId != null ? [_fileGroupId.toString()] : null,
+      fileGroupId: _fileGroupId,
     );
-    
+
     if (result.isSuccess && mounted) {
       Navigator.of(context).pop(true);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.error ?? AppLocalizations.of(context).translate('errors.unknown'))),
+        SnackBar(
+          content: Text(
+            result.error ??
+                AppLocalizations.of(context).translate('errors.unknown'),
+          ),
+        ),
       );
     }
   }
@@ -110,7 +128,7 @@ class _CreateTaskWithFilesScreenState extends State<CreateTaskWithFilesScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(title: Text(loc.translate('tasks.create'))),
       body: SingleChildScrollView(
@@ -150,7 +168,7 @@ class _CreateTaskWithFilesScreenState extends State<CreateTaskWithFilesScreen> {
                 onTap: () => _selectDeadline(context),
               ),
               const SizedBox(height: 24),
-              
+
               // File Group Manager
               ChangeNotifierProvider(
                 create: (_) => FileGroupProvider(),
@@ -159,7 +177,7 @@ class _CreateTaskWithFilesScreenState extends State<CreateTaskWithFilesScreen> {
                   onFileGroupCreated: _handleFileGroupCreated,
                 ),
               ),
-              
+
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'api_task_models.dart';
 
 @immutable
 class Project {
@@ -11,6 +12,7 @@ class Project {
   final DateTime createdAt;
   final int? status; // 1=active,2=completed,3=expired,4=rejected
   final String? statusLabel; // optional label from API
+  final int? fileGroupId; // ID of the file group
 
   const Project({
     required this.id,
@@ -22,23 +24,106 @@ class Project {
     required this.createdAt,
     required this.status,
     required this.statusLabel,
+    this.fileGroupId,
   });
 
   factory Project.fromJson(Map<String, dynamic> json) {
+    // Some endpoints (e.g., create project) return a slim payload
+    // without nested 'creator' or 'files'. Provide robust fallbacks.
+    final dynamic creatorRaw = json['creator'];
+    Creator fallbackCreator = const Creator(
+      id: 0,
+      name: 'Unknown',
+      phone: null,
+      avatarUrl: null,
+    );
+    Creator parsedCreator;
+    if (creatorRaw is Map<String, dynamic>) {
+      try {
+        parsedCreator = Creator.fromJson(creatorRaw);
+      } catch (_) {
+        parsedCreator = fallbackCreator;
+      }
+    } else {
+      parsedCreator = fallbackCreator;
+    }
+
+    final filesRaw = json['files'];
+    List<FileAttachment> parsedFiles = [];
+    if (filesRaw is List) {
+      parsedFiles = filesRaw.whereType<Map<String, dynamic>>().map((e) {
+        try {
+          return FileAttachment.fromJson(e);
+        } catch (_) {
+          return const FileAttachment(name: 'file', url: '');
+        }
+      }).toList();
+    }
+
     return Project(
       id: (json['id'] as num).toInt(),
-      name: json['name'] as String,
+      name: (json['name'] ?? '').toString(),
       description: json['description'] as String?,
-      creator: Creator.fromJson(json['creator'] as Map<String, dynamic>),
+      creator: parsedCreator,
       taskStats: json['task_stats'] != null
           ? TaskStats.fromJson(json['task_stats'] as Map<String, dynamic>)
           : null,
-      files: (json['files'] as List<dynamic>? ?? [])
-          .map((e) => FileAttachment.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      files: parsedFiles,
       createdAt: _parseDateTime(json['created_at']),
       status: (json['status'] as num?)?.toInt(),
       statusLabel: json['status_label'] as String?,
+      fileGroupId: _parseFileGroupId(json['file_group_id']),
+    );
+  }
+}
+
+/// Extended view model when backend embeds tasks inside project detail response.
+@immutable
+class ProjectWithTasks extends Project {
+  final List<ApiTask> tasks;
+  const ProjectWithTasks({
+    required super.id,
+    required super.name,
+    required super.description,
+    required super.creator,
+    required super.taskStats,
+    required super.files,
+    required super.createdAt,
+    required super.status,
+    required super.statusLabel,
+    super.fileGroupId,
+    this.tasks = const [],
+  }) : super();
+
+  factory ProjectWithTasks.fromJson(Map<String, dynamic> json) {
+    final base = Project.fromJson(json);
+    final tasksRaw = json['tasks'];
+    List<ApiTask> parsedTasks = [];
+    if (tasksRaw is List) {
+      parsedTasks = tasksRaw
+          .whereType<Map<String, dynamic>>()
+          .map((e) {
+            try {
+              return ApiTask.fromJson(e);
+            } catch (_) {
+              return const ApiTask(id: 0, name: '');
+            }
+          })
+          .where((t) => t.id != 0)
+          .toList();
+    }
+    return ProjectWithTasks(
+      id: base.id,
+      name: base.name,
+      description: base.description,
+      creator: base.creator,
+      taskStats: base.taskStats,
+      files: base.files,
+      createdAt: base.createdAt,
+      status: base.status,
+      statusLabel: base.statusLabel,
+      fileGroupId: base.fileGroupId,
+      tasks: parsedTasks,
     );
   }
 }
@@ -126,4 +211,14 @@ DateTime _parseDateTime(dynamic v) {
     }
   }
   return DateTime.now();
+}
+
+int? _parseFileGroupId(dynamic v) {
+  if (v == null) return null;
+  if (v is num) return v.toInt();
+  if (v is String) {
+    final parsed = int.tryParse(v);
+    return parsed;
+  }
+  return null;
 }
