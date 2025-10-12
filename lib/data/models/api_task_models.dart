@@ -131,8 +131,9 @@ class ApiTask {
         .map(FileAttachment.fromJson)
         .toList(),
     parentTaskId: json['parent_task_id'] as int?,
-    availableActions:
-        _parseActions(json['available_actions'] ?? json['actions']),
+    availableActions: _parseActions(
+      json['available_actions'] ?? json['actions'],
+    ),
   );
 
   static List<String> _parseActions(dynamic raw) {

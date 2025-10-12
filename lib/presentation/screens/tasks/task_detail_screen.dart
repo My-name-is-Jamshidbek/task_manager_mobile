@@ -238,8 +238,13 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           }
           final task = provider.task!;
           _ensureTaskSideData(task);
-          final actionSection =
-              _actionsSection(context, theme, loc, provider, task);
+          final actionSection = _actionsSection(
+            context,
+            theme,
+            loc,
+            provider,
+            task,
+          );
           return RefreshIndicator(
             onRefresh: () => _reloadTask(provider, task.id),
             child: ListView(
@@ -349,13 +354,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       onPressed: busy
           ? null
           : () => _handleAction(context, loc, provider, action),
-      child: _actionButtonChild(
-        label,
-        icon,
-        busy,
-        theme,
-        action,
-      ),
+      child: _actionButtonChild(label, icon, busy, theme, action),
     );
   }
 
@@ -461,15 +460,15 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         'tasks.actions.successMessage',
         {'action': loc.translate(action.translationKey)},
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(successMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(successMessage)));
     } else {
-      final error = provider.actionError ??
-          loc.translate('tasks.actions.genericError');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      final error =
+          provider.actionError ?? loc.translate('tasks.actions.genericError');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     }
   }
 
@@ -484,10 +483,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       builder: (context) => AlertDialog(
         title: Text(loc.translate('tasks.actions.confirmTitle')),
         content: Text(
-          loc.translateWithParams(
-            'tasks.actions.confirmMessage',
-            {'action': actionLabel},
-          ),
+          loc.translateWithParams('tasks.actions.confirmMessage', {
+            'action': actionLabel,
+          }),
         ),
         actions: [
           TextButton(
@@ -535,8 +533,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 final text = controller.text.trim();
                 if (text.isEmpty) {
                   setState(
-                    () => errorText =
-                        loc.translate('tasks.actions.reasonRequired'),
+                    () => errorText = loc.translate(
+                      'tasks.actions.reasonRequired',
+                    ),
                   );
                   return;
                 }
