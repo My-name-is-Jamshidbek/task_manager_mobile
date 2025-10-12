@@ -364,6 +364,7 @@ See [pubspec.yaml](pubspec.yaml) for complete dependency list.
 
 Comprehensive documentation is available:
 
+- [**App Flow Diagram**](APP_FLOW_DIAGRAM.md) - Complete application flow and user journey diagrams
 - [**Architecture Overview**](ARCHITECTURE.md) - System design and patterns
 - [**Theme System**](THEME_SYSTEM.md) - Complete theming guide
 - [**Firebase Setup**](FIREBASE_SETUP.md) - Firebase configuration

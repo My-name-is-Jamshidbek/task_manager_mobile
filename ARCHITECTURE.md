@@ -264,6 +264,7 @@ flutter run
 
 ## 📚 Additional Resources
 
+- [APP_FLOW_DIAGRAM.md](APP_FLOW_DIAGRAM.md) - Complete application flow diagrams and user journey
 - [Flutter Documentation](https://docs.flutter.dev/)
 - [Provider Package](https://pub.dev/packages/provider)
 - [Internationalization Guide](https://docs.flutter.dev/development/accessibility-and-localization/internationalization)
