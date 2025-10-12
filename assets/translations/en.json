@@ -17,7 +17,7 @@
     "title": "Task Manager",
     "version": "Version 1.0.0",
     "versionAndroid": "Android v1.2.0",
-    "versionIOS": "iOS v1.1.5", 
+    "versionIOS": "iOS v1.1.5",
     "versionWeb": "Web v1.0.8",
     "platformVersion": "Platform Version",
     "buildInfo": "Build Information",
@@ -33,153 +33,9 @@
     "updateOptionalMessage": "You can continue using the current version or update now for the latest features.",
     "versionComparison": "Current: {current} → Latest: {latest}"
   },
-  "demo": {
-    "title": "CoreUI Theme Demo",
-    "subtitle": "Theme System Showcase",
-    "components": "Components",
-    "colors": "Colors",
-    "typography": "Typography",
-    "themeSettings": "Theme Settings",
-    "languageSettings": "Language Settings",
-    "buttons": "Buttons",
-    "cards": "Cards",
-    "formElements": "Form Elements",
-    "listItems": "List Items",
-    "additionalComponents": "Additional Components",
-    "progressIndicators": "Progress Indicators",
-    "chips": "Chips",
-    "badges": "Badges",
-    "controls": "Controls",
-    "brandColors": "CoreUI Brand Colors",
-    "grayScaleColors": "Gray Scale Colors",
-    "priorityColors": "Priority Colors",
-    "headings": "Headings",
-    "bodyText": "Body Text",
-    "labels": "Labels",
-    "themeMode": "Theme Mode",
-    "primaryColor": "Primary Color",
-    "language": "Language",
-    "sampleCard": "Sample Card",
-    "sampleInput": "Sample Input",
-    "password": "Password",
-    "email": "Email",
-    "search": "Search",
-    "multilineText": "Multi-line Text",
-    "completeProject": "Complete project",
-    "teamMeeting": "Team meeting",
-    "dueTomorrow": "Due tomorrow",
-    "dueToday": "Due today",
-    "high": "High",
-    "medium": "Medium",
-    "low": "Low",
-    "primary": "Primary",
-    "outlined": "Outlined",
-    "text": "Text",
-    "withIcon": "With Icon",
-    "action": "Action",
-    "cancel": "Cancel",
-    "done": "Done",
-    "reset": "Reset",
-    "enterSomeText": "Enter some text",
-    "enterPassword": "Enter password",
-    "searchSomething": "Search something...",
-    "enterMultipleLines": "Enter multiple lines of text...",
-    "cardDescription": "This is a sample card using CoreUI design system with proper spacing and typography.",
-    "headingExamples": {
-      "h1": "Heading 1 - Display Large",
-      "h2": "Heading 2 - Display Medium", 
-      "h3": "Heading 3 - Display Small",
-      "h4": "Heading 4 - Headline Large",
-      "h5": "Heading 5 - Headline Medium",
-      "h6": "Heading 6 - Headline Small"
-    },
-    "bodyTextExamples": {
-      "large": "Body Large - This is large body text that provides excellent readability for important content.",
-      "medium": "Body Medium - This is the standard body text used for most content in the application.",
-      "small": "Body Small - This is small body text used for secondary information and captions."
-    },
-    "labelExamples": {
-      "large": "Label Large - Used for button text and important labels",
-      "medium": "Label Medium - Used for form labels and secondary buttons",
-      "small": "Label Small - Used for captions and small UI elements"
-    },
-    "themeModes": {
-      "light": "Light",
-      "dark": "Dark",
-      "system": "System"
-    },
-    "themeColors": {
-      "primary": {
-        "label": "CoreUI Primary",
-        "description": "Classic CoreUI Purple"
-      },
-      "secondary": {
-        "label": "CoreUI Secondary", 
-        "description": "Professional Gray"
-      },
-      "success": {
-        "label": "CoreUI Success",
-        "description": "Fresh Green"
-      },
-      "danger": {
-        "label": "CoreUI Danger",
-        "description": "Alert Red"
-      },
-      "warning": {
-        "label": "CoreUI Warning",
-        "description": "Attention Orange"
-      },
-      "info": {
-        "label": "CoreUI Info",
-        "description": "Informative Blue"
-      }
-    },
-    "colorNames": {
-      "primary": "Primary",
-      "secondary": "Secondary",
-      "success": "Success", 
-      "danger": "Danger",
-      "warning": "Warning",
-      "info": "Info",
-      "light": "Light",
-      "dark": "Dark",
-      "gray100": "Gray 100",
-      "gray200": "Gray 200",
-      "gray300": "Gray 300",
-      "gray400": "Gray 400",
-      "gray500": "Gray 500",
-      "gray600": "Gray 600",
-      "gray700": "Gray 700",
-      "gray800": "Gray 800",
-      "gray900": "Gray 900",
-      "priorityHigh": "High Priority",
-      "priorityMedium": "Medium Priority",
-      "priorityLow": "Low Priority"
-    },
-    "languages": {
-      "english": "English",
-      "uzbek": "Uzbek",
-      "russian": "Russian",
-      "currentLanguage": "Current Language"
-    },
-    "settings": "Settings",
-    "settingsDescription": "Customize your demo experience with theme and language preferences.",
-    "languageDescription": "Choose your preferred language for the demo interface.",
-    "additionalSettings": "Additional Settings",
-    "animations": "Animations",
-    "animationsDescription": "Enable or disable UI animations",
-    "developerMode": "Developer Mode",
-    "developerModeDescription": "Show additional debugging information",
-    "about": "About",
-    "aboutDescription": "CoreUI Demo v1.0.0",
-    "aboutContent": "A comprehensive demo showcasing CoreUI design system with multi-language and theme support."
-  ,
-  "availableLanguages": "Available Languages",
-  "uiUxDemo": "UI/UX Demo"
-  },
   "navigation": {
     "home": "Home",
-    "tasks": "Tasks", 
+    "tasks": "Tasks",
     "projects": "Projects",
     "profile": "Profile",
     "settings": "Settings"
@@ -226,7 +82,7 @@
     "addTask": "Add Task",
     "addTaskWithFiles": "Add Task with Files",
     "share": "Share task",
-  "createSubtask": "Create Subtask",
+    "createSubtask": "Create Subtask",
     "editTask": "Edit Task",
     "deleteTask": "Delete Task",
     "details": "Task Details",
@@ -251,32 +107,31 @@
     "sampleTaskTitle": "Complete the mobile app design",
     "sampleTaskDescription": "Design the main screens for the task manager application including login, dashboard, and task views.",
     "sampleProjectName": "Mobile App",
-  "parentTask": "Parent Task",
-  "parentTaskOptional": "Parent task (optional)",
-  "parentTaskRequired": "Parent task (required for you)",
-  "parentTaskRequiredShort": "Parent task required",
-  "noParent": "No parent",
+    "parentTask": "Parent Task",
+    "parentTaskOptional": "Parent task (optional)",
+    "parentTaskRequired": "Parent task (required for you)",
+    "parentTaskRequiredShort": "Parent task required",
+    "noParent": "No parent",
     "subtasks": "Subtasks",
     "noSubtasks": "No subtasks",
     "toWhom": "Assign To (user IDs)",
-  "toWhomHelper": "Enter user IDs separated by comma, e.g., 10,22,35"
-      ,
-      "actions": {
-        "title": "Actions",
-        "accept": "Accept",
-        "complete": "Mark complete",
-        "reject": "Reject",
-        "approveCompletion": "Approve completion",
-        "rework": "Request rework",
-        "confirmTitle": "Confirm action",
-        "confirmMessage": "Are you sure you want to {action}?",
-        "proceed": "Proceed",
-        "reasonLabel": "Reason",
-        "reasonHint": "Explain your decision",
-        "reasonRequired": "Please provide a reason",
-        "successMessage": "{action} successful",
-        "genericError": "Couldn't perform the action"
-      }
+    "toWhomHelper": "Enter user IDs separated by comma, e.g., 10,22,35",
+    "actions": {
+      "title": "Actions",
+      "accept": "Accept",
+      "complete": "Mark complete",
+      "reject": "Reject",
+      "approveCompletion": "Approve completion",
+      "rework": "Request rework",
+      "confirmTitle": "Confirm action",
+      "confirmMessage": "Are you sure you want to {action}?",
+      "proceed": "Proceed",
+      "reasonLabel": "Reason",
+      "reasonHint": "Explain your decision",
+      "reasonRequired": "Please provide a reason",
+      "successMessage": "{action} successful",
+      "genericError": "Couldn't perform the action"
+    }
   },
   "projects": {
     "title": "Projects",
@@ -287,11 +142,11 @@
     "progress": "Progress",
     "tasks": "tasks",
     "empty": "No projects found",
-  "searchHint": "Search projects",
-  "createTitle": "Create Project",
-  "name": "Name",
-  "description": "Description",
-  "createShort": "Create",
+    "searchHint": "Search projects",
+    "createTitle": "Create Project",
+    "name": "Name",
+    "description": "Description",
+    "createShort": "Create",
     "filters": {
       "all": "All",
       "createdByMe": "Created by me",
@@ -353,12 +208,12 @@
     "dateOfBirth": "Date of Birth",
     "updateProfile": "Update Profile",
     "updateSuccess": "Profile updated successfully",
-  "chooseFromGallery": "Choose from Gallery",
-  "takePhoto": "Take Photo",
-  "avatarUpdated": "Avatar updated successfully",
-  "avatarTooLarge": "Selected file is too large",
-  "avatarInvalidType": "Unsupported image format",
-  "avatarUploadFailed": "Avatar upload failed",
+    "chooseFromGallery": "Choose from Gallery",
+    "takePhoto": "Take Photo",
+    "avatarUpdated": "Avatar updated successfully",
+    "avatarTooLarge": "Selected file is too large",
+    "avatarInvalidType": "Unsupported image format",
+    "avatarUploadFailed": "Avatar upload failed",
     "changePassword": "Change Password",
     "changePasswordDescription": "Please enter your current password and choose a new one.",
     "currentPassword": "Current Password",
@@ -385,7 +240,49 @@
     "notifications": "Notifications",
     "privacy": "Privacy",
     "about": "About",
-    "version": "Version"
+    "version": "Version",
+    "languageChanged": "Language changed to {language}",
+    "languageOptions": {
+      "english": "English",
+      "uzbek": "Uzbek",
+      "russian": "Russian"
+    },
+    "themeSheet": {
+      "title": "Theme Settings",
+      "mode": "Theme Mode",
+      "primaryColor": "Primary Color",
+      "modes": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+      },
+      "colors": {
+        "primary": {
+          "label": "CoreUI Primary",
+          "description": "Classic CoreUI Purple"
+        },
+        "secondary": {
+          "label": "CoreUI Secondary",
+          "description": "Professional Gray"
+        },
+        "success": {
+          "label": "CoreUI Success",
+          "description": "Fresh Green"
+        },
+        "danger": {
+          "label": "CoreUI Danger",
+          "description": "Alert Red"
+        },
+        "warning": {
+          "label": "CoreUI Warning",
+          "description": "Attention Orange"
+        },
+        "info": {
+          "label": "CoreUI Info",
+          "description": "Informative Blue"
+        }
+      }
+    }
   },
   "common": {
     "yes": "Yes",

@@ -75,11 +75,6 @@ class AppLocalizations {
 
   // Get current language code
   String get languageCode => locale.languageCode;
-
-  // Check if current language is RTL
-  bool get isRTL {
-    return locale.languageCode == 'ar' || locale.languageCode == 'fa';
-  }
 }
 
 // Localization delegate

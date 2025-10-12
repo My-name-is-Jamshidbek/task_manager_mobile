@@ -68,29 +68,6 @@ class LocalizationService extends ChangeNotifier {
       (supportedLocale) => supportedLocale.languageCode == locale.languageCode,
     );
   }
-
-  // Get language name for display
-  String getLanguageName(String languageCode) {
-    switch (languageCode) {
-      case 'en':
-        return 'English';
-      case 'uz':
-        return 'O\'zbekcha';
-      case 'ru':
-        return 'Русский';
-      default:
-        return 'English';
-    }
-  }
-
-  // Get all available languages
-  List<Map<String, String>> get availableLanguages {
-    return [
-      {'code': 'en', 'name': 'English', 'nativeName': 'English'},
-      {'code': 'uz', 'name': 'Uzbek', 'nativeName': 'O\'zbekcha'},
-      {'code': 'ru', 'name': 'Russian', 'nativeName': 'Русский'},
-    ];
-  }
 }
 
 // Extension for easy access to translations

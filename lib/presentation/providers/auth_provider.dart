@@ -66,10 +66,6 @@ class AuthProvider extends ChangeNotifier {
           _isLoggedIn = true;
           _setLoading(false);
           notifyListeners();
-          // Register FCM token with backend
-          await FirebaseService().registerTokenWithBackend(
-            authToken: response.data!.token,
-          );
           return true;
         } else {
           // SMS verification required
@@ -106,10 +102,6 @@ class AuthProvider extends ChangeNotifier {
         _isLoggedIn = true;
         _setLoading(false);
         notifyListeners();
-        // Register FCM token after verification
-        await FirebaseService().registerTokenWithBackend(
-          authToken: response.data!.token!,
-        );
         return true;
       } else {
         // Try to get localized message from API response first

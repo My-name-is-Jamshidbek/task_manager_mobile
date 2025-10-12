@@ -66,7 +66,7 @@ class LanguageSelector extends StatelessWidget {
               _buildLanguageTile(
                 context,
                 'en',
-                localizations.translate('demo.languages.english'),
+                localizations.translate('settings.languageOptions.english'),
                 'English',
                 Icons.public,
                 localizationService,
@@ -78,7 +78,7 @@ class LanguageSelector extends StatelessWidget {
               _buildLanguageTile(
                 context,
                 'uz',
-                localizations.translate('demo.languages.uzbek'),
+                localizations.translate('settings.languageOptions.uzbek'),
                 'O\'zbekcha',
                 Icons.location_on,
                 localizationService,
@@ -90,7 +90,7 @@ class LanguageSelector extends StatelessWidget {
               _buildLanguageTile(
                 context,
                 'ru',
-                localizations.translate('demo.languages.russian'),
+                localizations.translate('settings.languageOptions.russian'),
                 'Русский',
                 Icons.language,
                 localizationService,
@@ -114,6 +114,7 @@ class LanguageSelector extends StatelessWidget {
     LocalizationService localizationService,
     ThemeService themeService,
   ) {
+    final localizations = AppLocalizations.of(context);
     final isSelected =
         localizationService.currentLocale.languageCode == languageCode;
 
@@ -153,7 +154,12 @@ class LanguageSelector extends StatelessWidget {
 
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Language changed to $localizedName'),
+                content: Text(
+                  localizations.translateWithParams(
+                    'settings.languageChanged',
+                    {'language': localizedName},
+                  ),
+                ),
                 duration: const Duration(seconds: 2),
                 backgroundColor: Theme.of(context).colorScheme.secondary,
               ),
@@ -217,19 +223,5 @@ class LanguageSelector extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  // ignore: unused_element
-  String _getLanguageDisplayName(String code, AppLocalizations localizations) {
-    switch (code) {
-      case 'en':
-        return localizations.translate('demo.languages.english');
-      case 'uz':
-        return localizations.translate('demo.languages.uzbek');
-      case 'ru':
-        return localizations.translate('demo.languages.russian');
-      default:
-        return localizations.translate('demo.languages.currentLanguage');
-    }
   }
 }

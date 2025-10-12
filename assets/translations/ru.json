@@ -18,7 +18,7 @@
     "version": "Версия 1.0.0",
     "versionAndroid": "Android в1.2.0",
     "versionIOS": "iOS в1.1.5",
-    "versionWeb": "Web в1.0.8", 
+    "versionWeb": "Web в1.0.8",
     "platformVersion": "Версия платформы",
     "buildInfo": "Информация о сборке",
     "updateAvailable": "Доступно обновление",
@@ -32,149 +32,6 @@
     "updateInstructions": "Пожалуйста, обновите приложение для продолжения использования",
     "updateOptionalMessage": "Вы можете продолжить использовать текущую версию или обновиться сейчас для получения последних функций.",
     "versionComparison": "Текущая: {current} → Последняя: {latest}"
-  },
-  "demo": {
-    "title": "Демо CoreUI Темы",
-    "subtitle": "Витрина Системы Темы",
-    "components": "Компоненты",
-    "colors": "Цвета",
-    "typography": "Типография",
-    "themeSettings": "Настройки Темы",
-    "languageSettings": "Настройки Языка",
-    "buttons": "Кнопки",
-    "cards": "Карточки",
-    "formElements": "Элементы Формы",
-    "listItems": "Элементы Списка",
-    "additionalComponents": "Дополнительные Компоненты",
-    "progressIndicators": "Индикаторы Прогресса",
-    "chips": "Чипы",
-    "badges": "Значки",
-    "controls": "Элементы Управления",
-    "brandColors": "Фирменные Цвета CoreUI",
-    "grayScaleColors": "Оттенки Серого",
-    "priorityColors": "Цвета Приоритета",
-    "headings": "Заголовки",
-    "bodyText": "Основной Текст",
-    "labels": "Метки",
-    "themeMode": "Режим Темы",
-    "primaryColor": "Основной Цвет",
-    "language": "Язык",
-    "sampleCard": "Образец Карточки",
-    "sampleInput": "Образец Ввода",
-    "password": "Пароль",
-    "email": "Email",
-    "search": "Поиск",
-    "multilineText": "Многострочный Текст",
-    "completeProject": "Завершить проект",
-    "teamMeeting": "Встреча команды",
-    "dueTomorrow": "Срок завтра",
-    "dueToday": "Срок сегодня",
-    "high": "Высокий",
-    "medium": "Средний",
-    "low": "Низкий",
-    "primary": "Основной",
-    "outlined": "Контурный",
-    "text": "Текст",
-    "withIcon": "С Иконкой",
-    "action": "Действие",
-    "cancel": "Отмена",
-    "done": "Готово",
-    "reset": "Сброс",
-    "enterSomeText": "Введите текст",
-    "enterPassword": "Введите пароль",
-    "searchSomething": "Найти что-то...",
-    "enterMultipleLines": "Введите многострочный текст...",
-    "cardDescription": "Это образец карточки, использующей дизайн-систему CoreUI с правильными отступами и типографикой.",
-    "headingExamples": {
-      "h1": "Заголовок 1 - Большой Дисплей",
-      "h2": "Заголовок 2 - Средний Дисплей",
-      "h3": "Заголовок 3 - Малый Дисплей",
-      "h4": "Заголовок 4 - Большая Шапка",
-      "h5": "Заголовок 5 - Средняя Шапка",
-      "h6": "Заголовок 6 - Малая Шапка"
-    },
-    "bodyTextExamples": {
-      "large": "Большой Основной Текст - Это большой основной текст, который обеспечивает отличную читаемость для важного контента.",
-      "medium": "Средний Основной Текст - Это стандартный основной текст, используемый для большинства контента в приложении.",
-      "small": "Малый Основной Текст - Это малый основной текст, используемый для вторичной информации и подписей."
-    },
-    "labelExamples": {
-      "large": "Большая Метка - Используется для текста кнопок и важных меток",
-      "medium": "Средняя Метка - Используется для меток форм и вторичных кнопок",
-      "small": "Малая Метка - Используется для подписей и малых UI элементов"
-    },
-    "themeModes": {
-      "light": "Светлый",
-      "dark": "Темный",
-      "system": "Системный"
-    },
-    "themeColors": {
-      "primary": {
-        "label": "CoreUI Основной",
-        "description": "Классический CoreUI Фиолетовый"
-      },
-      "secondary": {
-        "label": "CoreUI Вторичный",
-        "description": "Профессиональный Серый"
-      },
-      "success": {
-        "label": "CoreUI Успех",
-        "description": "Свежий Зеленый"
-      },
-      "danger": {
-        "label": "CoreUI Опасность",
-        "description": "Предупреждающий Красный"
-      },
-      "warning": {
-        "label": "CoreUI Предупреждение",
-        "description": "Внимание Оранжевый"
-      },
-      "info": {
-        "label": "CoreUI Информация",
-        "description": "Информативный Синий"
-      }
-    },
-    "colorNames": {
-      "primary": "Основной",
-      "secondary": "Вторичный",
-      "success": "Успех",
-      "danger": "Опасность",
-      "warning": "Предупреждение",
-      "info": "Информация",
-      "light": "Светлый",
-      "dark": "Темный",
-      "gray100": "Серый 100",
-      "gray200": "Серый 200",
-      "gray300": "Серый 300",
-      "gray400": "Серый 400",
-      "gray500": "Серый 500",
-      "gray600": "Серый 600",
-      "gray700": "Серый 700",
-      "gray800": "Серый 800",
-      "gray900": "Серый 900",
-      "priorityHigh": "Высокий Приоритет",
-      "priorityMedium": "Средний Приоритет",
-      "priorityLow": "Низкий Приоритет"
-    },
-    "languages": {
-      "english": "Английский",
-      "uzbek": "Узбекский",
-      "russian": "Русский",
-      "currentLanguage": "Текущий Язык"
-    },
-    "settings": "Настройки",
-    "settingsDescription": "Настройте ваш демо-опыт с предпочтениями темы и языка.",
-    "languageDescription": "Выберите предпочитаемый язык для демо-интерфейса.",
-    "additionalSettings": "Дополнительные Настройки",
-    "animations": "Анимации",
-    "animationsDescription": "Включить или отключить UI анимации",
-    "developerMode": "Режим Разработчика",
-    "developerModeDescription": "Показать дополнительную отладочную информацию",
-    "about": "О программе",
-    "aboutDescription": "CoreUI Demo v1.0.0",
-  "aboutContent": "Комплексное демо, демонстрирующее дизайн-систему CoreUI с поддержкой многоязычности и тем.",
-  "availableLanguages": "Доступные языки",
-  "uiUxDemo": "UI/UX демо"
   },
   "navigation": {
     "home": "Главная",
@@ -224,8 +81,8 @@
     "searchHint": "Поиск задач",
     "addTask": "Добавить задачу",
     "addTaskWithFiles": "Добавить задачу с файлами",
-  "share": "Поделиться задачей",
-  "createSubtask": "Создать подзадачу",
+    "share": "Поделиться задачей",
+    "createSubtask": "Создать подзадачу",
     "editTask": "Редактировать задачу",
     "deleteTask": "Удалить задачу",
     "details": "Подробности задачи",
@@ -250,32 +107,31 @@
     "sampleTaskTitle": "Завершить дизайн мобильного приложения",
     "sampleTaskDescription": "Спроектировать основные экраны для приложения управления задачами, включая вход, панель управления и просмотр задач.",
     "sampleProjectName": "Мобильное приложение",
-  "parentTask": "Родительская задача",
-  "parentTaskOptional": "Родительская задача (необязательно)",
-  "parentTaskRequired": "Родительская задача (обязательна для вас)",
-  "parentTaskRequiredShort": "Требуется родительская задача",
-  "noParent": "Без родителя",
+    "parentTask": "Родительская задача",
+    "parentTaskOptional": "Родительская задача (необязательно)",
+    "parentTaskRequired": "Родительская задача (обязательна для вас)",
+    "parentTaskRequiredShort": "Требуется родительская задача",
+    "noParent": "Без родителя",
     "subtasks": "Подзадачи",
     "noSubtasks": "Нет подзадач",
     "toWhom": "Назначить (ID пользователей)",
-  "toWhomHelper": "Введите ID пользователей через запятую, например: 10,22,35"
-      ,
-      "actions": {
-        "title": "Действия",
-        "accept": "Принять",
-        "complete": "Отметить выполненной",
-        "reject": "Отклонить",
-        "approveCompletion": "Подтвердить завершение",
-        "rework": "Запросить доработку",
-        "confirmTitle": "Подтверждение действия",
-        "confirmMessage": "Вы уверены, что хотите {action}?",
-        "proceed": "Продолжить",
-        "reasonLabel": "Причина",
-        "reasonHint": "Поясните ваше решение",
-        "reasonRequired": "Пожалуйста, укажите причину",
-        "successMessage": "{action} выполнено успешно",
-        "genericError": "Не удалось выполнить действие"
-      }
+    "toWhomHelper": "Введите ID пользователей через запятую, например: 10,22,35",
+    "actions": {
+      "title": "Действия",
+      "accept": "Принять",
+      "complete": "Отметить выполненной",
+      "reject": "Отклонить",
+      "approveCompletion": "Подтвердить завершение",
+      "rework": "Запросить доработку",
+      "confirmTitle": "Подтверждение действия",
+      "confirmMessage": "Вы уверены, что хотите {action}?",
+      "proceed": "Продолжить",
+      "reasonLabel": "Причина",
+      "reasonHint": "Поясните ваше решение",
+      "reasonRequired": "Пожалуйста, укажите причину",
+      "successMessage": "{action} выполнено успешно",
+      "genericError": "Не удалось выполнить действие"
+    }
   },
   "projects": {
     "title": "Проекты",
@@ -286,11 +142,11 @@
     "progress": "Прогресс",
     "tasks": "задач",
     "empty": "Проекты не найдены",
-  "searchHint": "Поиск проектов",
-  "createTitle": "Создать проект",
-  "name": "Название",
-  "description": "Описание",
-  "createShort": "Создать",
+    "searchHint": "Поиск проектов",
+    "createTitle": "Создать проект",
+    "name": "Название",
+    "description": "Описание",
+    "createShort": "Создать",
     "filters": {
       "all": "Все",
       "createdByMe": "Созданные мной",
@@ -352,12 +208,12 @@
     "dateOfBirth": "Дата рождения",
     "updateProfile": "Обновить профиль",
     "updateSuccess": "Профиль успешно обновлен",
-  "chooseFromGallery": "Выбрать из Галереи",
-  "takePhoto": "Сделать фото",
-  "avatarUpdated": "Аватар успешно обновлён",
-  "avatarTooLarge": "Файл слишком большой",
-  "avatarInvalidType": "Неподдерживаемый формат изображения",
-  "avatarUploadFailed": "Не удалось загрузить аватар",
+    "chooseFromGallery": "Выбрать из Галереи",
+    "takePhoto": "Сделать фото",
+    "avatarUpdated": "Аватар успешно обновлён",
+    "avatarTooLarge": "Файл слишком большой",
+    "avatarInvalidType": "Неподдерживаемый формат изображения",
+    "avatarUploadFailed": "Не удалось загрузить аватар",
     "changePassword": "Изменить пароль",
     "changePasswordDescription": "Пожалуйста, введите ваш текущий пароль и выберите новый.",
     "currentPassword": "Текущий пароль",
@@ -384,7 +240,49 @@
     "notifications": "Уведомления",
     "privacy": "Конфиденциальность",
     "about": "О приложении",
-    "version": "Версия"
+    "version": "Версия",
+    "languageChanged": "Язык изменён на {language}",
+    "languageOptions": {
+      "english": "Английский",
+      "uzbek": "Узбекский",
+      "russian": "Русский"
+    },
+    "themeSheet": {
+      "title": "Настройки темы",
+      "mode": "Режим темы",
+      "primaryColor": "Основной цвет",
+      "modes": {
+        "light": "Светлый",
+        "dark": "Тёмный",
+        "system": "Системный"
+      },
+      "colors": {
+        "primary": {
+          "label": "CoreUI Основной",
+          "description": "Классический CoreUI фиолетовый"
+        },
+        "secondary": {
+          "label": "CoreUI Вторичный",
+          "description": "Профессиональный серый"
+        },
+        "success": {
+          "label": "CoreUI Успех",
+          "description": "Свежий зелёный"
+        },
+        "danger": {
+          "label": "CoreUI Опасность",
+          "description": "Предупреждающий красный"
+        },
+        "warning": {
+          "label": "CoreUI Предупреждение",
+          "description": "Внимание оранжевый"
+        },
+        "info": {
+          "label": "CoreUI Информация",
+          "description": "Информативный синий"
+        }
+      }
+    }
   },
   "common": {
     "yes": "Да",

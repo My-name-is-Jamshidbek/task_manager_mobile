@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/localization/localization_service.dart';
+import '../../core/services/firebase_service.dart';
 import '../../core/utils/logger.dart';
 import '../../core/utils/multilingual_message.dart';
 import '../models/auth_models.dart';
@@ -312,6 +313,23 @@ class AuthService {
         stackTrace,
       );
       rethrow;
+    }
+
+    // Ensure FCM token is registered for this session
+    try {
+      final registered = await FirebaseService().registerTokenWithBackend(
+        authToken: token,
+      );
+      if (!registered) {
+        Logger.warning('⚠️ AuthService: Failed to register FCM token');
+      }
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ AuthService: Error registering FCM token',
+        'AuthService',
+        e,
+        stackTrace,
+      );
     }
   }
 

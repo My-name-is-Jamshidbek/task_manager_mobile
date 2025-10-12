@@ -19,7 +19,7 @@ class ThemeSettingsSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              localizations.translate('demo.themeSettings'),
+              localizations.translate('settings.themeSheet.title'),
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
@@ -43,14 +43,14 @@ class _ThemeModeSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          localizations.translate('demo.themeMode'),
+          localizations.translate('settings.themeSheet.mode'),
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         ...AppThemeMode.values.map(
           (mode) => RadioListTile<AppThemeMode>(
             title: Text(
-              localizations.translate('demo.themeModes.${mode.name}'),
+              localizations.translate('settings.themeSheet.modes.${mode.name}'),
             ),
             value: mode,
             groupValue: themeService.themeMode,
@@ -73,18 +73,20 @@ class _ThemeColorSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          localizations.translate('demo.primaryColor'),
+          localizations.translate('settings.themeSheet.primaryColor'),
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         ...AppThemeColor.values.map(
           (color) => RadioListTile<AppThemeColor>(
             title: Text(
-              localizations.translate('demo.themeColors.${color.name}.label'),
+              localizations.translate(
+                'settings.themeSheet.colors.${color.name}.label',
+              ),
             ),
             subtitle: Text(
               localizations.translate(
-                'demo.themeColors.${color.name}.description',
+                'settings.themeSheet.colors.${color.name}.description',
               ),
             ),
             value: color,
