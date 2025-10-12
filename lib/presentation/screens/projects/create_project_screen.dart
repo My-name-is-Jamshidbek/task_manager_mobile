@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/logger.dart';
-import '../../../data/api/project_service.dart';
 import '../../../data/models/project_models.dart';
 import '../../providers/project_detail_provider.dart';
 import '../../providers/file_group_provider.dart';
+import '../../providers/projects_provider.dart';
 import '../../widgets/file_group_manager.dart';
 import 'project_detail_screen.dart';
 
 class CreateProjectScreen extends StatefulWidget {
-  final ProjectService? projectService; // injectable for tests
   final List<int>? initialFileIds; // preload attachments (ids already uploaded)
   final bool showAttachments; // allow hiding attachments in specialized flows
   final void Function(Project)?
@@ -18,7 +17,6 @@ class CreateProjectScreen extends StatefulWidget {
 
   const CreateProjectScreen({
     super.key,
-    this.projectService,
     this.initialFileIds,
     this.showAttachments = true,
     this.onCreated,
@@ -130,8 +128,8 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _submitting = true);
     try {
-      final service = widget.projectService ?? ProjectService();
-      final res = await service.createProject(
+      final projectsProvider = context.read<ProjectsProvider>();
+      final res = await projectsProvider.createProject(
         name: _nameCtrl.text.trim(),
         description: _descCtrl.text.trim().isEmpty
             ? null

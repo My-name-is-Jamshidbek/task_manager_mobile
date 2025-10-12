@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/api/api_client.dart';
 import '../../core/utils/logger.dart';
 import '../../data/datasources/project_remote_datasource.dart';
 import '../../data/models/project_models.dart';
@@ -87,5 +88,32 @@ class ProjectsProvider extends ChangeNotifier {
     if (_loading || !_hasMore) return;
     _page += 1;
     await fetchProjects();
+  }
+
+  Future<ApiResponse<Project>> createProject({
+    required String name,
+    String? description,
+    int? fileGroupId,
+  }) async {
+    Logger.info('🆕 ProjectsProvider: Creating project "$name"');
+
+    final response = await _remote.createProject(
+      name: name,
+      description: description,
+      fileGroupId: fileGroupId,
+    );
+
+    if (response.isSuccess && response.data != null) {
+      _projects = [response.data!, ..._projects];
+      _page = 1;
+      _hasMore = true;
+      notifyListeners();
+    } else {
+      Logger.warning(
+        '⚠️ ProjectsProvider: Failed to create project - ${response.error}',
+      );
+    }
+
+    return response;
   }
 }

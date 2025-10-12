@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:task_manager/presentation/screens/projects/create_project_screen.dart';
-import 'package:task_manager/data/api/project_service.dart';
+import 'package:provider/provider.dart';
 import 'package:task_manager/core/api/api_client.dart';
+import 'package:task_manager/core/localization/app_localizations.dart';
 import 'package:task_manager/data/models/project_models.dart';
+import 'package:task_manager/presentation/providers/projects_provider.dart';
+import 'package:task_manager/presentation/screens/projects/create_project_screen.dart';
 
-// A simple fake ProjectService to capture the fileGroupId argument.
-class _FakeProjectService extends ProjectService {
+// A simple fake ProjectsProvider to capture the fileGroupId argument.
+class _FakeProjectsProvider extends ProjectsProvider {
   int? capturedFileGroupId;
   int calls = 0;
 
-  _FakeProjectService();
+  _FakeProjectsProvider();
 
   @override
   Future<ApiResponse<Project>> createProject({
@@ -37,6 +40,7 @@ class _FakeProjectService extends ProjectService {
       status: 1,
       statusLabel: 'active',
     );
+    notifyListeners();
     return ApiResponse.success(project);
   }
 }
@@ -46,18 +50,29 @@ void main() {
 
   group('CreateProjectScreen attachments', () {
     testWidgets('passes file group id to service', (tester) async {
-      final fakeService = _FakeProjectService();
+      final fakeProvider = _FakeProjectsProvider();
 
       // We inject initialFileIds directly (simulating already uploaded attachments)
       await tester.pumpWidget(
-        MaterialApp(
-          home: CreateProjectScreen(
-            projectService: fakeService,
-            showAttachments: false,
-            onCreated: (_) {},
+        ChangeNotifierProvider<ProjectsProvider>.value(
+          value: fakeProvider,
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizationsDelegate(),
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: CreateProjectScreen(
+              showAttachments: false,
+              onCreated: (_) {},
+            ),
           ),
         ),
       );
+
+      await tester.pumpAndSettle();
 
       // Enter name & description
       await tester.enterText(
@@ -73,13 +88,14 @@ void main() {
       // For a purist approach we could expose an injection parameter; here we just proceed without attachments.
 
       // Tap create button
-      await tester.tap(find.widgetWithIcon(FilledButton, Icons.save));
+      expect(find.text('Create'), findsOneWidget);
+      await tester.tap(find.text('Create'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(fakeService.calls, 1);
+      expect(fakeProvider.calls, 1);
       expect(
-        fakeService.capturedFileGroupId,
+        fakeProvider.capturedFileGroupId,
         isNull,
         reason: 'No group created when attachments UI hidden',
       );
