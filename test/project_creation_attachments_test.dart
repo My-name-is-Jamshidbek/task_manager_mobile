@@ -41,7 +41,7 @@ class _FakeProjectsProvider extends ProjectsProvider {
       statusLabel: 'active',
     );
     notifyListeners();
-    return ApiResponse.success(project);
+    return ApiResponse.success(data: project);
   }
 }
 

@@ -1,11 +1,8 @@
-import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import '../api/api_client.dart';
-import '../constants/api_constants.dart';
 import '../utils/logger.dart';
 import '../notifications/notification_templates.dart';
 import 'notification_service.dart';
@@ -19,7 +16,6 @@ class FirebaseService {
 
   FirebaseMessaging? _messaging;
   String? _fcmToken;
-  String? _storedAuthToken; // Store auth token for custom DELETE requests
   bool _isInitialized = false;
 
   // Getters
@@ -202,7 +198,6 @@ class FirebaseService {
       final apiClient = ApiClient();
       if (authToken != null) {
         apiClient.setAuthToken(authToken);
-        _storedAuthToken = authToken; // Store for custom DELETE requests
       }
 
       final requestBody = {
@@ -252,41 +247,45 @@ class FirebaseService {
       final apiClient = ApiClient();
       if (authToken != null) {
         apiClient.setAuthToken(authToken);
-        _storedAuthToken = authToken; // Store for custom DELETE requests
       }
 
-      // Create a custom DELETE request with body using http client directly
-      // since the ApiClient doesn't support DELETE with body
-      final status = await _deleteTokenWithBody(apiClient, '/firebase/tokens', {
-        'token': _fcmToken!,
-      });
+      final deleteResponse = await apiClient.delete<void>(
+        '/firebase/tokens',
+        body: {'token': _fcmToken!},
+      );
 
-      if (status >= 200 && status < 300) {
+      if (deleteResponse.isSuccess) {
         Logger.info('✅ FCM token deactivated from backend');
         return true;
       }
 
       // If unauthorized, try public deactivation endpoint without auth header
-      if (status == 401) {
+      if (deleteResponse.statusCode == 401) {
         Logger.warning(
           '⚠️ Auth deactivation returned 401, trying public endpoint',
         );
-        final publicStatus = await _deleteTokenWithBody(
-          apiClient,
+        final publicResponse = await apiClient.delete<void>(
           '/firebase/tokens/public',
-          {'token': _fcmToken!},
+          body: {'token': _fcmToken!},
           includeAuth: false,
         );
 
-        if (publicStatus >= 200 && publicStatus < 300) {
+        if (publicResponse.isSuccess) {
           Logger.info('✅ FCM token deactivated via public endpoint');
           return true;
         }
-        Logger.error('❌ Public deactivation failed with status: $publicStatus');
+        Logger.error(
+          '❌ Public deactivation failed with status: '
+          '${publicResponse.statusCode}',
+        );
         return false;
       }
 
-      Logger.error('❌ Failed to deactivate FCM token, status: $status');
+      Logger.error(
+        '❌ Failed to deactivate FCM token, status: '
+        '${deleteResponse.statusCode ?? 'unknown'} '
+        '- ${deleteResponse.error}',
+      );
       return false;
     } catch (e) {
       Logger.error('❌ Error deactivating FCM token: $e');
@@ -315,7 +314,6 @@ class FirebaseService {
       final apiClient = ApiClient();
       if (authToken != null) {
         apiClient.setAuthToken(authToken);
-        _storedAuthToken = authToken;
       }
 
       final currentLocale =
@@ -411,41 +409,6 @@ class FirebaseService {
       _fcmToken = newToken;
       onTokenRefresh(newToken);
     });
-  }
-
-  /// Custom DELETE request with body since ApiClient doesn't support it
-  /// Returns HTTP status code (or 0 on transport error)
-  Future<int> _deleteTokenWithBody(
-    ApiClient apiClient,
-    String endpoint,
-    Map<String, dynamic> body, {
-    bool includeAuth = true,
-  }) async {
-    try {
-      final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
-
-      final request = http.Request('DELETE', uri);
-      request.headers['Content-Type'] = 'application/json';
-
-      // We'll need to store the auth token when it's set
-      // For now, this will work without auth - update if auth is required
-      if (includeAuth && _storedAuthToken != null) {
-        request.headers['Authorization'] = 'Bearer $_storedAuthToken';
-      }
-
-      request.body = jsonEncode(body);
-
-      final response = await request.send();
-      final statusCode = response.statusCode;
-      if (statusCode < 200 || statusCode >= 300) {
-        final responseBody = await response.stream.bytesToString();
-        Logger.error('DELETE $endpoint failed: $statusCode - $responseBody');
-      }
-      return statusCode;
-    } catch (e) {
-      Logger.error('Error in DELETE with body: $e');
-      return 0;
-    }
   }
 }
 

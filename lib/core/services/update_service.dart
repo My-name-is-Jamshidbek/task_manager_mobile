@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../api/api_client.dart';
 import '../utils/logger.dart';
 import 'version_service.dart';
 
@@ -131,60 +130,58 @@ class UpdateService {
         '🔄 UpdateService: Checking for updates - $platform v$currentVersion',
       );
 
-      final uri = Uri.parse('$_baseUrl$_versionCheckEndpoint').replace(
-        queryParameters: {
-          'platform': platform,
-          'current_version': currentVersion,
-        },
+      final response = await ApiClient().get<Map<String, dynamic>>(
+        '$_baseUrl$_versionCheckEndpoint',
+        queryParams: {'platform': platform, 'current_version': currentVersion},
+        includeAuth: false,
+        showGlobalError: false,
+        fromJson: (obj) => obj,
       );
 
-      Logger.info('📤 UpdateService: Sending request to ${uri.toString()}');
+      Logger.info(
+        '📥 UpdateService: Response status: '
+        '${response.statusCode ?? 'unknown'}',
+      );
 
-      final response = await http
-          .get(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-          )
-          .timeout(const Duration(seconds: 10));
-
-      Logger.info('📥 UpdateService: Response status: ${response.statusCode}');
-      Logger.info('📥 UpdateService: Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-
-        if (jsonData['success'] == true && jsonData['data'] != null) {
-          final versionInfo = VersionInfo.fromJson(jsonData['data']);
-          Logger.info('✅ UpdateService: Version check successful');
-          Logger.info(
-            '🔍 UpdateService: Update required: ${versionInfo.updateRequired}',
-          );
-          Logger.info(
-            '🔍 UpdateService: Latest version: ${versionInfo.latest.code}',
-          );
-          return versionInfo;
-        } else {
-          Logger.warning('⚠️ UpdateService: Invalid response format');
+      if (!response.isSuccess) {
+        if (response.statusCode == 404) {
+          Logger.info('📱 UpdateService: No active version found for platform');
           return null;
         }
-      } else if (response.statusCode == 404) {
-        Logger.info('📱 UpdateService: No active version found for platform');
-        return null;
-      } else if (response.statusCode == 422) {
-        Logger.warning('⚠️ UpdateService: Validation error in request');
-        return null;
-      } else {
+        if (response.statusCode == 422) {
+          Logger.warning('⚠️ UpdateService: Validation error in request');
+          return null;
+        }
         Logger.error(
-          '❌ UpdateService: Unexpected response status: ${response.statusCode}',
+          '❌ UpdateService: Unexpected response status: '
+              '${response.statusCode ?? 'unknown'}',
           'UpdateService',
-          response.body,
+          response.error,
           null,
         );
         return null;
       }
+
+      final jsonData = response.data;
+      if (jsonData == null) {
+        Logger.warning('⚠️ UpdateService: Empty response payload');
+        return null;
+      }
+
+      if (jsonData['success'] == true && jsonData['data'] != null) {
+        final versionInfo = VersionInfo.fromJson(jsonData['data']);
+        Logger.info('✅ UpdateService: Version check successful');
+        Logger.info(
+          '🔍 UpdateService: Update required: ${versionInfo.updateRequired}',
+        );
+        Logger.info(
+          '🔍 UpdateService: Latest version: ${versionInfo.latest.code}',
+        );
+        return versionInfo;
+      }
+
+      Logger.warning('⚠️ UpdateService: Invalid response format');
+      return null;
     } catch (e, stackTrace) {
       Logger.error(
         '❌ UpdateService: Failed to check for updates',

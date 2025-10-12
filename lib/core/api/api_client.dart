@@ -33,6 +33,9 @@ class ApiClient {
     _authToken = null;
   }
 
+  // Current auth token (primarily for testing and diagnostics)
+  String? get authToken => _authToken;
+
   // Set callback for authentication failures
   void setAuthFailureCallback(AuthFailureCallback? callback) {
     _onAuthFailure = callback;
@@ -50,18 +53,25 @@ class ApiClient {
     }
   }
 
-  // Get common headers
-  Map<String, String> get _headers {
-    final headers = {
-      'Content-Type': 'application/json',
+  Map<String, String> _buildHeaders({
+    Map<String, String>? headers,
+    bool includeAuth = true,
+    bool includeJsonContentType = true,
+  }) {
+    final result = <String, String>{
+      if (includeJsonContentType) 'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
 
-    if (_authToken != null) {
-      headers['Authorization'] = 'Bearer $_authToken';
+    if (includeAuth && _authToken != null) {
+      result['Authorization'] = 'Bearer $_authToken';
     }
 
-    return headers;
+    if (headers != null) {
+      result.addAll(headers);
+    }
+
+    return result;
   }
 
   // GET request
@@ -69,6 +79,8 @@ class ApiClient {
     String endpoint, {
     Map<String, String>? queryParams,
     Map<String, String>? headers,
+    bool includeAuth = true,
+    bool showGlobalError = true,
     T Function(Map<String, dynamic>)? fromJson,
     T Function(List<dynamic>)? fromJsonList,
   }) async {
@@ -77,10 +89,10 @@ class ApiClient {
       final uri = _buildUri(endpoint, queryParams);
 
       // Merge custom headers with default headers
-      final finalHeaders = {..._headers};
-      if (headers != null) {
-        finalHeaders.addAll(headers);
-      }
+      final finalHeaders = _buildHeaders(
+        headers: headers,
+        includeAuth: includeAuth,
+      );
 
       Logger.info('🚀 [$requestId] GET Request Started');
       Logger.info('📍 [$requestId] URL: $uri');
@@ -100,6 +112,7 @@ class ApiClient {
         response,
         fromJson,
         requestId,
+        showGlobalError: showGlobalError,
         fromJsonList: fromJsonList,
       );
     } catch (e, stackTrace) {
@@ -116,14 +129,15 @@ class ApiClient {
   Future<ApiResponse<BinaryDownloadResult>> downloadBinary(
     String endpoint, {
     Map<String, String>? headers,
+    bool includeAuth = true,
   }) async {
     final String requestId = _generateRequestId();
     try {
       final uri = _buildUri(endpoint);
-      final finalHeaders = {..._headers};
-      if (headers != null) {
-        finalHeaders.addAll(headers);
-      }
+      final finalHeaders = _buildHeaders(
+        headers: headers,
+        includeAuth: includeAuth,
+      );
 
       Logger.info('🚀 [$requestId] BINARY DOWNLOAD Started');
       Logger.info('📍 [$requestId] URL: $uri');
@@ -145,11 +159,12 @@ class ApiClient {
         );
         Logger.info('✅ [$requestId] Binary download successful');
         return ApiResponse.success(
-          BinaryDownloadResult(
+          data: BinaryDownloadResult(
             bytes: response.bodyBytes,
             contentType: contentType,
             fileName: fileName,
           ),
+          statusCode: response.statusCode,
         );
       }
 
@@ -160,7 +175,7 @@ class ApiClient {
       final errorMessage =
           'Download failed with status ${response.statusCode}: ${response.reasonPhrase}';
       Logger.warning('⚠️ [$requestId] $errorMessage');
-      return ApiResponse.error(errorMessage);
+      return ApiResponse.error(errorMessage, statusCode: response.statusCode);
     } catch (e, stackTrace) {
       Logger.error(
         '❌ [$requestId] BINARY DOWNLOAD Failed',
@@ -177,6 +192,8 @@ class ApiClient {
     String endpoint, {
     Map<String, dynamic>? body,
     Map<String, String>? headers,
+    bool includeAuth = true,
+    bool showGlobalError = true,
     T Function(Map<String, dynamic>)? fromJson,
   }) async {
     final String requestId = _generateRequestId();
@@ -184,11 +201,10 @@ class ApiClient {
       final uri = _buildUri(endpoint);
       final jsonBody = body != null ? jsonEncode(body) : null;
 
-      // Merge custom headers with default headers
-      final finalHeaders = {..._headers};
-      if (headers != null) {
-        finalHeaders.addAll(headers);
-      }
+      final finalHeaders = _buildHeaders(
+        headers: headers,
+        includeAuth: includeAuth,
+      );
 
       Logger.info('🚀 [$requestId] POST Request Started');
       Logger.info('📍 [$requestId] URL: $uri');
@@ -206,7 +222,12 @@ class ApiClient {
       Logger.info(
         '⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms',
       );
-      return _handleResponse<T>(response, fromJson, requestId);
+      return _handleResponse<T>(
+        response,
+        fromJson,
+        requestId,
+        showGlobalError: showGlobalError,
+      );
     } catch (e, stackTrace) {
       Logger.error(
         '❌ [$requestId] POST Request Failed',
@@ -222,6 +243,9 @@ class ApiClient {
   Future<ApiResponse<T>> put<T>(
     String endpoint, {
     Map<String, dynamic>? body,
+    Map<String, String>? headers,
+    bool includeAuth = true,
+    bool showGlobalError = true,
     T Function(Map<String, dynamic>)? fromJson,
   }) async {
     final String requestId = _generateRequestId();
@@ -229,15 +253,20 @@ class ApiClient {
       final uri = _buildUri(endpoint);
       final jsonBody = body != null ? jsonEncode(body) : null;
 
+      final finalHeaders = _buildHeaders(
+        headers: headers,
+        includeAuth: includeAuth,
+      );
+
       Logger.info('🚀 [$requestId] PUT Request Started');
       Logger.info('📍 [$requestId] URL: $uri');
-      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(_headers)}');
+      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(finalHeaders)}');
       Logger.info('📦 [$requestId] Request Body: ${_sanitizeBody(body)}');
 
       final stopwatch = Stopwatch()..start();
       final response = await _client.put(
         uri,
-        headers: _headers,
+        headers: finalHeaders,
         body: jsonBody,
       );
       stopwatch.stop();
@@ -245,7 +274,12 @@ class ApiClient {
       Logger.info(
         '⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms',
       );
-      return _handleResponse<T>(response, fromJson, requestId);
+      return _handleResponse<T>(
+        response,
+        fromJson,
+        requestId,
+        showGlobalError: showGlobalError,
+      );
     } catch (e, stackTrace) {
       Logger.error(
         '❌ [$requestId] PUT Request Failed',
@@ -262,6 +296,8 @@ class ApiClient {
     String endpoint, {
     Map<String, dynamic>? body,
     Map<String, String>? headers,
+    bool includeAuth = true,
+    bool showGlobalError = true,
     T Function(Map<String, dynamic>)? fromJson,
   }) async {
     final String requestId = _generateRequestId();
@@ -269,11 +305,10 @@ class ApiClient {
       final uri = _buildUri(endpoint);
       final jsonBody = body != null ? jsonEncode(body) : null;
 
-      // Merge custom headers with default headers
-      final finalHeaders = {..._headers};
-      if (headers != null) {
-        finalHeaders.addAll(headers);
-      }
+      final finalHeaders = _buildHeaders(
+        headers: headers,
+        includeAuth: includeAuth,
+      );
 
       Logger.info('🚀 [$requestId] PATCH Request Started');
       Logger.info('📍 [$requestId] URL: $uri');
@@ -291,7 +326,12 @@ class ApiClient {
       Logger.info(
         '⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms',
       );
-      return _handleResponse<T>(response, fromJson, requestId);
+      return _handleResponse<T>(
+        response,
+        fromJson,
+        requestId,
+        showGlobalError: showGlobalError,
+      );
     } catch (e, stackTrace) {
       Logger.error(
         '❌ [$requestId] PATCH Request Failed',
@@ -306,24 +346,45 @@ class ApiClient {
   // DELETE request
   Future<ApiResponse<T>> delete<T>(
     String endpoint, {
+    Map<String, dynamic>? body,
+    Map<String, String>? headers,
+    bool includeAuth = true,
+    bool showGlobalError = true,
     T Function(Map<String, dynamic>)? fromJson,
   }) async {
     final String requestId = _generateRequestId();
     try {
       final uri = _buildUri(endpoint);
+      final jsonBody = body != null ? jsonEncode(body) : null;
+      final finalHeaders = _buildHeaders(
+        headers: headers,
+        includeAuth: includeAuth,
+      );
 
       Logger.info('🚀 [$requestId] DELETE Request Started');
       Logger.info('📍 [$requestId] URL: $uri');
-      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(_headers)}');
+      Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(finalHeaders)}');
+      if (body != null && body.isNotEmpty) {
+        Logger.info('📦 [$requestId] Request Body: ${_sanitizeBody(body)}');
+      }
 
       final stopwatch = Stopwatch()..start();
-      final response = await _client.delete(uri, headers: _headers);
+      final response = await _client.delete(
+        uri,
+        headers: finalHeaders,
+        body: jsonBody,
+      );
       stopwatch.stop();
 
       Logger.info(
         '⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms',
       );
-      return _handleResponse<T>(response, fromJson, requestId);
+      return _handleResponse<T>(
+        response,
+        fromJson,
+        requestId,
+        showGlobalError: showGlobalError,
+      );
     } catch (e, stackTrace) {
       Logger.error(
         '❌ [$requestId] DELETE Request Failed',
@@ -341,6 +402,8 @@ class ApiClient {
     required Map<String, String> fields,
     required Map<String, http.MultipartFile> files,
     Map<String, String>? headers,
+    bool includeAuth = true,
+    bool showGlobalError = true,
     T Function(Map<String, dynamic>)? fromJson,
   }) async {
     final String requestId = _generateRequestId();
@@ -349,9 +412,11 @@ class ApiClient {
       final request = http.MultipartRequest('POST', uri);
 
       // Headers (exclude json content type)
-      final finalHeaders = {..._headers};
-      finalHeaders.remove('Content-Type'); // Let multipart set boundary
-      if (headers != null) finalHeaders.addAll(headers);
+      final finalHeaders = _buildHeaders(
+        headers: headers,
+        includeAuth: includeAuth,
+        includeJsonContentType: false,
+      );
       request.headers.addAll(finalHeaders);
 
       // Fields
@@ -373,7 +438,12 @@ class ApiClient {
         '⏱️ [$requestId] Duration: ${stopwatch.elapsedMilliseconds}ms',
       );
 
-      return _handleResponse<T>(response, fromJson, requestId);
+      return _handleResponse<T>(
+        response,
+        fromJson,
+        requestId,
+        showGlobalError: showGlobalError,
+      );
     } catch (e, stackTrace) {
       Logger.error(
         '❌ [$requestId] MULTIPART POST Failed',
@@ -387,9 +457,15 @@ class ApiClient {
 
   // Build URI with base URL and query parameters
   Uri _buildUri(String endpoint, [Map<String, String>? queryParams]) {
-    return Uri.parse(
-      '${ApiConstants.baseUrl}$endpoint',
-    ).replace(queryParameters: queryParams);
+    final bool isAbsolute =
+        endpoint.startsWith('http://') || endpoint.startsWith('https://');
+    final base = isAbsolute ? endpoint : '${ApiConstants.baseUrl}$endpoint';
+    final uri = Uri.parse(base);
+    if (queryParams == null || queryParams.isEmpty) {
+      return uri;
+    }
+    final combined = {...uri.queryParameters, ...queryParams};
+    return uri.replace(queryParameters: combined);
   }
 
   // Generate unique request ID for tracking
@@ -441,27 +517,41 @@ class ApiClient {
     T Function(Map<String, dynamic>)? fromJson,
     String requestId, {
     T Function(List<dynamic>)? fromJsonList,
+    bool showGlobalError = true,
   }) {
     Logger.info('📥 [$requestId] Response Status: ${response.statusCode}');
     Logger.info('📥 [$requestId] Response Headers: ${response.headers}');
 
     // Log response body (truncated if too long)
-    final responseBodyLog = _truncateLog(response.body, 1000);
+    final rawBody = response.body;
+    final trimmedBody = rawBody.trim();
+    final responseBodyLog = _truncateLog(rawBody, 1000);
     Logger.info('📥 [$requestId] Response Body: $responseBodyLog');
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       Logger.info('✅ [$requestId] Request Successful');
       try {
-        final dynamic decoded = jsonDecode(response.body);
+        if (trimmedBody.isEmpty) {
+          Logger.info('🎯 [$requestId] Empty response body');
+          return ApiResponse.success(statusCode: response.statusCode);
+        }
+
+        final dynamic decoded = jsonDecode(trimmedBody);
 
         if (decoded is List) {
           if (fromJsonList != null) {
             final data = fromJsonList(decoded);
             Logger.info('🎯 [$requestId] List Parsed Successfully');
-            return ApiResponse.success(data);
+            return ApiResponse.success(
+              data: data,
+              statusCode: response.statusCode,
+            );
           }
           Logger.info('🎯 [$requestId] Raw JSON List Returned');
-          return ApiResponse.success(decoded as T);
+          return ApiResponse.success(
+            data: decoded as T,
+            statusCode: response.statusCode,
+          );
         } else if (decoded is Map<String, dynamic>) {
           // If caller expects a list (provided fromJsonList) but server
           // returned an envelope like { data: [...], meta: {...} }
@@ -470,21 +560,33 @@ class ApiClient {
             if (maybeList is List) {
               final data = fromJsonList(maybeList);
               Logger.info('🎯 [$requestId] Envelope List Parsed Successfully');
-              return ApiResponse.success(data);
+              return ApiResponse.success(
+                data: data,
+                statusCode: response.statusCode,
+              );
             }
           }
           if (fromJson != null) {
             final data = fromJson(decoded);
             Logger.info('🎯 [$requestId] Object Parsed Successfully');
-            return ApiResponse.success(data);
+            return ApiResponse.success(
+              data: data,
+              statusCode: response.statusCode,
+            );
           }
           Logger.info('🎯 [$requestId] Raw JSON Object Returned');
-          return ApiResponse.success(decoded as T);
+          return ApiResponse.success(
+            data: decoded as T,
+            statusCode: response.statusCode,
+          );
         } else {
           Logger.warning(
             '⚠️ [$requestId] Unexpected JSON type: ${decoded.runtimeType}',
           );
-          return ApiResponse.error('Unexpected response type');
+          return ApiResponse.error(
+            'Unexpected response type',
+            statusCode: response.statusCode,
+          );
         }
       } catch (e, stackTrace) {
         Logger.error(
@@ -495,13 +597,19 @@ class ApiClient {
         );
         final ctx = navigatorKey.currentContext;
         final loc = ctx != null ? AppLocalizations.of(ctx) : null;
-        _showGlobalError(
-          title: loc?.translate('common.error') ?? 'Error',
-          message:
-              loc?.translate('messages.unexpectedError') ?? 'Unexpected error',
-          details: 'Request: $requestId\n${response.body}',
+        if (showGlobalError) {
+          _showGlobalError(
+            title: loc?.translate('common.error') ?? 'Error',
+            message:
+                loc?.translate('messages.unexpectedError') ??
+                'Unexpected error',
+            details: 'Request: $requestId\n$trimmedBody',
+          );
+        }
+        return ApiResponse.error(
+          'Failed to parse response',
+          statusCode: response.statusCode,
         );
-        return ApiResponse.error('Failed to parse response');
       }
     } else {
       Logger.warning(
@@ -515,7 +623,28 @@ class ApiClient {
       }
 
       try {
-        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        if (trimmedBody.isEmpty) {
+          final errorMessage =
+              'HTTP ${response.statusCode}: ${response.reasonPhrase}';
+          Logger.error('❌ [$requestId] Error: $errorMessage');
+          if (response.statusCode != 401) {
+            if (showGlobalError) {
+              final ctx = navigatorKey.currentContext;
+              final loc = ctx != null ? AppLocalizations.of(ctx) : null;
+              _showGlobalError(
+                title: loc?.translate('common.error') ?? 'Error',
+                message: errorMessage,
+                details: 'HTTP ${response.statusCode}: <empty body>',
+              );
+            }
+          }
+          return ApiResponse.error(
+            errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
+
+        final Map<String, dynamic> errorData = jsonDecode(trimmedBody);
 
         // Handle both old and new message formats
         String message;
@@ -530,31 +659,35 @@ class ApiClient {
 
         Logger.error('❌ [$requestId] Error Message: $message');
         if (response.statusCode != 401) {
-          final ctx = navigatorKey.currentContext;
-          final loc = ctx != null ? AppLocalizations.of(ctx) : null;
-          _showGlobalError(
-            title: loc?.translate('common.error') ?? 'Error',
-            message: message,
-            details:
-                'HTTP ${response.statusCode}: ${_truncateLog(response.body, 1000)}',
-          );
+          if (showGlobalError) {
+            final ctx = navigatorKey.currentContext;
+            final loc = ctx != null ? AppLocalizations.of(ctx) : null;
+            _showGlobalError(
+              title: loc?.translate('common.error') ?? 'Error',
+              message: message,
+              details:
+                  'HTTP ${response.statusCode}: ${_truncateLog(trimmedBody, 1000)}',
+            );
+          }
         }
-        return ApiResponse.error(message);
+        return ApiResponse.error(message, statusCode: response.statusCode);
       } catch (e) {
         final errorMessage =
             'HTTP ${response.statusCode}: ${response.reasonPhrase}';
         Logger.error('❌ [$requestId] Error: $errorMessage');
         if (response.statusCode != 401) {
-          final ctx = navigatorKey.currentContext;
-          final loc = ctx != null ? AppLocalizations.of(ctx) : null;
-          _showGlobalError(
-            title: loc?.translate('common.error') ?? 'Error',
-            message: errorMessage,
-            details:
-                'HTTP ${response.statusCode}: ${_truncateLog(response.body, 1000)}',
-          );
+          if (showGlobalError) {
+            final ctx = navigatorKey.currentContext;
+            final loc = ctx != null ? AppLocalizations.of(ctx) : null;
+            _showGlobalError(
+              title: loc?.translate('common.error') ?? 'Error',
+              message: errorMessage,
+              details:
+                  'HTTP ${response.statusCode}: ${_truncateLog(trimmedBody, 1000)}',
+            );
+          }
         }
-        return ApiResponse.error(errorMessage);
+        return ApiResponse.error(errorMessage, statusCode: response.statusCode);
       }
     }
   }
@@ -606,15 +739,25 @@ class ApiResponse<T> {
   final T? data;
   final String? error;
   final bool isSuccess;
+  final int? statusCode;
 
-  ApiResponse._({this.data, this.error, required this.isSuccess});
+  ApiResponse._({
+    this.data,
+    this.error,
+    required this.isSuccess,
+    this.statusCode,
+  });
 
-  factory ApiResponse.success(T data) {
-    return ApiResponse._(data: data, isSuccess: true);
+  factory ApiResponse.success({T? data, int? statusCode}) {
+    return ApiResponse._(data: data, isSuccess: true, statusCode: statusCode);
   }
 
-  factory ApiResponse.error(String error) {
-    return ApiResponse._(error: error, isSuccess: false);
+  factory ApiResponse.error(String error, {int? statusCode}) {
+    return ApiResponse._(
+      error: error,
+      isSuccess: false,
+      statusCode: statusCode,
+    );
   }
 }
 

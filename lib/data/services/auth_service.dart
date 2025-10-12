@@ -250,7 +250,7 @@ class AuthService {
           ),
         );
 
-        return ApiResponse.success(response);
+        return ApiResponse.success(data: response);
       }
 
       // Real resend SMS API call
@@ -455,7 +455,7 @@ class AuthService {
       );
 
       Logger.info('✅ AuthService: Mock token verification successful');
-      return ApiResponse.success(mockResponse);
+      return ApiResponse.success(data: mockResponse);
     }
 
     try {
@@ -617,7 +617,7 @@ class AuthService {
           Logger.info('📝 AuthService: Success message - $localizedMessage');
         }
 
-        return ApiResponse.success(response.data!);
+        return ApiResponse.success(data: response.data!);
       } else {
         Logger.warning(
           '⚠️ AuthService: Profile update failed - ${response.error}',
@@ -660,7 +660,7 @@ class AuthService {
         Logger.info('✅ AuthService: Password changed successfully');
         final localizedMessage = response.data!.getLocalizedMessage();
         Logger.info('📝 AuthService: Success message - $localizedMessage');
-        return ApiResponse.success(response.data!);
+        return ApiResponse.success(data: response.data!);
       } else {
         Logger.warning(
           '⚠️ AuthService: Password change failed - ${response.error}',
@@ -775,7 +775,7 @@ class AuthService {
     // Store session data
     await _storeSession(mockToken, mockUser);
 
-    return ApiResponse.success(verifyResponse);
+    return ApiResponse.success(data: verifyResponse);
   }
 }
 
