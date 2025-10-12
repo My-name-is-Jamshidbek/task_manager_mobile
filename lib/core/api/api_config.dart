@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'http://tms.amusoft.uz/api';
+  static const String baseUrl = 'http://mobile.tms.thejoma.uz/api';
   
   // Auth endpoints
   static const String loginEndpoint = '/auth/login';

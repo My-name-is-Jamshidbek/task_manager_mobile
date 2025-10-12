@@ -224,6 +224,7 @@
     "searchHint": "Vazifalarni qidirish",
     "addTask": "Vazifa qo'shish",
     "addTaskWithFiles": "Fayllar bilan vazifa qo'shish",
+  "share": "Vazifani ulashish",
   "createSubtask": "Ost vazifa yaratish",
     "editTask": "Vazifani tahrirlash",
     "deleteTask": "Vazifani o'chirish",
@@ -258,7 +259,23 @@
     "noSubtasks": "Ost vazifalar yo'q",
     "toWhom": "Kimga biriktiriladi (foydalanuvchi IDlari)",
   "toWhomHelper": "Foydalanuvchi ID-larini vergul bilan kiriting, masalan: 10,22,35"
-    
+      ,
+      "actions": {
+        "title": "Harakatlar",
+        "accept": "Qabul qilish",
+        "complete": "Bajarildi deb belgilash",
+        "reject": "Rad etish",
+        "approveCompletion": "Yakunini tasdiqlash",
+        "rework": "Qayta ishlashni so'rash",
+        "confirmTitle": "Harakatni tasdiqlang",
+        "confirmMessage": "{action} bajarishga ishonchingiz komilmi?",
+        "proceed": "Davom etish",
+        "reasonLabel": "Sabab",
+        "reasonHint": "Qaroringizni tushuntiring",
+        "reasonRequired": "Iltimos, sabab ko'rsating",
+        "successMessage": "{action} muvaffaqiyatli bajarildi",
+        "genericError": "Amalni bajarib bo'lmadi"
+      }
   },
   "projects": {
     "title": "Loyihalar",

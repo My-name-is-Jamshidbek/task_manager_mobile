@@ -1,6 +1,6 @@
 class ApiConstants {
   // Base URL for the API
-  static const String baseUrl = 'https://tms.amusoft.uz/api';
+  static const String baseUrl = 'http://mobile.tms.thejoma.uz/api';
 
   // API Endpoints
   static const String login = '/auth/login';

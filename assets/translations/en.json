@@ -225,6 +225,7 @@
     "searchHint": "Search tasks",
     "addTask": "Add Task",
     "addTaskWithFiles": "Add Task with Files",
+    "share": "Share task",
   "createSubtask": "Create Subtask",
     "editTask": "Edit Task",
     "deleteTask": "Delete Task",
@@ -259,7 +260,23 @@
     "noSubtasks": "No subtasks",
     "toWhom": "Assign To (user IDs)",
   "toWhomHelper": "Enter user IDs separated by comma, e.g., 10,22,35"
-    
+      ,
+      "actions": {
+        "title": "Actions",
+        "accept": "Accept",
+        "complete": "Mark complete",
+        "reject": "Reject",
+        "approveCompletion": "Approve completion",
+        "rework": "Request rework",
+        "confirmTitle": "Confirm action",
+        "confirmMessage": "Are you sure you want to {action}?",
+        "proceed": "Proceed",
+        "reasonLabel": "Reason",
+        "reasonHint": "Explain your decision",
+        "reasonRequired": "Please provide a reason",
+        "successMessage": "{action} successful",
+        "genericError": "Couldn't perform the action"
+      }
   },
   "projects": {
     "title": "Projects",

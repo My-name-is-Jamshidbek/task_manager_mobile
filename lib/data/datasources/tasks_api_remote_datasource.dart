@@ -3,6 +3,7 @@ import '../../core/api/api_client.dart';
 import '../../core/constants/api_constants.dart';
 import '../models/api_task_models.dart';
 import '../models/worker_models.dart';
+import '../models/task_action.dart';
 
 class TasksApiRemoteDataSource {
   final ApiClient _apiClient;
@@ -100,6 +101,27 @@ class TasksApiRemoteDataSource {
     final endpoint = '${ApiConstants.taskById}/$id';
     return _apiClient.get<ApiTask>(
       endpoint,
+      fromJson: (obj) {
+        final map = (obj['data'] is Map<String, dynamic>)
+            ? obj['data'] as Map<String, dynamic>
+            : obj;
+        return ApiTask.fromJson(map);
+      },
+    );
+  }
+
+  Future<ApiResponse<ApiTask>> performTaskAction({
+    required int taskId,
+    required TaskActionKind action,
+    String? reason,
+  }) async {
+    final endpoint = '${ApiConstants.tasks}/$taskId/${action.pathSegment}';
+    final body = (reason != null && reason.trim().isNotEmpty)
+        ? {'reason': reason.trim()}
+        : null;
+    return _apiClient.post<ApiTask>(
+      endpoint,
+      body: body,
       fromJson: (obj) {
         final map = (obj['data'] is Map<String, dynamic>)
             ? obj['data'] as Map<String, dynamic>

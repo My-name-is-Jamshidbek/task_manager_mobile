@@ -81,6 +81,7 @@ class ApiTask {
   final List<ApiUserRef> workers;
   final List<FileAttachment> files;
   final int? parentTaskId;
+  final List<String> availableActions;
   const ApiTask({
     required this.id,
     required this.name,
@@ -94,6 +95,7 @@ class ApiTask {
     this.workers = const [],
     this.files = const [],
     this.parentTaskId,
+    this.availableActions = const [],
   });
 
   factory ApiTask.fromJson(Map<String, dynamic> json) => ApiTask(
@@ -129,5 +131,27 @@ class ApiTask {
         .map(FileAttachment.fromJson)
         .toList(),
     parentTaskId: json['parent_task_id'] as int?,
+    availableActions:
+        _parseActions(json['available_actions'] ?? json['actions']),
   );
+
+  static List<String> _parseActions(dynamic raw) {
+    if (raw == null) return const [];
+    if (raw is List) {
+      return raw
+          .whereType<String>()
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    if (raw is Map<String, dynamic>) {
+      // Some APIs return maps like {accept: true}
+      return raw.entries
+          .where((entry) => entry.value == true)
+          .map((entry) => entry.key.trim())
+          .where((key) => key.isNotEmpty)
+          .toList();
+    }
+    return const [];
+  }
 }
