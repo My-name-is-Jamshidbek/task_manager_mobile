@@ -10,6 +10,13 @@ class TaskListItem extends StatelessWidget {
   final bool showDescription;
   final bool showStatus;
   final bool showDeadline;
+  final bool showProjectName;
+  final bool isCompleted;
+  final Widget? leading;
+  final Widget? trailing;
+  final String? projectNameOverride;
+  final String projectPlaceholder;
+  final String? deadlineLabel;
   final VoidCallback? onTap;
 
   const TaskListItem({
@@ -19,50 +26,43 @@ class TaskListItem extends StatelessWidget {
     this.showDescription = true,
     this.showStatus = true,
     this.showDeadline = true,
+    this.showProjectName = false,
+    this.isCompleted = false,
+    this.leading,
+    this.trailing,
+    this.projectNameOverride,
+    this.projectPlaceholder = '-',
+    this.deadlineLabel,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final statusLabel = task.status?.label ?? '';
+    final statusLabel = task.status?.label?.trim() ?? '';
     final deadline = task.deadline;
+    final projectName = projectNameOverride ?? task.project?.name ?? '';
 
     return ListTile(
       contentPadding:
           contentPadding ?? const EdgeInsets.symmetric(horizontal: 0),
-      leading: const Icon(Icons.checklist),
+      leading: leading ?? const Icon(Icons.checklist),
       title: Text(
         task.name,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+        style: theme.textTheme.bodyLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          decoration: isCompleted ? TextDecoration.lineThrough : null,
+          color: isCompleted ? theme.colorScheme.onSurfaceVariant : null,
+        ),
       ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (showDescription && (task.description ?? '').trim().isNotEmpty)
-            Text(
-              task.description!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          Row(
-            children: [
-              if (showDeadline && deadline != null) ...[
-                const Icon(Icons.calendar_today, size: 14),
-                const SizedBox(width: 4),
-                Text(_formatDate(deadline)),
-                const SizedBox(width: 8),
-              ],
-              if (showStatus && statusLabel.isNotEmpty) ...[
-                const Icon(Icons.flag, size: 14),
-                const SizedBox(width: 4),
-                Text(statusLabel),
-              ],
-            ],
-          ),
-        ],
+      trailing: trailing,
+      subtitle: _buildSubtitle(
+        theme: theme,
+        statusLabel: statusLabel,
+        deadline: deadline,
+        projectName: projectName,
       ),
       onTap:
           onTap ??
@@ -79,6 +79,113 @@ class TaskListItem extends StatelessWidget {
     );
   }
 
+  Widget? _buildSubtitle({
+    required ThemeData theme,
+    required String statusLabel,
+    required DateTime? deadline,
+    required String projectName,
+  }) {
+    final description = (task.description ?? '').trim();
+    final children = <Widget>[];
+
+    void addSpacing() {
+      if (children.isNotEmpty) {
+        children.add(const SizedBox(height: 6));
+      }
+    }
+
+    if (showDescription && description.isNotEmpty) {
+      children.add(
+        Text(description, maxLines: 2, overflow: TextOverflow.ellipsis),
+      );
+    }
+
+    final DateTime? resolvedDeadline = showDeadline ? deadline : null;
+    final hasDeadline = resolvedDeadline != null;
+    final hasStatus = showStatus && statusLabel.isNotEmpty;
+    if (hasDeadline || hasStatus) {
+      addSpacing();
+      final rowChildren = <Widget>[];
+      if (hasDeadline) {
+        final deadlineValue = resolvedDeadline;
+        rowChildren.addAll([
+          const Icon(Icons.calendar_today, size: 14),
+          const SizedBox(width: 4),
+          Text(
+            _formatDeadlineText(deadlineValue),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ]);
+      }
+      if (hasDeadline && hasStatus) {
+        rowChildren.add(const SizedBox(width: 12));
+      }
+      if (hasStatus) {
+        rowChildren.addAll([
+          const Icon(Icons.flag, size: 14),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              statusLabel,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ]);
+      }
+      children.add(
+        Row(
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: rowChildren,
+        ),
+      );
+    }
+
+    if (showProjectName) {
+      addSpacing();
+      children.add(
+        Row(
+          children: [
+            const Icon(Icons.folder_outlined, size: 14),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                projectName.isNotEmpty ? projectName : projectPlaceholder,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (children.isEmpty) {
+      return null;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: children,
+    );
+  }
+
   String _formatDate(DateTime dt) =>
       '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
+  String _formatDeadlineText(DateTime value) {
+    final label = deadlineLabel?.trim();
+    if (label != null && label.isNotEmpty) {
+      return '$label: ${_formatDate(value)}';
+    }
+    return _formatDate(value);
+  }
 }

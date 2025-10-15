@@ -4,8 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../providers/tasks_api_provider.dart';
 import '../../../data/models/api_task_models.dart';
-import '../tasks/task_detail_screen.dart';
-import '../../providers/task_detail_provider.dart';
+import '../../widgets/task_list_item.dart';
 import '../../providers/dashboard_provider.dart';
 
 class TasksScreen extends StatefulWidget {
@@ -711,9 +710,7 @@ class _TasksScreenState extends State<TasksScreen> {
     ThemeData theme,
     AppLocalizations loc,
   ) {
-    // Treat status id 2 as Completed according to dropdown mapping
     final isCompleted = task.status?.id == 2;
-    final deadline = task.deadline;
     final projectName = task.project?.name ?? '';
     final statusLabel = task.status?.label ?? '';
 
@@ -721,101 +718,28 @@ class _TasksScreenState extends State<TasksScreen> {
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ChangeNotifierProvider(
-                create: (_) => TaskDetailProvider(),
-                child: TaskDetailScreen(taskId: task.id),
-              ),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Checkbox(
-                    value: isCompleted,
-                    onChanged: (value) {
-                      // TODO: Toggle task completion via API
-                    },
-                  ),
-                  Expanded(
-                    child: Text(
-                      task.name,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        decoration: isCompleted
-                            ? TextDecoration.lineThrough
-                            : null,
-                        color: isCompleted
-                            ? theme.colorScheme.onSurfaceVariant
-                            : null,
-                      ),
-                    ),
-                  ),
-                  if (statusLabel.isNotEmpty)
-                    _buildStatusChip(statusLabel, theme),
-                ],
-              ),
-              if (task.description != null &&
-                  task.description!.trim().isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  task.description!,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    deadline != null
-                        ? '${loc.translate('tasks.due')}: ${_formatDate(deadline)}'
-                        : loc.translate('tasks.due'),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    Icons.folder_outlined,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    projectName.isEmpty ? '-' : projectName,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+      child: TaskListItem(
+        task: task,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
         ),
+        leading: Checkbox(
+          value: isCompleted,
+          onChanged: (value) {
+            // TODO: Toggle task completion via API
+          },
+        ),
+        trailing: statusLabel.isNotEmpty
+            ? _buildStatusChip(statusLabel, theme)
+            : null,
+        showStatus: false,
+        showProjectName: true,
+        projectNameOverride: projectName,
+        isCompleted: isCompleted,
+        deadlineLabel: loc.translate('tasks.due'),
       ),
     );
-  }
-
-  String _formatDate(DateTime dt) {
-    // Simple date formatting; can be replaced with intl if available
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
   }
 
   Widget _buildStatusChip(String label, ThemeData theme) {

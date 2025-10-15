@@ -328,12 +328,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              ...tasks.map(
-                (task) => Padding(
+              ...tasks.map((task) {
+                final statusLabel = task.status?.label?.trim() ?? '';
+                return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: TaskListItem(task: task),
-                ),
-              ),
+                  child: TaskListItem(
+                    task: task,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    trailing: _buildTaskStatusChip(statusLabel, theme),
+                    showStatus: false,
+                    isCompleted: task.status?.id == 2,
+                    deadlineLabel: loc.translate('tasks.due'),
+                  ),
+                );
+              }),
               const SizedBox(height: 12),
             ],
           );
@@ -858,8 +869,21 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: tasks.length,
                 separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (context, index) =>
-                    TaskListItem(task: tasks[index]),
+                itemBuilder: (context, index) {
+                  final task = tasks[index];
+                  final statusLabel = task.status?.label?.trim() ?? '';
+                  return TaskListItem(
+                    task: task,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    trailing: _buildTaskStatusChip(statusLabel, theme),
+                    showStatus: false,
+                    isCompleted: task.status?.id == 2,
+                    deadlineLabel: loc.translate('tasks.due'),
+                  );
+                },
               ),
               if (isLoadingMore)
                 const Padding(
@@ -912,7 +936,26 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return CircleAvatar(radius: 28, child: Text(initials));
   }
 
-  // _chip and _buildStatusChip removed in favor of shared InfoPill and ProjectStatusChip widgets.
+  Widget? _buildTaskStatusChip(String label, ThemeData theme) {
+    final trimmed = label.trim();
+    if (trimmed.isEmpty) return null;
+    final color = theme.colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        trimmed,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 
   String _formatDate(DateTime dt) =>
       '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
