@@ -95,4 +95,44 @@ class ProjectRemoteDataSource {
       },
     );
   }
+
+  Future<ApiResponse<Project>> updateProject({
+    required int projectId,
+    String? name,
+    String? description,
+    int? fileGroupId,
+    int? status,
+    List<String>? fileIds,
+  }) async {
+    final endpoint = '${ApiConstants.projects}/$projectId';
+    final fields = <String, String>{
+      '_method': 'PUT',
+      if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+      if (description != null && description.trim().isNotEmpty)
+        'description': description.trim(),
+      if (fileGroupId != null) 'file_group_id': fileGroupId.toString(),
+      if (status != null) 'status': status.toString(),
+    };
+
+    final files = <String, http.MultipartFile>{};
+    if (fileIds != null && fileIds.isNotEmpty) {
+      for (var i = 0; i < fileIds.length; i++) {
+        final id = fileIds[i].trim();
+        if (id.isEmpty) continue;
+        files['files_$i'] = http.MultipartFile.fromString('files[]', id);
+      }
+    }
+
+    return _apiClient.uploadMultipart<Project>(
+      endpoint,
+      fields: fields,
+      files: files,
+      fromJson: (obj) {
+        final map = obj['data'] is Map<String, dynamic>
+            ? obj['data'] as Map<String, dynamic>
+            : obj;
+        return Project.fromJson(map);
+      },
+    );
+  }
 }

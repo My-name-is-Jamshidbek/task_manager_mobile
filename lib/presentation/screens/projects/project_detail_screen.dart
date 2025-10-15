@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../providers/project_detail_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../../data/models/project_models.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../widgets/project_widgets.dart';
-import '../../widgets/file_viewer_dialog.dart';
+import '../../widgets/file_group_attachments_card.dart';
 import '../tasks/create_task_screen.dart';
 // Removed direct task detail imports; navigation is handled by TaskListItem
 import '../../widgets/task_list_item.dart';
+import 'edit_project_screen.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final int projectId;
@@ -35,6 +37,46 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       appBar: AppBar(
         title: Text(loc.translate('common.details')),
         actions: [
+          Consumer<ProjectDetailProvider>(
+            builder: (context, provider, _) {
+              final project = provider.project;
+              final currentUserId = context
+                  .read<AuthProvider?>()
+                  ?.currentUser
+                  ?.id;
+              if (project == null || currentUserId != project.creator.id) {
+                return const SizedBox.shrink();
+              }
+              return IconButton(
+                tooltip: loc.translate('common.edit'),
+                icon: const Icon(Icons.edit),
+                onPressed: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          ChangeNotifierProvider<ProjectDetailProvider>.value(
+                            value: provider,
+                            child: EditProjectScreen(
+                              project: project,
+                              initialFiles: provider.files,
+                            ),
+                          ),
+                    ),
+                  );
+                  if (result == true && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(loc.translate('messages.projectUpdated')),
+                      ),
+                    );
+                    await context.read<ProjectDetailProvider>().load(
+                      project.id,
+                    );
+                  }
+                },
+              );
+            },
+          ),
           Consumer<ProjectDetailProvider>(
             builder: (context, provider, _) {
               final project = provider.project;
@@ -118,7 +160,15 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 const SizedBox(height: 24),
                 _taskStats(project, theme, loc),
                 const SizedBox(height: 24),
-                _filesSection(provider, theme, loc),
+                FileGroupAttachmentsCard(
+                  fileGroupId: project.fileGroupId,
+                  title: loc.translate('attachments'),
+                  groupName: 'Project Files',
+                  allowEditing:
+                      context.read<AuthProvider?>()?.currentUser?.id ==
+                      project.creator.id,
+                  initialFiles: provider.files,
+                ),
                 const SizedBox(height: 24),
                 _projectTasksSection(context, loc, theme, provider),
                 const SizedBox(height: 32),
@@ -224,104 +274,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         ),
       ),
     );
-  }
-
-  Widget _filesSection(
-    ProjectDetailProvider provider,
-    ThemeData theme,
-    AppLocalizations loc,
-  ) {
-    final files = provider.files;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              loc.translate('attachments'),
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(width: 8),
-            if (files.isNotEmpty)
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: Text(
-                  files.length.toString(),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (files.isEmpty)
-          Text(
-            loc.translate('noAttachments'),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          )
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: files.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final f = files[index];
-              final icon = _fileIconForName(f.name);
-              return ListTile(
-                leading: Icon(icon),
-                title: Text(
-                  f.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  f.url,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                onTap: () => showFileViewer(
-                  context,
-                  fileId: f.id ?? 0, // Use file ID if available
-                  fileName: f.name,
-                  fileUrl: f.url,
-                ),
-              );
-            },
-          ),
-      ],
-    );
-  }
-
-  IconData _fileIconForName(String name) {
-    final ext = name.split('.').last.toLowerCase();
-    switch (ext) {
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return Icons.image;
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'doc':
-      case 'docx':
-        return Icons.description;
-      case 'xls':
-      case 'xlsx':
-        return Icons.table_chart;
-      case 'txt':
-      case 'md':
-        return Icons.text_snippet;
-      case 'zip':
-      case 'rar':
-        return Icons.archive;
-      default:
-        return Icons.insert_drive_file;
-    }
   }
 
   Widget _projectTasksSection(

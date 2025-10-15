@@ -5,12 +5,17 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../data/datasources/tasks_api_remote_datasource.dart';
 import '../../../data/models/api_task_models.dart';
+import '../../../data/models/file_models.dart';
+import '../../../data/models/project_models.dart'
+    as project_models
+    show FileAttachment;
 import '../../../data/models/task_action.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/task_detail_provider.dart';
-import '../../widgets/file_viewer_dialog.dart';
-import '../../widgets/project_widgets.dart';
+import '../../widgets/file_group_attachments_card.dart';
 import '../../widgets/task_list_item.dart';
 import 'create_task_screen.dart';
+import 'edit_task_screen.dart';
 
 class TaskDetailScreen extends StatefulWidget {
   final int taskId;
@@ -18,6 +23,24 @@ class TaskDetailScreen extends StatefulWidget {
 
   @override
   State<TaskDetailScreen> createState() => _TaskDetailScreenState();
+}
+
+class _WorkerTileData {
+  final String name;
+  final String? phone;
+  final String? meta;
+  const _WorkerTileData({required this.name, this.phone, this.meta});
+}
+
+class _MetaInfo {
+  final IconData icon;
+  final String label;
+  final String value;
+  const _MetaInfo({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 }
 
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
@@ -34,7 +57,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   Color _alpha(Color base, double opacity) => base.withValues(alpha: opacity);
 
   Future<void> _buildParentChain(ApiTask task) async {
-    // Clear and rebuild if parent exists
     if (task.parentTaskId == null) {
       if (!mounted) return;
       setState(() {
@@ -51,11 +73,12 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         _parentError = null;
       });
     }
+
     final chain = <ApiTask>[];
     int? currentParentId = task.parentTaskId;
-    // Safety depth limit to avoid accidental loops
     int depth = 0;
     String? error;
+
     try {
       while (currentParentId != null && depth < 10) {
         if (_taskCache.containsKey(currentParentId)) {
@@ -72,24 +95,23 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         }
         final parentTask = res.data!;
         _taskCache[parentTask.id] = parentTask;
-        chain.insert(0, parentTask); // root-first order
+        chain.insert(0, parentTask);
         currentParentId = parentTask.parentTaskId;
         depth++;
       }
     } catch (e) {
       error = e.toString();
     }
+
     if (!mounted) return;
     setState(() {
       _loadingParents = false;
-      if (error != null) {
-        _parentError = error;
-      } else {
-        _parentError = null;
+      _parentError = error;
+      if (error == null) {
+        _parentChain
+          ..clear()
+          ..addAll(chain);
       }
-      _parentChain
-        ..clear()
-        ..addAll(chain);
     });
   }
 
@@ -190,6 +212,34 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               );
             },
           ),
+          Consumer2<TaskDetailProvider, AuthProvider>(
+            builder: (context, detailProvider, authProvider, _) {
+              final task = detailProvider.task;
+              final currentUserId = authProvider.currentUser?.id;
+              if (task == null || currentUserId == null) {
+                return const SizedBox.shrink();
+              }
+              final canEdit = task.creator?.id == currentUserId;
+              if (!canEdit) {
+                return const SizedBox.shrink();
+              }
+              return IconButton(
+                tooltip: loc.translate('tasks.editTask'),
+                icon: const Icon(Icons.edit_note),
+                onPressed: () async {
+                  final updated = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => EditTaskScreen(task: task),
+                    ),
+                  );
+                  if (!context.mounted) return;
+                  if (updated == true) {
+                    await _reloadTask(detailProvider, task.id);
+                  }
+                },
+              );
+            },
+          ),
           Consumer<TaskDetailProvider>(
             builder: (context, provider, _) {
               final task = provider.task;
@@ -238,6 +288,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           }
           final task = provider.task!;
           _ensureTaskSideData(task);
+          final List<FileAttachment> initialAttachments =
+              provider.attachments.isNotEmpty
+              ? provider.attachments
+              : _convertProjectFiles(task.files);
           final actionSection = _actionsSection(
             context,
             theme,
@@ -251,24 +305,30 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               padding: const EdgeInsets.all(16),
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                _header(context, theme, task),
-                const SizedBox(height: 16),
+                _overviewCard(context, theme, loc, task),
+                const SizedBox(height: 18),
                 if (actionSection != null) ...[
                   actionSection,
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
                 ],
-                _parentSection(theme, loc, task),
+                _metaSection(theme, loc, task),
                 if ((task.description ?? '').trim().isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
                   _descriptionSection(theme, task),
                 ],
-                const SizedBox(height: 16),
-                _metaSection(theme, loc, task),
-                const SizedBox(height: 16),
-                _workersSection(theme, loc, task),
-                const SizedBox(height: 16),
-                _filesSection(theme, loc, task),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
+                _workersSection(theme, loc, provider, task),
+                const SizedBox(height: 18),
+                FileGroupAttachmentsCard(
+                  fileGroupId: task.fileGroupId,
+                  title: loc.translate('attachments'),
+                  groupName: 'Task Files',
+                  allowEditing: _canEditTask(task),
+                  initialFiles: initialAttachments,
+                ),
+                const SizedBox(height: 18),
+                _parentSection(theme, loc, task),
+                const SizedBox(height: 18),
                 _subtasksSection(theme, loc, task),
                 const SizedBox(height: 32),
               ],
@@ -599,50 +659,186 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   String _normalizeActionValue(String value) =>
       value.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
 
-  Widget _header(BuildContext context, ThemeData theme, ApiTask task) {
-    final project = task.project;
+  Widget _overviewCard(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations loc,
+    ApiTask task,
+  ) {
+    final projectName = task.project?.name ?? '—';
+    final dueDateLabel = task.deadline != null
+        ? _formatDate(task.deadline!)
+        : loc.translate('tasks.dueDate');
+    final priorityLabel =
+        task.taskType?.name ?? loc.translate('priority.medium');
+    final timeLabel = task.timeProgress?.label;
+    final creatorName = task.creator?.name;
+    final surfaceText = theme.colorScheme.onPrimaryContainer;
+    final gradient = LinearGradient(
+      colors: [
+        theme.colorScheme.primaryContainer,
+        theme.colorScheme.secondaryContainer,
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _avatar(task.creator),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.name,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: surfaceText,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if ((task.status?.label ?? '').isNotEmpty)
+                          _buildTagChip(
+                            theme,
+                            icon: Icons.flag,
+                            label: task.status!.label!,
+                          ),
+                        _buildTagChip(
+                          theme,
+                          icon: Icons.calendar_today,
+                          label: dueDateLabel,
+                        ),
+                        _buildTagChip(
+                          theme,
+                          icon: Icons.tune,
+                          label: priorityLabel,
+                        ),
+                        if ((timeLabel ?? '').isNotEmpty)
+                          _buildTagChip(
+                            theme,
+                            icon: Icons.timelapse,
+                            label: timeLabel!,
+                          ),
+                        if ((creatorName ?? '').isNotEmpty)
+                          _buildTagChip(
+                            theme,
+                            icon: Icons.person,
+                            label: creatorName!,
+                          ),
+                        if (task.files.isNotEmpty)
+                          _buildTagChip(
+                            theme,
+                            icon: Icons.attach_file,
+                            label: '${task.files.length}',
+                          ),
+                        if (task.parentTaskId != null)
+                          _buildTagChip(
+                            theme,
+                            icon: Icons.account_tree_outlined,
+                            label: '#${task.parentTaskId}',
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Divider(color: surfaceText.withOpacity(0.2)),
+          const SizedBox(height: 12),
+          _overviewRow(
+            theme,
+            icon: Icons.folder_open,
+            label: loc.translate('projects.title'),
+            value: projectName,
+            textColor: surfaceText,
+          ),
+          if ((task.creator?.phone ?? '').isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _overviewRow(
+              theme,
+              icon: Icons.call,
+              label: loc.translate('profile.phone'),
+              value: task.creator!.phone!,
+              textColor: surfaceText,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTagChip(
+    ThemeData theme, {
+    required IconData icon,
+    required String label,
+  }) {
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = theme.colorScheme.onPrimaryContainer;
+    final background = isDark
+        ? Colors.white.withOpacity(0.12)
+        : Colors.white.withOpacity(0.2);
+    return Chip(
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+      backgroundColor: background,
+      avatar: Icon(icon, size: 16, color: textColor),
+      label: Text(
+        label,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _overviewRow(
+    ThemeData theme, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color textColor,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _avatar(task.creator),
-        const SizedBox(width: 12),
+        Icon(icon, size: 20, color: textColor),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                task.name,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: textColor.withOpacity(0.75),
                 ),
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (project != null)
-                    InfoPill(icon: Icons.folder, label: project.name),
-                  if (task.status?.label != null)
-                    InfoPill(icon: Icons.flag, label: task.status!.label!),
-                  if (task.timeProgress?.label != null)
-                    InfoPill(
-                      icon: Icons.timelapse,
-                      label: task.timeProgress!.label!,
-                    ),
-                  if (task.deadline != null)
-                    InfoPill(
-                      icon: Icons.calendar_today,
-                      label: _formatDate(task.deadline!),
-                    ),
-                  if ((task.creator?.name ?? '').isNotEmpty)
-                    InfoPill(icon: Icons.person, label: task.creator!.name!),
-                  if (task.files.isNotEmpty)
-                    InfoPill(
-                      icon: Icons.attach_file,
-                      label: '${task.files.length}',
-                    ),
-                ],
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: textColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -780,6 +976,24 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   }
 
   Widget _metaSection(ThemeData theme, AppLocalizations loc, ApiTask task) {
+    final items = <_MetaInfo>[
+      _MetaInfo(
+        icon: Icons.calendar_month,
+        label: loc.translate('tasks.dueDate'),
+        value: task.deadline != null ? _formatDate(task.deadline!) : '—',
+      ),
+      _MetaInfo(
+        icon: Icons.flag_outlined,
+        label: loc.translate('tasks.status'),
+        value: task.status?.label ?? '—',
+      ),
+      _MetaInfo(
+        icon: Icons.tune,
+        label: loc.translate('tasks.priority'),
+        value: task.taskType?.name ?? loc.translate('priority.medium'),
+      ),
+    ];
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
@@ -792,93 +1006,21 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            _metaRow(
-              theme,
-              icon: Icons.calendar_today,
-              label: loc.translate('tasks.dueDate'),
-              value: task.deadline != null ? _formatDate(task.deadline!) : '-',
-            ),
-            const SizedBox(height: 8),
-            _metaRow(
-              theme,
-              icon: Icons.category,
-              label: loc.translate('tasks.category'),
-              value: task.taskType?.name ?? '-',
-            ),
-            const SizedBox(height: 8),
-            _metaRow(
-              theme,
-              icon: Icons.flag,
-              label: loc.translate('tasks.status'),
-              value: task.status?.label ?? '-',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _metaRow(
-    ThemeData theme, {
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: theme.colorScheme.primary),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              Text(
-                value,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _workersSection(ThemeData theme, AppLocalizations loc, ApiTask task) {
-    if (task.workers.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              loc.translate('tasks.workers'),
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: task.workers.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final worker = task.workers[index];
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const CircleAvatar(child: Icon(Icons.person)),
-                  title: Text(worker.name ?? '—'),
-                  subtitle: Text(worker.phone ?? ''),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final maxWidth = constraints.maxWidth;
+                final tileWidth = maxWidth >= 520
+                    ? (maxWidth - 12) / 2
+                    : maxWidth;
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: items.map((item) {
+                    return SizedBox(
+                      width: tileWidth,
+                      child: _metaTile(theme, item),
+                    );
+                  }).toList(),
                 );
               },
             ),
@@ -888,29 +1030,71 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     );
   }
 
-  Widget _filesSection(ThemeData theme, AppLocalizations loc, ApiTask task) {
-    if (task.files.isEmpty) {
-      return Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              const Icon(Icons.attach_file),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  loc.translate('noAttachments'),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
+  Widget _metaTile(ThemeData theme, _MetaInfo item) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(item.icon, color: theme.colorScheme.primary),
+          const SizedBox(height: 10),
+          Text(
+            item.label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
-      );
-    }
+          const SizedBox(height: 4),
+          Text(
+            item.value,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _workersSection(
+    ThemeData theme,
+    AppLocalizations loc,
+    TaskDetailProvider provider,
+    ApiTask task,
+  ) {
+    final isLoading = provider.isWorkersLoading;
+    final error = provider.workersError;
+    final workerUsers = provider.workers;
+    final fallbackRefs = task.workers;
+    final hasAny = workerUsers.isNotEmpty || fallbackRefs.isNotEmpty;
+
+    final displayWorkers = workerUsers.isNotEmpty
+        ? workerUsers.map((w) {
+            final phone = (w.phone ?? '').trim();
+            final deptNames = w.departments
+                .map((d) => d.name.trim())
+                .where((name) => name.isNotEmpty)
+                .toList();
+            final meta = deptNames.isEmpty ? null : deptNames.join(', ');
+            return _WorkerTileData(
+              name: w.name.isNotEmpty ? w.name : '—',
+              phone: phone.isEmpty ? null : phone,
+              meta: meta,
+            );
+          }).toList()
+        : fallbackRefs.map((w) {
+            final name = (w.name ?? '').trim();
+            final contact = (w.phone ?? '').trim();
+            return _WorkerTileData(
+              name: name.isEmpty ? '—' : name,
+              phone: contact.isEmpty ? null : contact,
+            );
+          }).toList();
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
@@ -921,94 +1105,90 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             Row(
               children: [
                 Text(
-                  loc.translate('attachments'),
+                  loc.translate('tasks.workers'),
                   style: theme.textTheme.titleMedium,
                 ),
-                const SizedBox(width: 8),
-                CircleAvatar(
-                  radius: 12,
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  child: Text(
-                    task.files.length.toString(),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
+                const Spacer(),
+                IconButton(
+                  tooltip: loc.translate('common.refresh'),
+                  icon: isLoading
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.primary,
+                          ),
+                        )
+                      : const Icon(Icons.refresh),
+                  onPressed: isLoading ? null : provider.reloadWorkers,
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: task.files.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final file = task.files[index];
-                return ListTile(
-                  leading: Icon(_fileIconForName(file.name)),
-                  title: Text(
-                    file.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+            if (isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (error != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    error,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
                   ),
-                  subtitle: Text(
-                    file.url,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: provider.reloadWorkers,
+                    icon: const Icon(Icons.refresh),
+                    label: Text(loc.translate('common.retry')),
                   ),
-                  onTap: () {
-                    if (file.id != null) {
-                      showFileViewer(
-                        context,
-                        fileId: file.id!,
-                        fileName: file.name,
-                        fileUrl: file.url,
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            loc.translate('files.previewNotAvailable'),
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                );
-              },
-            ),
+                ],
+              )
+            else if (hasAny)
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: displayWorkers.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final worker = displayWorkers[index];
+                  final subtitleLines = <String>[];
+                  if (worker.phone != null && worker.phone!.isNotEmpty) {
+                    subtitleLines.add(worker.phone!);
+                  }
+                  if (worker.meta != null && worker.meta!.isNotEmpty) {
+                    subtitleLines.add(worker.meta!);
+                  }
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const CircleAvatar(child: Icon(Icons.person)),
+                    title: Text(worker.name),
+                    subtitle: subtitleLines.isEmpty
+                        ? null
+                        : Text(subtitleLines.join('\n')),
+                  );
+                },
+              )
+            else
+              Text(
+                loc.translate('workers.noneAssigned'),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  IconData _fileIconForName(String name) {
-    final ext = name.split('.').last.toLowerCase();
-    switch (ext) {
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return Icons.image;
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'doc':
-      case 'docx':
-        return Icons.description;
-      case 'xls':
-      case 'xlsx':
-        return Icons.table_chart;
-      case 'txt':
-      case 'md':
-        return Icons.text_snippet;
-      case 'zip':
-      case 'rar':
-        return Icons.archive;
-      default:
-        return Icons.insert_drive_file;
-    }
+  bool _canEditTask(ApiTask task) {
+    final auth = context.read<AuthProvider?>();
+    final currentUserId = auth?.currentUser?.id;
+    if (currentUserId == null) return false;
+    return task.creator?.id == currentUserId;
   }
 
   Widget _subtasksSection(ThemeData theme, AppLocalizations loc, ApiTask task) {
@@ -1126,4 +1306,15 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
   String _formatDate(DateTime dt) =>
       '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+}
+
+List<FileAttachment> _convertProjectFiles(
+  List<project_models.FileAttachment> files,
+) {
+  if (files.isEmpty) return const <FileAttachment>[];
+  return files
+      .map(
+        (file) => FileAttachment(name: file.name, url: file.url, id: file.id),
+      )
+      .toList(growable: false);
 }

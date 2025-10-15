@@ -97,6 +97,54 @@ class TasksApiRemoteDataSource {
     );
   }
 
+  Future<ApiResponse<ApiTask>> updateTask({
+    required int taskId,
+    int? projectId,
+    String? name,
+    String? description,
+    int? taskTypeId,
+    String? deadlineIso,
+    int? parentTaskId,
+    int? fileGroupId,
+    List<int>? toWhomUserIds,
+  }) async {
+    final endpoint = '${ApiConstants.tasks}/$taskId';
+    final fields = <String, String>{
+      if (projectId != null) 'project_id': projectId.toString(),
+      if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+      if (taskTypeId != null) 'task_type_id': taskTypeId.toString(),
+      if (deadlineIso != null && deadlineIso.isNotEmpty)
+        'deadline': deadlineIso,
+      if (description != null && description.trim().isNotEmpty)
+        'description': description.trim(),
+      if (parentTaskId != null) 'parent_task_id': parentTaskId.toString(),
+      if (fileGroupId != null) 'file_group_id': fileGroupId.toString(),
+    };
+
+    final files = <String, http.MultipartFile>{};
+    if (toWhomUserIds != null && toWhomUserIds.isNotEmpty) {
+      for (var i = 0; i < toWhomUserIds.length; i++) {
+        files['to_whom_$i'] = http.MultipartFile.fromString(
+          'to_whom[]',
+          toWhomUserIds[i].toString(),
+        );
+      }
+    }
+
+    return _apiClient.uploadMultipart<ApiTask>(
+      endpoint,
+      fields: fields,
+      files: files,
+      httpMethod: 'PUT',
+      fromJson: (obj) {
+        final map = (obj['data'] is Map<String, dynamic>)
+            ? obj['data'] as Map<String, dynamic>
+            : obj;
+        return ApiTask.fromJson(map);
+      },
+    );
+  }
+
   Future<ApiResponse<ApiTask>> getTaskById(int id) async {
     final endpoint = '${ApiConstants.taskById}/$id';
     return _apiClient.get<ApiTask>(
@@ -136,18 +184,8 @@ class TasksApiRemoteDataSource {
     final endpoint = '${ApiConstants.tasks}/$taskId/workers';
     return _apiClient.get<List<WorkerUser>>(
       endpoint,
-      fromJson: (obj) {
-        final list =
-            (obj['data'] as List<dynamic>? ?? obj as List<dynamic>? ?? [])
-                .whereType<Map<String, dynamic>>()
-                .map(WorkerUser.fromJson)
-                .toList();
-        return list;
-      },
-      fromJsonList: (list) => list
-          .whereType<Map<String, dynamic>>()
-          .map(WorkerUser.fromJson)
-          .toList(),
+      fromJson: (obj) => _parseWorkerList(obj),
+      fromJsonList: (list) => _parseWorkerList(list),
     );
   }
 
@@ -197,4 +235,56 @@ class TasksApiRemoteDataSource {
     final endpoint = '${ApiConstants.tasks}/$taskId/workers/$userId';
     return _apiClient.delete<void>(endpoint, fromJson: (_) {});
   }
+}
+
+List<WorkerUser> _parseWorkerList(dynamic source) {
+  final rawList = _extractNestedList(source);
+  if (rawList is! List) return const [];
+  return rawList
+      .whereType<Map<String, dynamic>>()
+      .map(WorkerUser.fromJson)
+      .toList();
+}
+
+dynamic _extractNestedList(dynamic source, [Set<int>? visited]) {
+  if (source is List) return source;
+  if (source is! Map<String, dynamic>) return null;
+
+  visited ??= <int>{};
+  final hash = identityHashCode(source);
+  if (visited.contains(hash)) {
+    return null;
+  }
+  visited.add(hash);
+
+  const candidateKeys = <String>[
+    'data',
+    'workers',
+    'available',
+    'assigned',
+    'items',
+    'list',
+    'results',
+  ];
+
+  for (final key in candidateKeys) {
+    if (source.containsKey(key)) {
+      final nested = _extractNestedList(source[key], visited);
+      if (nested != null) {
+        visited.remove(hash);
+        return nested;
+      }
+    }
+  }
+
+  for (final entry in source.entries) {
+    final nested = _extractNestedList(entry.value, visited);
+    if (nested != null) {
+      visited.remove(hash);
+      return nested;
+    }
+  }
+
+  visited.remove(hash);
+  return null;
 }

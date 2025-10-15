@@ -3,10 +3,10 @@ import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/logger.dart';
 import '../../../data/datasources/tasks_api_remote_datasource.dart';
+import '../../../data/models/api_task_models.dart';
 import '../../providers/tasks_api_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/file_group_provider.dart';
-import '../../widgets/file_group_manager.dart';
+import '../../widgets/file_group_attachments_card.dart';
 import '../../providers/task_workers_provider.dart';
 import 'select_task_workers_screen.dart';
 
@@ -33,13 +33,18 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   final _nameCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _deadlineCtrl = TextEditingController();
+  final TasksApiRemoteDataSource _tasksRemote = TasksApiRemoteDataSource();
   // File attachments tracking (we no longer use group id directly)
   int _taskType = 1; // 1-low, 2-medium, 3-high
   DateTime? _deadline;
   bool _submitting = false;
   int? _parentTaskId; // optional unless user not project creator or fixed
-  final List<int> _attachedFileIds = []; // capture real file attachment IDs
   int? _fileGroupId; // new file group id if created via FileGroupManager
+  final GlobalKey<FormFieldState<int?>> _parentFieldKey =
+      GlobalKey<FormFieldState<int?>>();
+  List<ApiTask> _parentCandidates = const <ApiTask>[];
+  bool _parentTasksLoading = false;
+  String? _parentTasksError;
 
   @override
   void dispose() {
@@ -47,6 +52,15 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     _descCtrl.dispose();
     _deadlineCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.fixedParentTaskId != null) return;
+      _loadParentCandidates();
+    });
   }
 
   @override
@@ -143,29 +157,51 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
               if (widget.fixedParentTaskId == null)
                 Consumer2<TasksApiProvider, AuthProvider>(
                   builder: (context, tasksProv, authProv, _) {
-                    // Filter tasks belonging to this.projectId
-                    final projectTasks = tasksProv.tasks
+                    final providerTasks = tasksProv.tasks
                         .where((t) => t.project?.id == widget.projectId)
-                        .where(
-                          (t) => t.parentTaskId == null,
-                        ) // only top-level can be parent
+                        .where((t) => t.parentTaskId == null)
                         .toList();
+                    final mergedTasks = _mergeParentOptions(providerTasks);
                     final currentUserId = authProv.currentUser?.id;
-                    // Determine if current user is project creator.
-                    // Priority: explicit projectCreatorId if supplied; otherwise fallback heuristic based on any top-level task creator id.
                     bool isCreator = false;
                     if (currentUserId != null) {
                       if (widget.projectCreatorId != null) {
                         isCreator = widget.projectCreatorId == currentUserId;
                       } else {
-                        // Fallback: heuristic using existing tasks (may be empty for new project)
-                        isCreator = projectTasks.any(
+                        isCreator = mergedTasks.any(
                           (t) => t.creator?.id == currentUserId,
                         );
                       }
                     }
 
-                    return DropdownButtonFormField<int?>(
+                    final helperText =
+                        _parentTasksError ??
+                        (isCreator
+                            ? AppLocalizations.of(
+                                context,
+                              ).t('tasks.parentTaskOptional')
+                            : AppLocalizations.of(
+                                context,
+                              ).t('tasks.parentTaskRequired'));
+
+                    final items = <DropdownMenuItem<int?>>[
+                      if (isCreator)
+                        DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text(
+                            AppLocalizations.of(context).t('tasks.noParent'),
+                          ),
+                        ),
+                      ...mergedTasks.map(
+                        (t) => DropdownMenuItem<int?>(
+                          value: t.id,
+                          child: Text('#${t.id}  ${t.name}'),
+                        ),
+                      ),
+                    ];
+
+                    final dropdown = DropdownButtonFormField<int?>(
+                      key: _parentFieldKey,
                       initialValue: _parentTaskId,
                       isExpanded: true,
                       decoration: InputDecoration(
@@ -173,29 +209,9 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                           context,
                         ).t('tasks.parentTask'),
                         border: const OutlineInputBorder(),
-                        helperText: isCreator
-                            ? AppLocalizations.of(
-                                context,
-                              ).t('tasks.parentTaskOptional')
-                            : AppLocalizations.of(
-                                context,
-                              ).t('tasks.parentTaskRequired'),
+                        helperText: helperText,
                       ),
-                      items: [
-                        if (isCreator)
-                          DropdownMenuItem<int?>(
-                            value: null,
-                            child: Text(
-                              AppLocalizations.of(context).t('tasks.noParent'),
-                            ),
-                          ),
-                        ...projectTasks.map(
-                          (t) => DropdownMenuItem<int?>(
-                            value: t.id,
-                            child: Text('#${t.id}  ${t.name}'),
-                          ),
-                        ),
-                      ],
+                      items: items,
                       validator: (val) {
                         if (!isCreator && (val == null)) {
                           return AppLocalizations.of(
@@ -206,26 +222,38 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                       },
                       onChanged: widget.lockParentSelection
                           ? null
-                          : (val) => setState(() => _parentTaskId = val),
+                          : (val) {
+                              setState(() => _parentTaskId = val);
+                              _parentFieldKey.currentState?.didChange(val);
+                            },
                     );
+
+                    if (_parentTasksLoading && mergedTasks.isEmpty) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          LinearProgressIndicator(
+                            minHeight: 3,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(height: 8),
+                          dropdown,
+                        ],
+                      );
+                    }
+
+                    return dropdown;
                   },
                 ),
               if (widget.fixedParentTaskId == null) const SizedBox(height: 12),
 
               // Attachments widget
-              ChangeNotifierProvider(
-                create: (_) => FileGroupProvider(),
-                child: FileGroupManager(
-                  groupName: 'Task Files',
-                  onFileGroupCreated: (id) => _fileGroupId = id,
-                  onFilesUpdated: (files) {
-                    _attachedFileIds
-                      ..clear()
-                      ..addAll(
-                        files.where((f) => f.id != null).map((f) => f.id!),
-                      );
-                  },
-                ),
+              FileGroupAttachmentsCard(
+                fileGroupId: _fileGroupId,
+                title: loc.translate('attachments'),
+                groupName: 'Task Files',
+                allowEditing: true,
+                onFileGroupCreated: (id) => _fileGroupId = id,
               ),
               const SizedBox(height: 24),
 
@@ -254,8 +282,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _submitting = true);
     try {
-      final ds = TasksApiRemoteDataSource();
-      final res = await ds.createTask(
+      final res = await _tasksRemote.createTask(
         projectId: widget.projectId,
         taskTypeId: _taskType,
         name: _nameCtrl.text.trim(),
@@ -268,9 +295,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         parentTaskId: _parentTaskId,
         // Prefer single group id field (file_id) if available; fallback to individual file ids
         fileGroupId: _fileGroupId,
-        fileIds: _fileGroupId == null && _attachedFileIds.isNotEmpty
-            ? _attachedFileIds.map((e) => e.toString()).toList()
-            : null,
       );
 
       if (!mounted) return;
@@ -362,5 +386,77 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   String _formatLocalDateTime(DateTime dt) {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${dt.year}-${two(dt.month)}-${two(dt.day)} ${two(dt.hour)}:${two(dt.minute)}';
+  }
+
+  Future<void> _loadParentCandidates() async {
+    if (_parentTasksLoading) return;
+    setState(() {
+      _parentTasksLoading = true;
+      _parentTasksError = null;
+    });
+
+    final results = <ApiTask>[];
+    const perPage = 100;
+    var page = 1;
+    var hasMore = true;
+    final auth = context.read<AuthProvider>();
+    final currentUserId = auth.currentUser?.id;
+
+    while (hasMore && mounted) {
+      final response = await _tasksRemote.getTasks(
+        perPage: perPage,
+        page: page,
+        projectId: widget.projectId,
+      );
+
+      if (!response.isSuccess || response.data == null) {
+        setState(() {
+          _parentTasksLoading = false;
+          _parentTasksError = response.error ?? 'Failed to load parent tasks';
+        });
+        return;
+      }
+
+      final rawItems = response.data!;
+      final parentTasks = rawItems
+          .where((task) => task.parentTaskId == null)
+          .where(
+            (task) => currentUserId == null
+                ? true
+                : task.workers.any((worker) => worker.id == currentUserId),
+          )
+          .toList();
+      results.addAll(parentTasks);
+      hasMore = rawItems.length == perPage;
+      page += 1;
+    }
+
+    if (!mounted) return;
+
+    results.sort((a, b) => a.id.compareTo(b.id));
+    setState(() {
+      _parentTasksLoading = false;
+      _parentCandidates = results;
+      if (_parentTaskId != null &&
+          results.every((task) => task.id != _parentTaskId)) {
+        _parentTaskId = null;
+        _parentFieldKey.currentState?.didChange(_parentTaskId);
+      }
+    });
+  }
+
+  List<ApiTask> _mergeParentOptions(List<ApiTask> providerTasks) {
+    if (providerTasks.isEmpty && _parentCandidates.isEmpty) {
+      return const <ApiTask>[];
+    }
+    final map = <int, ApiTask>{};
+    for (final task in providerTasks) {
+      map[task.id] = task;
+    }
+    for (final task in _parentCandidates) {
+      map[task.id] = task;
+    }
+    final merged = map.values.toList()..sort((a, b) => a.id.compareTo(b.id));
+    return merged;
   }
 }

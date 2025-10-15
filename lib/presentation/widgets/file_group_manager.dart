@@ -14,6 +14,7 @@ class FileGroupManager extends StatefulWidget {
   final bool showHeader;
   final Function(int)? onFileGroupCreated;
   final Function(List<FileAttachment>)? onFilesUpdated;
+  final List<FileAttachment>? initialFiles;
 
   const FileGroupManager({
     super.key,
@@ -23,6 +24,7 @@ class FileGroupManager extends StatefulWidget {
     this.showHeader = true,
     this.onFileGroupCreated,
     this.onFilesUpdated,
+    this.initialFiles,
   });
 
   @override
@@ -184,7 +186,9 @@ class _FileGroupManagerState extends State<FileGroupManager> {
     final loc = AppLocalizations.of(context);
     return Consumer<FileGroupProvider>(
       builder: (context, provider, _) {
-        if (provider.isLoading && !provider.hasFiles) {
+        final files = _mergeFiles(provider.files);
+
+        if (provider.isLoading && files.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
 
@@ -200,14 +204,17 @@ class _FileGroupManagerState extends State<FileGroupManager> {
             ],
 
             // File list
-            if (provider.hasFiles)
+            if (files.isNotEmpty)
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: provider.files.length,
+                itemCount: files.length,
                 itemBuilder: (context, index) {
-                  final file = provider.files[index];
-                  return _buildFileItem(file);
+                  final file = files[index];
+                  return _buildFileItem(
+                    file,
+                    canDelete: provider.files.contains(file),
+                  );
                 },
               )
             else
@@ -231,7 +238,7 @@ class _FileGroupManagerState extends State<FileGroupManager> {
     );
   }
 
-  Widget _buildFileItem(FileAttachment file) {
+  Widget _buildFileItem(FileAttachment file, {required bool canDelete}) {
     final loc = AppLocalizations.of(context);
     String fileTypeName = _getFileTypeName(file.name);
     IconData fileIcon = _getFileIcon(file.name);
@@ -250,7 +257,7 @@ class _FileGroupManagerState extends State<FileGroupManager> {
               tooltip: loc.translate('viewFile'),
               onPressed: () => _viewFile(file),
             ),
-            if (widget.allowEditing)
+            if (widget.allowEditing && canDelete)
               IconButton(
                 icon: const Icon(Icons.delete_outline),
                 tooltip: loc.translate('deleteFile'),
@@ -312,5 +319,28 @@ class _FileGroupManagerState extends State<FileGroupManager> {
       default:
         return Icons.insert_drive_file;
     }
+  }
+
+  List<FileAttachment> _mergeFiles(List<FileAttachment> providerFiles) {
+    final merged = <FileAttachment>[];
+    final seen = <String>{};
+
+    void addUnique(FileAttachment file) {
+      final key = '${file.id ?? file.url}|${file.name}';
+      if (seen.add(key)) {
+        merged.add(file);
+      }
+    }
+
+    for (final file in providerFiles) {
+      addUnique(file);
+    }
+
+    final extras = widget.initialFiles ?? const <FileAttachment>[];
+    for (final file in extras) {
+      addUnique(file);
+    }
+
+    return merged;
   }
 }

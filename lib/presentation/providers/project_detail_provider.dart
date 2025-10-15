@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/api/api_client.dart';
 import '../../data/datasources/project_remote_datasource.dart';
 import '../../data/datasources/file_group_remote_datasource.dart';
 import '../../data/models/project_models.dart';
@@ -106,5 +107,87 @@ class ProjectDetailProvider extends ChangeNotifier {
       _loading = false;
       notifyListeners();
     }
+  }
+
+  Future<ApiResponse<Project>> updateProject({
+    required int projectId,
+    String? name,
+    String? description,
+    int? fileGroupId,
+    int? status,
+    List<String>? fileIds,
+  }) async {
+    if (_loading) {
+      return ApiResponse.error('Another operation is in progress');
+    }
+    _loading = true;
+    _error = null;
+    notifyListeners();
+
+    final existingTasks = tasks;
+    ApiResponse<Project>? response;
+    try {
+      response = await _remote.updateProject(
+        projectId: projectId,
+        name: name,
+        description: description,
+        fileGroupId: fileGroupId,
+        status: status,
+        fileIds: fileIds,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final updated = response.data!;
+        _currentId = projectId;
+        if (updated is ProjectWithTasks) {
+          _project = updated;
+        } else if (existingTasks.isNotEmpty) {
+          _project = ProjectWithTasks(
+            id: updated.id,
+            name: updated.name,
+            description: updated.description,
+            creator: updated.creator,
+            taskStats: updated.taskStats,
+            files: updated.files,
+            createdAt: updated.createdAt,
+            status: updated.status,
+            statusLabel: updated.statusLabel,
+            fileGroupId: updated.fileGroupId,
+            tasks: existingTasks,
+          );
+        } else {
+          _project = updated;
+        }
+
+        final groupId = _project?.fileGroupId;
+        if (groupId != null) {
+          try {
+            final fileGroupResult = await _fileGroupRemote.getFileGroup(
+              groupId,
+            );
+            if (fileGroupResult.isSuccess) {
+              _fileGroup = fileGroupResult.data;
+            } else {
+              _fileGroup = null;
+            }
+          } catch (_) {
+            _fileGroup = null;
+          }
+        } else {
+          _fileGroup = null;
+        }
+      } else {
+        _error = response.error;
+      }
+    } catch (e) {
+      final message = e.toString();
+      _error = message;
+      response = ApiResponse.error(message);
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+
+    return response;
   }
 }

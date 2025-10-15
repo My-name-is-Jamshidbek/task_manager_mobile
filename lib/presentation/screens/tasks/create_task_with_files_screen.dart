@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../data/datasources/tasks_api_remote_datasource.dart';
-import '../../providers/file_group_provider.dart';
-import '../../widgets/file_group_manager.dart';
+import '../../widgets/file_group_attachments_card.dart';
 
 class CreateTaskWithFilesScreen extends StatefulWidget {
   final int? projectId;
@@ -169,13 +167,12 @@ class _CreateTaskWithFilesScreenState extends State<CreateTaskWithFilesScreen> {
               ),
               const SizedBox(height: 24),
 
-              // File Group Manager
-              ChangeNotifierProvider(
-                create: (_) => FileGroupProvider(),
-                child: FileGroupManager(
-                  groupName: 'Task Files',
-                  onFileGroupCreated: _handleFileGroupCreated,
-                ),
+              FileGroupAttachmentsCard(
+                fileGroupId: _fileGroupId,
+                title: loc.translate('attachments'),
+                groupName: 'Task Files',
+                allowEditing: true,
+                onFileGroupCreated: _handleFileGroupCreated,
               ),
 
               const SizedBox(height: 32),

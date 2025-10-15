@@ -405,11 +405,12 @@ class ApiClient {
     bool includeAuth = true,
     bool showGlobalError = true,
     T Function(Map<String, dynamic>)? fromJson,
+    String httpMethod = 'POST',
   }) async {
     final String requestId = _generateRequestId();
     try {
       final uri = _buildUri(endpoint);
-      final request = http.MultipartRequest('POST', uri);
+      final request = http.MultipartRequest(httpMethod.toUpperCase(), uri);
 
       // Headers (exclude json content type)
       final finalHeaders = _buildHeaders(
@@ -424,7 +425,9 @@ class ApiClient {
       // Files
       files.forEach((k, file) => request.files.add(file));
 
-      Logger.info('🚀 [$requestId] MULTIPART POST Started');
+      Logger.info(
+        '🚀 [$requestId] MULTIPART ${httpMethod.toUpperCase()} Started',
+      );
       Logger.info('📍 [$requestId] URL: $uri');
       Logger.info('📤 [$requestId] Headers: ${_sanitizeHeaders(finalHeaders)}');
       Logger.info('📦 [$requestId] Fields: $fields');
@@ -446,7 +449,7 @@ class ApiClient {
       );
     } catch (e, stackTrace) {
       Logger.error(
-        '❌ [$requestId] MULTIPART POST Failed',
+        '❌ [$requestId] MULTIPART ${httpMethod.toUpperCase()} Failed',
         'ApiClient',
         e,
         stackTrace,

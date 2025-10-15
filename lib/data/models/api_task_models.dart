@@ -80,6 +80,7 @@ class ApiTask {
   final ApiTimeProgress? timeProgress;
   final List<ApiUserRef> workers;
   final List<FileAttachment> files;
+  final int? fileGroupId;
   final int? parentTaskId;
   final List<String> availableActions;
   const ApiTask({
@@ -94,6 +95,7 @@ class ApiTask {
     this.timeProgress,
     this.workers = const [],
     this.files = const [],
+    this.fileGroupId,
     this.parentTaskId,
     this.availableActions = const [],
   });
@@ -130,6 +132,7 @@ class ApiTask {
         .whereType<Map<String, dynamic>>()
         .map(FileAttachment.fromJson)
         .toList(),
+    fileGroupId: _parseFileGroupId(json['file_group_id']),
     parentTaskId: json['parent_task_id'] as int?,
     availableActions: _parseActions(
       json['available_actions'] ?? json['actions'],
@@ -155,4 +158,11 @@ class ApiTask {
     }
     return const [];
   }
+}
+
+int? _parseFileGroupId(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value);
+  return null;
 }

@@ -116,4 +116,39 @@ class ProjectsProvider extends ChangeNotifier {
 
     return response;
   }
+
+  Future<ApiResponse<Project>> updateProject({
+    required int projectId,
+    String? name,
+    String? description,
+    int? fileGroupId,
+    int? status,
+    List<String>? fileIds,
+  }) async {
+    Logger.info('✏️ ProjectsProvider: Updating project #$projectId');
+
+    final response = await _remote.updateProject(
+      projectId: projectId,
+      name: name,
+      description: description,
+      fileGroupId: fileGroupId,
+      status: status,
+      fileIds: fileIds,
+    );
+
+    if (response.isSuccess && response.data != null) {
+      final updated = response.data!;
+      final idx = _projects.indexWhere((p) => p.id == projectId);
+      if (idx != -1) {
+        _projects[idx] = updated;
+        notifyListeners();
+      }
+    } else {
+      Logger.warning(
+        '⚠️ ProjectsProvider: Failed to update project - ${response.error}',
+      );
+    }
+
+    return response;
+  }
 }

@@ -4,9 +4,8 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/logger.dart';
 import '../../../data/models/project_models.dart';
 import '../../providers/project_detail_provider.dart';
-import '../../providers/file_group_provider.dart';
 import '../../providers/projects_provider.dart';
-import '../../widgets/file_group_manager.dart';
+import '../../widgets/file_group_attachments_card.dart';
 import 'project_detail_screen.dart';
 
 class CreateProjectScreen extends StatefulWidget {
@@ -30,17 +29,15 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  // Attachment tracking list (mirrors task creation pattern). Can be preloaded via initialFileIds.
-  final List<int> _attachedFileIds = [];
   int? _fileGroupId; // backend expects file_group_id for project creation
   bool _submitting = false;
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialFileIds != null && widget.initialFileIds!.isNotEmpty) {
-      _attachedFileIds.addAll(widget.initialFileIds!);
-    }
+    // Legacy initialFileIds support: if provided, assume an existing file
+    // group has been created upstream; the caller should provide its id via
+    // onFileGroupCreated callback before submission.
   }
 
   @override
@@ -87,19 +84,12 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
               ),
               const SizedBox(height: 12),
               if (widget.showAttachments) ...[
-                ChangeNotifierProvider(
-                  create: (_) => FileGroupProvider(),
-                  child: FileGroupManager(
-                    groupName: 'Project Files',
-                    onFileGroupCreated: (gid) => _fileGroupId = gid,
-                    onFilesUpdated: (files) {
-                      _attachedFileIds
-                        ..clear()
-                        ..addAll(
-                          files.where((f) => f.id != null).map((f) => f.id!),
-                        );
-                    },
-                  ),
+                FileGroupAttachmentsCard(
+                  fileGroupId: _fileGroupId,
+                  title: loc.translate('attachments'),
+                  groupName: 'Project Files',
+                  allowEditing: true,
+                  onFileGroupCreated: (gid) => _fileGroupId = gid,
                 ),
                 const SizedBox(height: 24),
               ],
