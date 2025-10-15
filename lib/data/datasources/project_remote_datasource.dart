@@ -2,6 +2,7 @@ import 'package:http/http.dart' as http;
 import '../../core/api/api_client.dart';
 import '../../core/constants/api_constants.dart';
 import '../models/project_models.dart';
+import '../models/project_task_api_models.dart';
 
 class ProjectRemoteDataSource {
   final ApiClient _apiClient;
@@ -161,6 +162,35 @@ class ProjectRemoteDataSource {
             : obj;
         return Project.fromJson(map);
       },
+    );
+  }
+
+  Future<ApiResponse<ProjectTasksResult>> getProjectTasks({
+    required int projectId,
+    String? group,
+    int? page,
+    int? perPage,
+    String? search,
+    int? status,
+    int? taskTypeId,
+    int? timeProgress,
+    String? deadline,
+  }) async {
+    final endpoint = '${ApiConstants.projects}/$projectId/tasks';
+    final query = <String, String>{};
+    if (group != null && group.isNotEmpty) query['group'] = group;
+    if (page != null) query['page'] = page.toString();
+    if (perPage != null) query['per_page'] = perPage.toString();
+    if (search != null && search.isNotEmpty) query['search'] = search;
+    if (status != null) query['status'] = status.toString();
+    if (taskTypeId != null) query['task_type_id'] = taskTypeId.toString();
+    if (timeProgress != null) query['time_progress'] = timeProgress.toString();
+    if (deadline != null && deadline.isNotEmpty) query['deadline'] = deadline;
+
+    return _apiClient.get<ProjectTasksResult>(
+      endpoint,
+      queryParams: query.isEmpty ? null : query,
+      fromJson: (obj) => ProjectTasksResult.fromResponse(obj),
     );
   }
 }

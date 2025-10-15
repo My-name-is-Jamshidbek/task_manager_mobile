@@ -79,6 +79,23 @@
   "tasks": {
     "title": "Tasks",
     "searchHint": "Search tasks",
+    "dashboard": {
+      "title": "Task dashboard"
+    },
+    "filters": {
+      "title": "Filters",
+      "status": "Status",
+      "statusAll": "All statuses",
+      "clear": "Clear filters"
+    },
+    "groups": {
+      "accept": "Awaiting acceptance",
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "checked_finished": "Checked finished",
+      "rejected": "Rejected",
+      "rejected_confirmed": "Rejected confirmed"
+    },
     "addTask": "Add Task",
     "addTaskWithFiles": "Add Task with Files",
     "share": "Share task",
@@ -102,6 +119,7 @@
     "markIncomplete": "Mark as Incomplete",
     "noTasks": "No tasks found",
     "createFirstTask": "Create your first task",
+    "endOfList": "You have reached the end",
     "all": "All",
     "due": "Due",
     "sampleTaskTitle": "Complete the mobile app design",

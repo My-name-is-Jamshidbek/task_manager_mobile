@@ -4,9 +4,11 @@ import '../../data/datasources/project_remote_datasource.dart';
 import '../../data/datasources/file_group_remote_datasource.dart';
 import '../../data/models/project_models.dart';
 import '../../data/models/api_task_models.dart';
+import '../../data/models/project_task_api_models.dart';
 import '../../data/models/file_models.dart' as file_models;
 
 class ProjectDetailProvider extends ChangeNotifier {
+  static const int _defaultTasksPerPage = 10;
   final ProjectRemoteDataSource _remote;
   final FileGroupRemoteDataSource _fileGroupRemote;
   Project? _project;
@@ -15,16 +17,56 @@ class ProjectDetailProvider extends ChangeNotifier {
   String? _error;
   int? _currentId;
 
+  // Project task API state
+  bool _taskDashboardLoading = false;
+  String? _taskDashboardError;
+  Map<String, int> _taskCounts = const {};
+  Map<String, List<ApiTask>> _taskListsByGroup = const {};
+
+  bool _tasksLoading = false;
+  bool _tasksLoadingMore = false;
+  String? _tasksError;
+  List<ApiTask> _taskItems = [];
+  bool _tasksHasMore = true;
+  int _tasksPage = 1;
+
+  String? _selectedTaskGroup;
+  String? _taskSearch;
+  int? _taskStatus;
+  int? _taskTypeId;
+  int? _taskTimeProgress;
+  String? _taskDeadline;
+
   Project? get project => _project;
   file_models.FileGroup? get fileGroup => _fileGroup;
   bool get isLoading => _loading;
   String? get error => _error;
 
   List<ApiTask> get tasks {
+    if (_taskItems.isNotEmpty) return _taskItems;
+    if (_selectedTaskGroup != null) {
+      final fallback = _taskListsByGroup[_selectedTaskGroup!];
+      if (fallback != null && fallback.isNotEmpty) return fallback;
+    }
     final p = _project;
     if (p is ProjectWithTasks) return p.tasks;
     return const [];
   }
+
+  Map<String, int> get taskCounts => _taskCounts;
+  Map<String, List<ApiTask>> get groupedTaskLists => _taskListsByGroup;
+  String? get tasksError => _tasksError;
+  bool get isTaskDashboardLoading => _taskDashboardLoading;
+  String? get taskDashboardError => _taskDashboardError;
+  bool get isTaskListLoading => _tasksLoading && _tasksPage <= 1;
+  bool get isTaskListLoadingMore => _tasksLoadingMore;
+  bool get hasMoreTasks => _tasksHasMore;
+  String? get selectedTaskGroup => _selectedTaskGroup;
+  String? get taskSearch => _taskSearch;
+  int? get taskStatus => _taskStatus;
+  int? get taskTypeId => _taskTypeId;
+  int? get taskTimeProgress => _taskTimeProgress;
+  String? get taskDeadline => _taskDeadline;
 
   List<file_models.FileAttachment> get files {
     // Prioritize file group files over project.files
@@ -49,6 +91,202 @@ class ProjectDetailProvider extends ChangeNotifier {
     FileGroupRemoteDataSource? fileGroupRemote,
   }) : _remote = remote ?? ProjectRemoteDataSource(),
        _fileGroupRemote = fileGroupRemote ?? FileGroupRemoteDataSource();
+
+  void _resetTaskState() {
+    _taskDashboardLoading = false;
+    _taskDashboardError = null;
+    _taskCounts = const {};
+    _taskListsByGroup = const {};
+    _tasksLoading = false;
+    _tasksLoadingMore = false;
+    _tasksError = null;
+    _taskItems = [];
+    _tasksHasMore = true;
+    _tasksPage = 1;
+    _selectedTaskGroup = null;
+    _taskSearch = null;
+    _taskStatus = null;
+    _taskTypeId = null;
+    _taskTimeProgress = null;
+    _taskDeadline = null;
+  }
+
+  static const List<String> _taskGroupOrder = <String>[
+    'accept',
+    'in_progress',
+    'completed',
+    'checked_finished',
+    'rejected',
+    'rejected_confirmed',
+  ];
+
+  String _pickDefaultTaskGroup(Map<String, int> counts) {
+    for (final key in _taskGroupOrder) {
+      if ((counts[key] ?? 0) > 0) {
+        return key;
+      }
+    }
+    if (counts.isNotEmpty) {
+      return counts.entries.first.key;
+    }
+    return _taskGroupOrder.first;
+  }
+
+  Future<void> fetchTaskDashboard() async {
+    final id = _currentId;
+    if (id == null) return;
+    _taskDashboardLoading = true;
+    _taskDashboardError = null;
+    notifyListeners();
+
+    final response = await _remote.getProjectTasks(projectId: id);
+    if (response.isSuccess && response.data != null) {
+      final data = response.data!;
+      _taskCounts = Map<String, int>.from(data.counts);
+      _taskListsByGroup = data.lists.map(
+        (key, value) => MapEntry(key, List<ApiTask>.from(value)),
+      );
+      _taskDashboardError = null;
+      _selectedTaskGroup ??= _pickDefaultTaskGroup(_taskCounts);
+    } else {
+      _taskDashboardError = response.error ?? 'Unknown error';
+      _taskCounts = const {};
+      _taskListsByGroup = const {};
+    }
+
+    _taskDashboardLoading = false;
+    notifyListeners();
+  }
+
+  Future<bool> _fetchProjectTasksInternal({
+    required int projectId,
+    required int page,
+  }) async {
+    final group = _selectedTaskGroup;
+    if (group == null || group.isEmpty) {
+      _taskItems = [];
+      _tasksHasMore = false;
+      return true;
+    }
+
+    final result = await _remote.getProjectTasks(
+      projectId: projectId,
+      group: group,
+      page: page,
+      perPage: _defaultTasksPerPage,
+      search: _taskSearch,
+      status: _taskStatus,
+      taskTypeId: _taskTypeId,
+      timeProgress: _taskTimeProgress,
+      deadline: _taskDeadline,
+    );
+
+    if (result.isSuccess && result.data != null) {
+      final payload = result.data!;
+      final incoming = List<ApiTask>.from(payload.items);
+      if (page <= 1) {
+        _taskItems = incoming;
+      } else {
+        _taskItems = [..._taskItems, ...incoming];
+      }
+
+      if (payload.counts.isNotEmpty) {
+        _taskCounts = Map<String, int>.from(payload.counts);
+      }
+
+      if (_selectedTaskGroup != null) {
+        _taskListsByGroup = {
+          ..._taskListsByGroup,
+          _selectedTaskGroup!: List<ApiTask>.from(_taskItems),
+        };
+      }
+
+      final meta = payload.meta;
+      if (meta != null) {
+        _tasksHasMore = meta.hasMore;
+      } else {
+        _tasksHasMore = incoming.length >= _defaultTasksPerPage;
+      }
+
+      _tasksError = null;
+      return true;
+    } else {
+      _tasksError = result.error ?? 'Unknown error';
+      return false;
+    }
+  }
+
+  Future<void> refreshProjectTasks() async {
+    final id = _currentId;
+    if (id == null) return;
+    _tasksPage = 1;
+    _tasksHasMore = true;
+    _tasksLoading = true;
+    _tasksError = null;
+    notifyListeners();
+
+    final success = await _fetchProjectTasksInternal(projectId: id, page: 1);
+
+    _tasksLoading = false;
+    if (!success && _taskItems.isEmpty) {
+      _tasksHasMore = false;
+    }
+    notifyListeners();
+  }
+
+  Future<void> loadMoreProjectTasks() async {
+    final id = _currentId;
+    if (id == null) return;
+    if (_tasksLoading || _tasksLoadingMore || !_tasksHasMore) return;
+
+    final nextPage = _tasksPage + 1;
+    _tasksLoadingMore = true;
+    notifyListeners();
+
+    final success = await _fetchProjectTasksInternal(
+      projectId: id,
+      page: nextPage,
+    );
+
+    if (success) {
+      _tasksPage = nextPage;
+    }
+
+    _tasksLoadingMore = false;
+    notifyListeners();
+  }
+
+  Future<void> selectTaskGroup(String group) async {
+    if (_selectedTaskGroup == group) return;
+    _selectedTaskGroup = group;
+    _tasksPage = 1;
+    _tasksHasMore = true;
+    _taskItems = [];
+    _tasksError = null;
+    notifyListeners();
+    await refreshProjectTasks();
+  }
+
+  Future<void> updateTaskSearch(String? value) async {
+    final normalized = (value ?? '').trim();
+    final newValue = normalized.isEmpty ? null : normalized;
+    if (_taskSearch == newValue) return;
+    _taskSearch = newValue;
+    await refreshProjectTasks();
+  }
+
+  Future<void> updateTaskStatus(int? status) async {
+    if (_taskStatus == status) return;
+    _taskStatus = status;
+    await refreshProjectTasks();
+  }
+
+  Future<void> _initializeTaskData() async {
+    await fetchTaskDashboard();
+    if (_selectedTaskGroup != null) {
+      await refreshProjectTasks();
+    }
+  }
 
   Future<void> _refreshFileGroup(int? groupId) async {
     if (groupId == null) {
@@ -127,6 +365,7 @@ class ProjectDetailProvider extends ChangeNotifier {
     _error = null;
     _project = null; // Clear previous project data
     _fileGroup = null; // Clear previous file group data
+    _resetTaskState();
     notifyListeners();
     try {
       // Load project (with tasks if available)
@@ -148,6 +387,7 @@ class ProjectDetailProvider extends ChangeNotifier {
             // Just log or ignore, use project.files as fallback
           }
         }
+        await _initializeTaskData();
       } else if (!withTasks.isSuccess) {
         // Fallback to basic project fetch
         final basic = await _remote.getProject(id);
@@ -167,6 +407,7 @@ class ProjectDetailProvider extends ChangeNotifier {
               // Ignore file group errors
             }
           }
+          await _initializeTaskData();
         } else {
           _error = withTasks.error ?? basic.error ?? 'Unknown error';
         }

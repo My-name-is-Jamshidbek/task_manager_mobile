@@ -79,6 +79,23 @@
   "tasks": {
     "title": "Vazifalar",
     "searchHint": "Vazifalarni qidirish",
+    "dashboard": {
+      "title": "Vazifa paneli"
+    },
+    "filters": {
+      "title": "Filtrlar",
+      "status": "Holat",
+      "statusAll": "Barcha holatlar",
+      "clear": "Filtrlarni tozalash"
+    },
+    "groups": {
+      "accept": "Qabul qilishni kutmoqda",
+      "in_progress": "Jarayonda",
+      "completed": "Bajarilgan",
+      "checked_finished": "Tekshirilib tasdiqlangan",
+      "rejected": "Rad etilgan",
+      "rejected_confirmed": "Rad etish tasdiqlangan"
+    },
     "addTask": "Vazifa qo'shish",
     "addTaskWithFiles": "Fayllar bilan vazifa qo'shish",
     "share": "Vazifani ulashish",
@@ -102,6 +119,7 @@
     "markIncomplete": "Bajarilmagan deb belgilash",
     "noTasks": "Vazifalar topilmadi",
     "createFirstTask": "Birinchi vazifangizni yarating",
+    "endOfList": "Ro'yxat oxiriga yetdingiz",
     "all": "Hammasi",
     "due": "Muddati",
     "sampleTaskTitle": "Mobil ilovaning dizaynini yakunlash",

@@ -79,6 +79,23 @@
   "tasks": {
     "title": "Задачи",
     "searchHint": "Поиск задач",
+    "dashboard": {
+      "title": "Панель задач"
+    },
+    "filters": {
+      "title": "Фильтры",
+      "status": "Статус",
+      "statusAll": "Все статусы",
+      "clear": "Сбросить фильтры"
+    },
+    "groups": {
+      "accept": "Принятые",
+      "in_progress": "В работе",
+      "completed": "Завершенные",
+      "checked_finished": "Проверенные",
+      "rejected": "Отклоненные",
+      "rejected_confirmed": "Отклоненные (подтверждено)"
+    },
     "addTask": "Добавить задачу",
     "addTaskWithFiles": "Добавить задачу с файлами",
     "share": "Поделиться задачей",
@@ -102,6 +119,7 @@
     "markIncomplete": "Отметить как невыполненную",
     "noTasks": "Задачи не найдены",
     "createFirstTask": "Создайте свою первую задачу",
+    "endOfList": "Вы достигли конца списка",
     "all": "Все",
     "due": "Срок",
     "sampleTaskTitle": "Завершить дизайн мобильного приложения",
