@@ -42,11 +42,25 @@ class TaskListItem extends StatelessWidget {
     final statusLabel = task.status?.label?.trim() ?? '';
     final deadline = task.deadline;
     final projectName = projectNameOverride ?? task.project?.name ?? '';
+    final description = (task.description ?? '').trim();
+    final hasDescription = showDescription && description.isNotEmpty;
+    final hasDeadline = showDeadline && deadline != null;
+    final hasStatus = showStatus && statusLabel.isNotEmpty;
+    final hasMetaRow = hasDeadline || hasStatus;
+    final hasProjectRow = showProjectName;
+    final descriptionMaxLines = (hasDeadline || hasStatus || hasProjectRow)
+        ? 1
+        : 2;
+    final estimatedLines =
+        (hasDescription ? descriptionMaxLines : 0) +
+        (hasMetaRow ? 1 : 0) +
+        (hasProjectRow ? 1 : 0);
 
     return ListTile(
       contentPadding:
           contentPadding ?? const EdgeInsets.symmetric(horizontal: 0),
       leading: leading ?? const Icon(Icons.checklist),
+      isThreeLine: estimatedLines > 2,
       title: Text(
         task.name,
         maxLines: 1,
@@ -60,6 +74,12 @@ class TaskListItem extends StatelessWidget {
       trailing: trailing,
       subtitle: _buildSubtitle(
         theme: theme,
+        description: description,
+        hasDescription: hasDescription,
+        hasDeadline: hasDeadline,
+        hasStatus: hasStatus,
+        hasProjectRow: hasProjectRow,
+        descriptionMaxLines: descriptionMaxLines,
         statusLabel: statusLabel,
         deadline: deadline,
         projectName: projectName,
@@ -81,11 +101,16 @@ class TaskListItem extends StatelessWidget {
 
   Widget? _buildSubtitle({
     required ThemeData theme,
+    required String description,
+    required bool hasDescription,
+    required bool hasDeadline,
+    required bool hasStatus,
+    required bool hasProjectRow,
+    required int descriptionMaxLines,
     required String statusLabel,
     required DateTime? deadline,
     required String projectName,
   }) {
-    final description = (task.description ?? '').trim();
     final children = <Widget>[];
 
     void addSpacing() {
@@ -94,20 +119,21 @@ class TaskListItem extends StatelessWidget {
       }
     }
 
-    if (showDescription && description.isNotEmpty) {
+    if (hasDescription) {
       children.add(
-        Text(description, maxLines: 2, overflow: TextOverflow.ellipsis),
+        Text(
+          description,
+          maxLines: descriptionMaxLines,
+          overflow: TextOverflow.ellipsis,
+        ),
       );
     }
 
-    final DateTime? resolvedDeadline = showDeadline ? deadline : null;
-    final hasDeadline = resolvedDeadline != null;
-    final hasStatus = showStatus && statusLabel.isNotEmpty;
     if (hasDeadline || hasStatus) {
       addSpacing();
       final rowChildren = <Widget>[];
       if (hasDeadline) {
-        final deadlineValue = resolvedDeadline;
+        final deadlineValue = deadline!; // safe due to hasDeadline guard
         rowChildren.addAll([
           const Icon(Icons.calendar_today, size: 14),
           const SizedBox(width: 4),
@@ -146,7 +172,7 @@ class TaskListItem extends StatelessWidget {
       );
     }
 
-    if (showProjectName) {
+    if (hasProjectRow) {
       addSpacing();
       children.add(
         Row(
