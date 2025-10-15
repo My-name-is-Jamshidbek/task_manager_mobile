@@ -50,6 +50,76 @@ class ProjectDetailProvider extends ChangeNotifier {
   }) : _remote = remote ?? ProjectRemoteDataSource(),
        _fileGroupRemote = fileGroupRemote ?? FileGroupRemoteDataSource();
 
+  Future<void> _refreshFileGroup(int? groupId) async {
+    if (groupId == null) {
+      _fileGroup = null;
+      return;
+    }
+    try {
+      final fileGroupResult = await _fileGroupRemote.getFileGroup(groupId);
+      if (fileGroupResult.isSuccess) {
+        _fileGroup = fileGroupResult.data;
+      } else {
+        _fileGroup = null;
+      }
+    } catch (_) {
+      _fileGroup = null;
+    }
+  }
+
+  Project _mergeProjectWithTasks(Project updated, List<ApiTask> existingTasks) {
+    if (updated is ProjectWithTasks) return updated;
+    if (existingTasks.isEmpty) return updated;
+    return ProjectWithTasks(
+      id: updated.id,
+      name: updated.name,
+      description: updated.description,
+      creator: updated.creator,
+      taskStats: updated.taskStats,
+      files: updated.files,
+      createdAt: updated.createdAt,
+      status: updated.status,
+      statusLabel: updated.statusLabel,
+      fileGroupId: updated.fileGroupId,
+      tasks: existingTasks,
+    );
+  }
+
+  Future<ApiResponse<Project>> _applyProjectMutation(
+    Future<ApiResponse<Project>> Function() mutation,
+  ) async {
+    if (_loading) {
+      return ApiResponse.error('Another operation is in progress');
+    }
+    _loading = true;
+    _error = null;
+    notifyListeners();
+
+    final existingTasks = tasks;
+    late ApiResponse<Project> response;
+
+    try {
+      response = await mutation();
+      if (response.isSuccess && response.data != null) {
+        final merged = _mergeProjectWithTasks(response.data!, existingTasks);
+        _project = merged;
+        _currentId = merged.id;
+        await _refreshFileGroup(merged.fileGroupId);
+      } else {
+        _error = response.error;
+      }
+    } catch (e) {
+      final message = e.toString();
+      _error = message;
+      response = ApiResponse.error(message);
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+
+    return response;
+  }
+
   Future<void> load(int id) async {
     if (_loading) return;
     _currentId = id;
@@ -116,78 +186,24 @@ class ProjectDetailProvider extends ChangeNotifier {
     int? fileGroupId,
     int? status,
     List<String>? fileIds,
-  }) async {
-    if (_loading) {
-      return ApiResponse.error('Another operation is in progress');
-    }
-    _loading = true;
-    _error = null;
-    notifyListeners();
-
-    final existingTasks = tasks;
-    ApiResponse<Project>? response;
-    try {
-      response = await _remote.updateProject(
+  }) {
+    return _applyProjectMutation(
+      () => _remote.updateProject(
         projectId: projectId,
         name: name,
         description: description,
         fileGroupId: fileGroupId,
         status: status,
         fileIds: fileIds,
-      );
+      ),
+    );
+  }
 
-      if (response.isSuccess && response.data != null) {
-        final updated = response.data!;
-        _currentId = projectId;
-        if (updated is ProjectWithTasks) {
-          _project = updated;
-        } else if (existingTasks.isNotEmpty) {
-          _project = ProjectWithTasks(
-            id: updated.id,
-            name: updated.name,
-            description: updated.description,
-            creator: updated.creator,
-            taskStats: updated.taskStats,
-            files: updated.files,
-            createdAt: updated.createdAt,
-            status: updated.status,
-            statusLabel: updated.statusLabel,
-            fileGroupId: updated.fileGroupId,
-            tasks: existingTasks,
-          );
-        } else {
-          _project = updated;
-        }
+  Future<ApiResponse<Project>> completeProject(int projectId) {
+    return _applyProjectMutation(() => _remote.completeProject(projectId));
+  }
 
-        final groupId = _project?.fileGroupId;
-        if (groupId != null) {
-          try {
-            final fileGroupResult = await _fileGroupRemote.getFileGroup(
-              groupId,
-            );
-            if (fileGroupResult.isSuccess) {
-              _fileGroup = fileGroupResult.data;
-            } else {
-              _fileGroup = null;
-            }
-          } catch (_) {
-            _fileGroup = null;
-          }
-        } else {
-          _fileGroup = null;
-        }
-      } else {
-        _error = response.error;
-      }
-    } catch (e) {
-      final message = e.toString();
-      _error = message;
-      response = ApiResponse.error(message);
-    } finally {
-      _loading = false;
-      notifyListeners();
-    }
-
-    return response;
+  Future<ApiResponse<Project>> rejectProject(int projectId) {
+    return _applyProjectMutation(() => _remote.rejectProject(projectId));
   }
 }

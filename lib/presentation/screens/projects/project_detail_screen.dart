@@ -148,13 +148,16 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             );
           }
           final project = provider.project!;
+          final isOwner =
+              context.read<AuthProvider?>()?.currentUser?.id ==
+              project.creator.id;
           return RefreshIndicator(
             onRefresh: () async =>
                 context.read<ProjectDetailProvider>().load(project.id),
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _header(context, project, provider, theme, loc),
+                _header(context, project, provider, theme, loc, isOwner),
                 const SizedBox(height: 16),
                 _description(project, theme),
                 const SizedBox(height: 24),
@@ -164,9 +167,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   fileGroupId: project.fileGroupId,
                   title: loc.translate('attachments'),
                   groupName: 'Project Files',
-                  allowEditing:
-                      context.read<AuthProvider?>()?.currentUser?.id ==
-                      project.creator.id,
+                  allowEditing: isOwner,
                   initialFiles: provider.files,
                 ),
                 const SizedBox(height: 24),
@@ -186,6 +187,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     ProjectDetailProvider provider,
     ThemeData theme,
     AppLocalizations loc,
+    bool isOwner,
   ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,6 +227,33 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     ProjectStatusChip(project: project),
                 ],
               ),
+              if (isOwner) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: provider.isLoading
+                          ? null
+                          : () =>
+                                _handleProjectComplete(project, provider, loc),
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: Text(loc.translate('projects.markComplete')),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: provider.isLoading
+                          ? null
+                          : () => _handleProjectReject(project, provider, loc),
+                      icon: const Icon(Icons.cancel_outlined),
+                      label: Text(loc.translate('projects.markRejected')),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.colorScheme.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -353,4 +382,93 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   String _formatDate(DateTime dt) =>
       '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
+  Future<bool> _confirmProjectAction({
+    required String message,
+    required String confirmLabel,
+    required AppLocalizations loc,
+    Color? confirmColor,
+  }) async {
+    final theme = Theme.of(context);
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(loc.translate('common.warning')),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(loc.translate('common.cancel')),
+          ),
+          FilledButton(
+            style: confirmColor != null
+                ? FilledButton.styleFrom(
+                    backgroundColor: confirmColor,
+                    foregroundColor: theme.colorScheme.onError,
+                  )
+                : null,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(confirmLabel),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  Future<void> _handleProjectComplete(
+    Project project,
+    ProjectDetailProvider provider,
+    AppLocalizations loc,
+  ) async {
+    final confirm = await _confirmProjectAction(
+      message: loc.translate('projects.markCompleteConfirm'),
+      confirmLabel: loc.translate('projects.markComplete'),
+      loc: loc,
+    );
+    if (!confirm || !mounted) return;
+
+    final response = await provider.completeProject(project.id);
+    if (!mounted) return;
+
+    if (response.isSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.translate('messages.projectCompleted'))),
+      );
+    } else {
+      final message = response.error ?? loc.translate('errors.unknown');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  Future<void> _handleProjectReject(
+    Project project,
+    ProjectDetailProvider provider,
+    AppLocalizations loc,
+  ) async {
+    final theme = Theme.of(context);
+    final confirm = await _confirmProjectAction(
+      message: loc.translate('projects.markRejectedConfirm'),
+      confirmLabel: loc.translate('projects.markRejected'),
+      loc: loc,
+      confirmColor: theme.colorScheme.error,
+    );
+    if (!confirm || !mounted) return;
+
+    final response = await provider.rejectProject(project.id);
+    if (!mounted) return;
+
+    if (response.isSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.translate('messages.projectRejected'))),
+      );
+    } else {
+      final message = response.error ?? loc.translate('errors.unknown');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
 }

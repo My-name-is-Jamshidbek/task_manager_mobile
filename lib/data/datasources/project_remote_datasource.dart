@@ -135,4 +135,32 @@ class ProjectRemoteDataSource {
       },
     );
   }
+
+  Future<ApiResponse<Project>> completeProject(int projectId) async {
+    final endpoint = '${ApiConstants.projects}/$projectId/complete';
+    return _apiClient.post<Project>(
+      endpoint,
+      body: const <String, dynamic>{},
+      fromJson: (obj) {
+        final map = obj['data'] is Map<String, dynamic>
+            ? obj['data'] as Map<String, dynamic>
+            : obj;
+        return Project.fromJson(map);
+      },
+    );
+  }
+
+  Future<ApiResponse<Project>> rejectProject(int projectId) async {
+    final endpoint = '${ApiConstants.projects}/$projectId/reject';
+    return _apiClient.post<Project>(
+      endpoint,
+      body: const <String, dynamic>{},
+      fromJson: (obj) {
+        final map = obj['data'] is Map<String, dynamic>
+            ? obj['data'] as Map<String, dynamic>
+            : obj;
+        return Project.fromJson(map);
+      },
+    );
+  }
 }
