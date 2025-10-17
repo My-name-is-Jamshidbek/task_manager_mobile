@@ -148,7 +148,8 @@
       "reasonHint": "Qaroringizni tushuntiring",
       "reasonRequired": "Iltimos, sabab ko'rsating",
       "successMessage": "{action} muvaffaqiyatli bajarildi",
-      "genericError": "Amalni bajarib bo'lmadi"
+      "genericError": "Amalni bajarib bo'lmadi",
+      "noAvailable": "Ushbu vazifa uchun amal mavjud emas"
     }
   },
   "projects": {

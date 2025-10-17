@@ -14,6 +14,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/task_detail_provider.dart';
 import '../../widgets/file_group_attachments_card.dart';
 import '../../widgets/task_list_item.dart';
+import '../../utils/task_action_helper.dart';
 import 'create_task_screen.dart';
 import 'edit_task_screen.dart';
 
@@ -346,7 +347,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     TaskDetailProvider provider,
     ApiTask task,
   ) {
-    final actions = _deriveActions(task);
+    final currentUserId = context.read<AuthProvider?>()?.currentUser?.id;
+    final actions = TaskActionHelper.deriveActions(task, currentUserId);
     if (actions.isEmpty) return null;
 
     return Card(
@@ -407,25 +409,24 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   ) {
     final label = loc.translate(action.translationKey);
     final busy = provider.isActionBusy(action);
-    final icon = _iconForAction(action);
-    final style = _buttonStyleForAction(theme, action);
+    final style = TaskActionHelper.buttonStyleForAction(theme, action);
     return FilledButton(
       style: style,
       onPressed: busy
           ? null
           : () => _handleAction(context, loc, provider, action),
-      child: _actionButtonChild(label, icon, busy, theme, action),
+      child: _actionButtonChild(label, busy, theme, action),
     );
   }
 
   Widget _actionButtonChild(
     String label,
-    IconData icon,
     bool busy,
     ThemeData theme,
     TaskActionKind action,
   ) {
-    final progressColor = _progressColor(theme, action);
+    final progressColor = TaskActionHelper.progressColor(theme, action);
+    final icon = TaskActionHelper.iconForAction(action);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -446,58 +447,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     );
   }
 
-  IconData _iconForAction(TaskActionKind action) {
-    switch (action) {
-      case TaskActionKind.accept:
-        return Icons.task_alt;
-      case TaskActionKind.complete:
-        return Icons.check_circle_outline;
-      case TaskActionKind.reject:
-        return Icons.cancel;
-      case TaskActionKind.approveCompletion:
-        return Icons.verified;
-      case TaskActionKind.rework:
-        return Icons.restart_alt;
-    }
-  }
-
-  ButtonStyle? _buttonStyleForAction(ThemeData theme, TaskActionKind action) {
-    switch (action) {
-      case TaskActionKind.reject:
-        return FilledButton.styleFrom(
-          backgroundColor: theme.colorScheme.error,
-          foregroundColor: theme.colorScheme.onError,
-        );
-      case TaskActionKind.rework:
-        return FilledButton.styleFrom(
-          backgroundColor: theme.colorScheme.secondaryContainer,
-          foregroundColor: theme.colorScheme.onSecondaryContainer,
-        );
-      case TaskActionKind.approveCompletion:
-        return FilledButton.styleFrom(
-          backgroundColor: theme.colorScheme.primaryContainer,
-          foregroundColor: theme.colorScheme.onPrimaryContainer,
-        );
-      case TaskActionKind.accept:
-      case TaskActionKind.complete:
-        return null;
-    }
-  }
-
-  Color _progressColor(ThemeData theme, TaskActionKind action) {
-    switch (action) {
-      case TaskActionKind.reject:
-        return theme.colorScheme.onError;
-      case TaskActionKind.rework:
-        return theme.colorScheme.onSecondaryContainer;
-      case TaskActionKind.approveCompletion:
-        return theme.colorScheme.onPrimaryContainer;
-      case TaskActionKind.accept:
-      case TaskActionKind.complete:
-        return theme.colorScheme.onPrimary;
-    }
-  }
-
   Future<void> _handleAction(
     BuildContext context,
     AppLocalizations loc,
@@ -506,20 +455,21 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   ) async {
     String? reason;
     if (action.requiresReason) {
-      reason = await _promptForReason(context, loc, action);
+      reason = await TaskActionHelper.promptForReason(context, loc, action);
       if (reason == null) return;
     } else {
-      final confirmed = await _confirmAction(context, loc, action);
+      final confirmed = await TaskActionHelper.confirmAction(
+        context,
+        loc,
+        action,
+      );
       if (!confirmed) return;
     }
 
     final success = await provider.performAction(action, reason: reason);
     if (!context.mounted) return;
     if (success) {
-      final successMessage = loc.translateWithParams(
-        'tasks.actions.successMessage',
-        {'action': loc.translate(action.translationKey)},
-      );
+      final successMessage = TaskActionHelper.buildSuccessMessage(loc, action);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(successMessage)));
@@ -531,133 +481,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       ).showSnackBar(SnackBar(content: Text(error)));
     }
   }
-
-  Future<bool> _confirmAction(
-    BuildContext context,
-    AppLocalizations loc,
-    TaskActionKind action,
-  ) async {
-    final actionLabel = loc.translate(action.translationKey);
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(loc.translate('tasks.actions.confirmTitle')),
-        content: Text(
-          loc.translateWithParams('tasks.actions.confirmMessage', {
-            'action': actionLabel,
-          }),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(loc.translate('common.cancel')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(loc.translate('tasks.actions.proceed')),
-          ),
-        ],
-      ),
-    );
-    return result ?? false;
-  }
-
-  Future<String?> _promptForReason(
-    BuildContext context,
-    AppLocalizations loc,
-    TaskActionKind action,
-  ) async {
-    final controller = TextEditingController();
-    String? errorText;
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(loc.translate(action.translationKey)),
-          content: TextField(
-            controller: controller,
-            maxLines: 4,
-            decoration: InputDecoration(
-              labelText: loc.translate('tasks.actions.reasonLabel'),
-              hintText: loc.translate('tasks.actions.reasonHint'),
-              errorText: errorText,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: Text(loc.translate('common.cancel')),
-            ),
-            FilledButton(
-              onPressed: () {
-                final text = controller.text.trim();
-                if (text.isEmpty) {
-                  setState(
-                    () => errorText = loc.translate(
-                      'tasks.actions.reasonRequired',
-                    ),
-                  );
-                  return;
-                }
-                Navigator.of(context).pop(text);
-              },
-              child: Text(loc.translate('tasks.actions.proceed')),
-            ),
-          ],
-        ),
-      ),
-    );
-    controller.dispose();
-    return result;
-  }
-
-  List<TaskActionKind> _deriveActions(ApiTask task) {
-    final result = <TaskActionKind>[];
-    for (final raw in task.availableActions) {
-      final action = _mapAction(raw);
-      if (action != null && !result.contains(action)) {
-        result.add(action);
-      }
-    }
-    if (result.isNotEmpty) {
-      return result;
-    }
-
-    final statusLabel = (task.status?.label ?? '').toLowerCase();
-    void addIfMissing(TaskActionKind action) {
-      if (!result.contains(action)) result.add(action);
-    }
-
-    if (statusLabel.contains('pending') || statusLabel.contains('await')) {
-      addIfMissing(TaskActionKind.accept);
-      addIfMissing(TaskActionKind.reject);
-    } else if (statusLabel.contains('progress') ||
-        statusLabel.contains('accepted')) {
-      addIfMissing(TaskActionKind.complete);
-    } else if (statusLabel.contains('complete') ||
-        statusLabel.contains('approval') ||
-        statusLabel.contains('review')) {
-      addIfMissing(TaskActionKind.approveCompletion);
-      addIfMissing(TaskActionKind.rework);
-    }
-
-    return result;
-  }
-
-  TaskActionKind? _mapAction(String raw) {
-    final normalized = _normalizeActionValue(raw);
-    for (final action in TaskActionKind.values) {
-      final nameMatch = _normalizeActionValue(action.name);
-      final pathMatch = _normalizeActionValue(action.pathSegment);
-      if (normalized == nameMatch || normalized == pathMatch) {
-        return action;
-      }
-    }
-    return null;
-  }
-
-  String _normalizeActionValue(String value) =>
-      value.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
 
   Widget _overviewCard(
     BuildContext context,

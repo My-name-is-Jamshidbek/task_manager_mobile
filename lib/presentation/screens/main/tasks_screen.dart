@@ -2,10 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/tasks_api_provider.dart';
 import '../../../data/models/api_task_models.dart';
+import '../../../data/models/task_action.dart';
 import '../../widgets/task_list_item.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../utils/task_action_helper.dart';
+import '../../widgets/task_action_sheet.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -73,6 +77,7 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final currentUserId = context.watch<AuthProvider?>()?.currentUser?.id;
 
     return SafeArea(
       child: Consumer<TasksApiProvider>(
@@ -132,7 +137,13 @@ class _TasksScreenState extends State<TasksScreen> {
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: _buildTasksSliverList(context, theme, loc, provider),
+                  sliver: _buildTasksSliverList(
+                    context,
+                    theme,
+                    loc,
+                    provider,
+                    currentUserId,
+                  ),
                 ),
               ],
             ),
@@ -633,6 +644,7 @@ class _TasksScreenState extends State<TasksScreen> {
     ThemeData theme,
     AppLocalizations loc,
     TasksApiProvider provider,
+    int? currentUserId,
   ) {
     if (provider.tasks.isEmpty) {
       return SliverList(
@@ -659,7 +671,14 @@ class _TasksScreenState extends State<TasksScreen> {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        return _buildTaskCard(context, provider.tasks[index], theme, loc);
+        return _buildTaskCard(
+          context,
+          provider.tasks[index],
+          theme,
+          loc,
+          provider,
+          currentUserId,
+        );
       }, childCount: provider.tasks.length + (provider.hasMore ? 1 : 0)),
     );
   }
@@ -709,10 +728,23 @@ class _TasksScreenState extends State<TasksScreen> {
     ApiTask task,
     ThemeData theme,
     AppLocalizations loc,
+    TasksApiProvider provider,
+    int? currentUserId,
   ) {
     final isCompleted = task.status?.id == 2;
     final projectName = task.project?.name ?? '';
     final statusLabel = task.status?.label ?? '';
+    final actions = TaskActionHelper.deriveActions(task, currentUserId);
+    final trailing = _buildTaskTrailing(
+      context,
+      theme,
+      loc,
+      task,
+      provider,
+      currentUserId,
+      statusLabel,
+      actions,
+    );
 
     return Card(
       elevation: 2,
@@ -724,15 +756,8 @@ class _TasksScreenState extends State<TasksScreen> {
           horizontal: 12,
           vertical: 12,
         ),
-        leading: Checkbox(
-          value: isCompleted,
-          onChanged: (value) {
-            // TODO: Toggle task completion via API
-          },
-        ),
-        trailing: statusLabel.isNotEmpty
-            ? _buildStatusChip(statusLabel, theme)
-            : null,
+        leading: const Icon(Icons.checklist),
+        trailing: trailing,
         showStatus: false,
         showProjectName: true,
         projectNameOverride: projectName,
@@ -740,6 +765,75 @@ class _TasksScreenState extends State<TasksScreen> {
         deadlineLabel: loc.translate('tasks.due'),
       ),
     );
+  }
+
+  Widget? _buildTaskTrailing(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations loc,
+    ApiTask task,
+    TasksApiProvider provider,
+    int? currentUserId,
+    String statusLabel,
+    List<TaskActionKind> actions,
+  ) {
+    final statusChip = statusLabel.isNotEmpty
+        ? _buildStatusChip(statusLabel, theme)
+        : null;
+    if (actions.isEmpty) {
+      return statusChip;
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (statusChip != null) statusChip,
+        if (statusChip != null) const SizedBox(width: 4),
+        IconButton(
+          tooltip: loc.translate('tasks.actions.title'),
+          icon: const Icon(Icons.more_horiz),
+          onPressed: () => _openTaskActions(
+            context,
+            loc,
+            task,
+            actions,
+            provider,
+            currentUserId,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openTaskActions(
+    BuildContext context,
+    AppLocalizations loc,
+    ApiTask task,
+    List<TaskActionKind> actions,
+    TasksApiProvider provider,
+    int? currentUserId,
+  ) async {
+    final result = await TaskActionSheet.show(
+      context,
+      task: task,
+      currentUserId: currentUserId,
+      presetActions: actions,
+    );
+    if (!mounted || result == null) return;
+
+    if (result.updatedTask != null) {
+      provider.replaceTask(result.updatedTask!);
+    }
+
+    await provider.refresh();
+
+    if (!mounted) return;
+
+    context.read<DashboardProvider>().refreshTaskStats();
+
+    final message = TaskActionHelper.buildSuccessMessage(loc, result.action);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _buildStatusChip(String label, ThemeData theme) {

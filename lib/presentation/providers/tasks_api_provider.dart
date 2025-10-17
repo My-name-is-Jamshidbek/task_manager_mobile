@@ -86,4 +86,11 @@ class TasksApiProvider extends ChangeNotifier {
     _page += 1;
     await fetchTasks();
   }
+
+  void replaceTask(ApiTask task) {
+    final index = _tasks.indexWhere((existing) => existing.id == task.id);
+    if (index == -1) return;
+    _tasks = List<ApiTask>.from(_tasks)..[index] = task;
+    notifyListeners();
+  }
 }

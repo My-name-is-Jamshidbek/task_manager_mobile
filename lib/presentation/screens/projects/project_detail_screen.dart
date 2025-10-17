@@ -6,12 +6,16 @@ import '../../../core/localization/app_localizations.dart';
 import '../../providers/project_detail_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../../data/models/project_models.dart';
+import '../../../data/models/api_task_models.dart';
+import '../../../data/models/task_action.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../widgets/project_widgets.dart';
 import '../../widgets/file_group_attachments_card.dart';
 import '../tasks/create_task_screen.dart';
 // Removed direct task detail imports; navigation is handled by TaskListItem
 import '../../widgets/task_list_item.dart';
+import '../../widgets/task_action_sheet.dart';
+import '../../utils/task_action_helper.dart';
 import 'edit_project_screen.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
@@ -270,6 +274,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     ThemeData theme,
     ProjectDetailProvider provider,
     AppLocalizations loc,
+    int? currentUserId,
   ) {
     final loading = provider.isTaskDashboardLoading;
     final error = provider.taskDashboardError;
@@ -329,7 +334,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               ),
               const SizedBox(height: 8),
               ...tasks.map((task) {
-                final statusLabel = task.status?.label?.trim() ?? '';
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: TaskListItem(
@@ -338,7 +342,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       horizontal: 12,
                       vertical: 8,
                     ),
-                    trailing: _buildTaskStatusChip(statusLabel, theme),
+                    trailing: _taskTrailing(
+                      theme,
+                      loc,
+                      provider,
+                      task,
+                      currentUserId,
+                    ),
                     showStatus: false,
                     isCompleted: task.status?.id == 2,
                     deadlineLabel: loc.translate('tasks.due'),
@@ -566,9 +576,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             );
           }
           final project = provider.project!;
-          final isOwner =
-              context.read<AuthProvider?>()?.currentUser?.id ==
-              project.creator.id;
+          final currentUserId = context.read<AuthProvider?>()?.currentUser?.id;
+          final isOwner = currentUserId == project.creator.id;
           return RefreshIndicator(
             onRefresh: () async =>
                 context.read<ProjectDetailProvider>().load(project.id),
@@ -590,7 +599,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   initialFiles: provider.files,
                 ),
                 const SizedBox(height: 24),
-                _projectTasksSection(context, loc, theme, provider),
+                _projectTasksSection(
+                  context,
+                  loc,
+                  theme,
+                  provider,
+                  currentUserId,
+                ),
                 const SizedBox(height: 32),
               ],
             ),
@@ -729,6 +744,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     AppLocalizations loc,
     ThemeData theme,
     ProjectDetailProvider provider,
+    int? currentUserId,
   ) {
     final tasks = provider.tasks;
     final isInitialLoading = provider.isTaskListLoading;
@@ -806,7 +822,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           onToggle: () {
             setState(() => _taskDashboardExpanded = !_taskDashboardExpanded);
           },
-          child: _buildTaskDashboard(theme, provider, loc),
+          child: _buildTaskDashboard(theme, provider, loc, currentUserId),
         ),
         _buildCollapsibleSection(
           theme: theme,
@@ -871,14 +887,19 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final task = tasks[index];
-                  final statusLabel = task.status?.label?.trim() ?? '';
                   return TaskListItem(
                     task: task,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 12,
                     ),
-                    trailing: _buildTaskStatusChip(statusLabel, theme),
+                    trailing: _taskTrailing(
+                      theme,
+                      loc,
+                      provider,
+                      task,
+                      currentUserId,
+                    ),
                     showStatus: false,
                     isCompleted: task.status?.id == 2,
                     deadlineLabel: loc.translate('tasks.due'),
@@ -916,6 +937,65 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           ),
       ],
     );
+  }
+
+  Widget? _taskTrailing(
+    ThemeData theme,
+    AppLocalizations loc,
+    ProjectDetailProvider provider,
+    ApiTask task,
+    int? currentUserId,
+  ) {
+    final statusLabel = task.status?.label?.trim() ?? '';
+    final statusChip = statusLabel.isNotEmpty
+        ? _buildTaskStatusChip(statusLabel, theme)
+        : null;
+    final actions = TaskActionHelper.deriveActions(task, currentUserId);
+    if (actions.isEmpty) {
+      return statusChip;
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (statusChip != null) statusChip,
+        if (statusChip != null) const SizedBox(width: 4),
+        IconButton(
+          tooltip: loc.translate('tasks.actions.title'),
+          icon: const Icon(Icons.more_horiz),
+          onPressed: () => _openTaskActionsForProject(
+            provider: provider,
+            task: task,
+            actions: actions,
+            currentUserId: currentUserId,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openTaskActionsForProject({
+    required ProjectDetailProvider provider,
+    required ApiTask task,
+    required List<TaskActionKind> actions,
+    required int? currentUserId,
+  }) async {
+    final result = await TaskActionSheet.show(
+      context,
+      task: task,
+      currentUserId: currentUserId,
+      presetActions: actions,
+    );
+    if (!mounted || result == null) return;
+
+    final loc = AppLocalizations.of(context);
+    final message = TaskActionHelper.buildSuccessMessage(loc, result.action);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+
+    await provider.fetchTaskDashboard();
+    if (!mounted) return;
+    await provider.refreshProjectTasks();
   }
 
   Widget _avatar(Creator creator) {
