@@ -75,6 +75,10 @@ dependencies:
   share_plus: ^10.0.2
   url_launcher: ^6.3.1
   curved_labeled_navigation_bar: ^2.0.5
+  
+  # WebSocket for real-time communication
+  pusher_channels_flutter: ^2.2.1
+  
   # Lottie animations
   lottie: ^3.1.2
   path_provider: ^2.1.3

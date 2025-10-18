@@ -15,6 +15,10 @@ import 'presentation/providers/firebase_provider.dart';
 import 'presentation/providers/projects_provider.dart';
 import 'presentation/providers/tasks_api_provider.dart';
 import 'presentation/providers/dashboard_provider.dart';
+import 'presentation/providers/chat_provider.dart';
+import 'presentation/providers/contacts_provider.dart';
+import 'presentation/providers/conversations_provider.dart';
+import 'presentation/providers/conversation_details_provider.dart';
 import 'presentation/widgets/app_root.dart';
 import 'core/utils/navigation_service.dart';
 
@@ -43,7 +47,10 @@ void main() async {
   final projectsProvider = ProjectsProvider();
   final tasksApiProvider = TasksApiProvider();
   final dashboardProvider = DashboardProvider();
-
+  final chatProvider = ChatProvider();
+  final contactsProvider = ContactsProvider();
+  final conversationsProvider = ConversationsProvider();
+  final conversationDetailsProvider = ConversationDetailsProvider();
   Logger.info('⚙️ Initializing basic services...');
   await themeService.initialize();
   await localizationService.initialize();
@@ -85,6 +92,10 @@ void main() async {
             ChangeNotifierProvider.value(value: projectsProvider),
             ChangeNotifierProvider.value(value: tasksApiProvider),
             ChangeNotifierProvider.value(value: dashboardProvider),
+            ChangeNotifierProvider.value(value: chatProvider),
+            ChangeNotifierProvider.value(value: contactsProvider),
+            ChangeNotifierProvider.value(value: conversationsProvider),
+            ChangeNotifierProvider.value(value: conversationDetailsProvider),
           ],
           child:
               Consumer4<

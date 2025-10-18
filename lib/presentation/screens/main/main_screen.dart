@@ -11,6 +11,7 @@ import 'home_screen.dart';
 import 'tasks_screen.dart';
 import 'projects_screen.dart';
 import 'profile_screen.dart';
+import 'chat_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final Future<void> Function()? onLogout;
@@ -34,6 +35,7 @@ class _MainScreenState extends State<MainScreen> {
       const HomeScreen(),
       const TasksScreen(),
       const ProjectsScreen(),
+      const ChatScreen(),
       ProfileScreen(onLogout: widget.onLogout),
     ];
   }
@@ -85,6 +87,8 @@ class _MainScreenState extends State<MainScreen> {
       case 2:
         return loc.translate('navigation.projects');
       case 3:
+        return loc.translate('navigation.chat');
+      case 4:
         return loc.translate('navigation.profile');
       default:
         return loc.translate('app.title');
@@ -139,8 +143,18 @@ class _MainScreenState extends State<MainScreen> {
           ),
           CurvedNavigationBarItem(
             child: Icon(
-              _currentIndex == 3 ? Icons.person : Icons.person_outline,
+              _currentIndex == 3 ? Icons.chat : Icons.chat_outlined,
               color: _currentIndex == 3
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+            label: loc.translate('navigation.chat'),
+            labelStyle: labelStyle,
+          ),
+          CurvedNavigationBarItem(
+            child: Icon(
+              _currentIndex == 4 ? Icons.person : Icons.person_outline,
+              color: _currentIndex == 4
                   ? theme.colorScheme.onPrimary
                   : theme.colorScheme.onSurfaceVariant,
             ),
@@ -233,13 +247,23 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 _buildDrawerItem(
                   context,
-                  icon: Icons.person_outline,
-                  title: loc.translate('navigation.profile'),
+                  icon: Icons.chat_outlined,
+                  title: loc.translate('navigation.chat'),
                   onTap: () {
                     Navigator.pop(context);
                     _onTabTapped(3);
                   },
                   isSelected: _currentIndex == 3,
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.person_outline,
+                  title: loc.translate('navigation.profile'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _onTabTapped(4);
+                  },
+                  isSelected: _currentIndex == 4,
                 ),
                 const Divider(),
                 _buildDrawerItem(

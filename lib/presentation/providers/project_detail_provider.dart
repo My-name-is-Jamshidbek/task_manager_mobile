@@ -129,7 +129,7 @@ class ProjectDetailProvider extends ChangeNotifier {
     if (counts.isNotEmpty) {
       return counts.entries.first.key;
     }
-    return _taskGroupOrder.first;
+    return _taskGroupOrder.isNotEmpty ? _taskGroupOrder.first : 'accept';
   }
 
   Future<void> fetchTaskDashboard() async {
