@@ -77,7 +77,8 @@ dependencies:
   curved_labeled_navigation_bar: ^2.0.5
   
   # WebSocket for real-time communication
-  pusher_channels_flutter: ^2.2.1
+  pusher_channels_flutter:
+    path: third_party/pusher_channels_flutter_local
   
   # Lottie animations
   lottie: ^3.1.2
