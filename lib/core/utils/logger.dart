@@ -23,7 +23,10 @@ class Logger {
 
   // Info log
   static void info(String message, [String? tag]) {
-    _log(message, _levelInfo, tag ?? _tag);
+    // if (tag?.startsWith('WebSock') == true) {
+      _log(message, _levelInfo, tag ?? _tag);
+      return;
+    // }
   }
 
   // Warning log

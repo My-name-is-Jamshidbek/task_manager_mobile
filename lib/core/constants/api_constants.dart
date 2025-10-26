@@ -35,6 +35,15 @@ class ApiConstants {
   // Categories endpoints
   static const String categories = '/categories';
 
+  // WebSocket Configuration
+  static const String reverbAppKey = '1puo7oyhapqfczgdmt1d';
+  static const String reverbHost = 'tms.amusoft.uz';
+  static const int reverbPort = 443;
+  static const String reverbScheme = 'https'; // https (wss) or http (ws)
+
+  // Broadcasting auth endpoint
+  static const String broadcastingAuth = '/broadcasting/auth';
+
   // API Timeouts
   static const int connectionTimeout = 30000; // 30 seconds
   static const int receiveTimeout = 30000; // 30 seconds

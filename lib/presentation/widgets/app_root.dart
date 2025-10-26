@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/managers/app_manager.dart';
+import '../../core/managers/websocket_manager.dart';
 import '../../core/utils/logger.dart';
 import '../../core/utils/navigation_service.dart';
 import '../../core/utils/auth_debug_helper.dart';
@@ -177,6 +178,38 @@ class _AppRootState extends State<AppRoot> {
         Logger.info('👤 AppRoot: Loading user profile data');
         await authProvider.loadUserProfile();
         Logger.info('✅ AppRoot: User profile data loaded');
+
+        // Initialize WebSocket connection for real-time chat
+        try {
+          final token = authProvider.authToken;
+          final userId = authProvider.currentUser?.id;
+
+          if (token != null && userId != null) {
+            Logger.info('🔌 AppRoot: Initializing WebSocket connection');
+            final webSocketManager = Provider.of<WebSocketManager>(
+              context,
+              listen: false,
+            );
+
+            final connected = await webSocketManager.connect(
+              token: token,
+              userId: userId,
+            );
+
+            if (connected) {
+              Logger.info('✅ AppRoot: WebSocket connection established');
+            } else {
+              Logger.warning('⚠️ AppRoot: WebSocket connection failed');
+            }
+          } else {
+            Logger.warning(
+              '⚠️ AppRoot: Cannot initialize WebSocket - missing token or userId',
+            );
+          }
+        } catch (e, st) {
+          Logger.warning('⚠️ AppRoot: WebSocket initialization error: $e');
+          Logger.debug(st.toString());
+        }
 
         try {
           // Prefetch tasks & projects in parallel so main screen shows ready content

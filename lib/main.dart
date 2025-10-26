@@ -21,6 +21,7 @@ import 'presentation/providers/conversations_provider.dart';
 import 'presentation/providers/conversation_details_provider.dart';
 import 'presentation/widgets/app_root.dart';
 import 'core/utils/navigation_service.dart';
+import 'core/managers/websocket_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -96,6 +97,10 @@ void main() async {
             ChangeNotifierProvider.value(value: contactsProvider),
             ChangeNotifierProvider.value(value: conversationsProvider),
             ChangeNotifierProvider.value(value: conversationDetailsProvider),
+            ChangeNotifierProvider(
+              create: (_) => WebSocketManager(),
+              lazy: false,
+            ),
           ],
           child:
               Consumer4<

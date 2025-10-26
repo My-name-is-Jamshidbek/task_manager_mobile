@@ -79,6 +79,7 @@ dependencies:
   # WebSocket for real-time communication
   pusher_channels_flutter:
     path: third_party/pusher_channels_flutter_local
+  web_socket_channel: ^3.0.3
   
   # Lottie animations
   lottie: ^3.1.2

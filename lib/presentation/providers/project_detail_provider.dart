@@ -4,7 +4,6 @@ import '../../data/datasources/project_remote_datasource.dart';
 import '../../data/datasources/file_group_remote_datasource.dart';
 import '../../data/models/project_models.dart';
 import '../../data/models/api_task_models.dart';
-import '../../data/models/project_task_api_models.dart';
 import '../../data/models/file_models.dart' as file_models;
 
 class ProjectDetailProvider extends ChangeNotifier {
