@@ -27,8 +27,11 @@ class WebSocketService {
   // Reconnection settings
   static const int _maxReconnectAttempts = 5;
   static const Duration _reconnectDelay = Duration(seconds: 3);
+  static const Duration _handshakeTimeout = Duration(seconds: 10);
   int _reconnectAttempts = 0;
   Timer? _reconnectTimer;
+  Completer<bool>? _connectionCompleter;
+  bool _manualDisconnect = false;
 
   // Public streams
   Stream<WebSocketEvent> get eventStream => _eventStreamController.stream;
@@ -42,21 +45,31 @@ class WebSocketService {
 
   /// Connect to WebSocket server
   Future<bool> connect({required String token, required int userId}) async {
-    if (_isConnected || _isConnecting) {
-      Logger.warning('WebSocket already connected or connecting', _tag);
+    if (_isConnected) {
+      Logger.info('WebSocket already connected', _tag);
+      return true;
+    }
+
+    if (_isConnecting) {
+      Logger.warning('WebSocket already connecting', _tag);
+      if (_connectionCompleter != null) {
+        return _connectionCompleter!.future;
+      }
       return false;
     }
 
     _isConnecting = true;
+    _manualDisconnect = false;
     _userToken = token;
     _userId = userId;
+    _connectionCompleter = Completer<bool>();
 
     try {
       final wsScheme = ApiConstants.reverbScheme.toLowerCase() == 'https'
           ? 'wss'
           : 'ws';
       final wsUrl =
-          '$wsScheme://${ApiConstants.reverbHost}:${ApiConstants.reverbPort}/app/${ApiConstants.reverbAppKey}?protocol=7&client=flutter&version=1.0';
+          '$wsScheme://${ApiConstants.reverbHost}:${ApiConstants.reverbPort}/app/${ApiConstants.reverbAppKey}?protocol=7&client=flutter&version=1.0&flash=false';
 
       Logger.info('Connecting to WebSocket: $wsUrl', _tag);
 
@@ -67,24 +80,55 @@ class WebSocketService {
         _handleMessage,
         onError: _handleError,
         onDone: _handleClose,
+        cancelOnError: true,
       );
 
-      _isConnecting = false;
-      Logger.info('WebSocket connection initiated', _tag);
-      return true;
+      Logger.info('WebSocket connection initiated, awaiting handshake', _tag);
+
+      final connected = await _connectionCompleter!.future.timeout(
+        _handshakeTimeout,
+        onTimeout: () {
+          final timeoutMessage =
+              'Timed out waiting for WebSocket handshake after ${_handshakeTimeout.inSeconds}s';
+          Logger.error(timeoutMessage, _tag);
+          _errorController.add(timeoutMessage);
+          _completeConnection(false);
+          try {
+            _channel.sink.close();
+          } catch (_) {}
+          return false;
+        },
+      );
+
+      _connectionCompleter = null;
+
+      if (!connected) {
+        _isConnecting = false;
+        Logger.warning('WebSocket handshake failed', _tag);
+      }
+
+      return connected;
     } catch (e, stackTrace) {
       _isConnecting = false;
       final errorMsg = 'Failed to connect to WebSocket: $e';
       Logger.error(errorMsg, _tag, e, stackTrace);
       _errorController.add(errorMsg);
+      _completeConnection(false);
+      _connectionCompleter = null;
       return false;
+    }
+  }
+
+  void _completeConnection(bool success) {
+    if (_connectionCompleter != null && !_connectionCompleter!.isCompleted) {
+      _connectionCompleter!.complete(success);
     }
   }
 
   /// Authorize and subscribe to a private channel
   Future<bool> subscribeToChannel({
     required String channelName,
-    required Function(String) onAuthRequired,
+    required Future<String> Function(String) onAuthRequired,
   }) async {
     if (!_isConnected || _socketId == null) {
       Logger.warning(
@@ -184,6 +228,7 @@ class WebSocketService {
 
     _reconnectTimer?.cancel();
     _reconnectAttempts = 0;
+    _manualDisconnect = true;
 
     try {
       await _channel.sink.close();
@@ -286,6 +331,8 @@ class WebSocketService {
 
       _socketId = data['socket_id'] as String?;
       _isConnected = true;
+      _isConnecting = false;
+      _completeConnection(true);
       _reconnectAttempts = 0;
 
       Logger.info(
@@ -304,6 +351,8 @@ class WebSocketService {
         e,
         stackTrace,
       );
+      _isConnecting = false;
+      _completeConnection(false);
     }
   }
 
@@ -348,7 +397,7 @@ class WebSocketService {
         _tag,
       );
 
-      final data = message['data'] is String
+      var data = message['data'] is String
           ? json.decode(message['data'] as String)
           : message['data'];
 
@@ -365,11 +414,59 @@ class WebSocketService {
       }
 
       Logger.debug('🔄 [TRACE] Data is Map, attempting to parse event', _tag);
+      Logger.debug('🔍 Data keys: ${data.keys.toList()}', _tag);
+
+      // Check if this is Laravel backend message format: {"message": {...}}
+      if (data.containsKey('message') &&
+          data['message'] is Map<String, dynamic> &&
+          !data.containsKey('type')) {
+        Logger.info(
+          '🎯 [SERVER] Detected Laravel message format - wrapping with type: "message"',
+          _tag,
+        );
+        data = {'type': 'message', 'data': data};
+        Logger.debug(
+          '🔄 [TRACE] Wrapped data with keys: ${data.keys.toList()}',
+          _tag,
+        );
+      }
+
+      // Check if this is nested format (Python-style): {type, data: {...}}
+      // or flat format (Flutter-style): {type, message_id, text, ...}
+      final hasNestedData =
+          data.containsKey('data') &&
+          data['data'] is Map<String, dynamic> &&
+          data.containsKey('type');
+
+      if (hasNestedData) {
+        Logger.info(
+          '🔄 [TRACE] Detected nested format (Python-style): extracting nested data',
+          _tag,
+        );
+        final payloadType = data['type'] as String?;
+        final nestedData = data['data'] as Map<String, dynamic>?;
+
+        if (nestedData != null) {
+          Logger.info(
+            '📦 [SERVER] Nested payload - Type: "$payloadType", Extracting nested data',
+            _tag,
+          );
+          // Use nested data and add type if not present
+          if (!nestedData.containsKey('type')) {
+            nestedData['type'] = payloadType;
+          }
+          data = nestedData;
+          Logger.debug(
+            '🔄 [TRACE] Now using nested data with keys: ${data.keys.toList()}',
+            _tag,
+          );
+        }
+      }
 
       // Try to parse the event
       try {
         Logger.debug(
-          '🔄 [TRACE] Calling WebSocketEvent.fromJson with: ${data.keys.toList()}',
+          '🔄 [TRACE] Calling WebSocketEvent.fromJson with keys: ${data.keys.toList()}',
           _tag,
         );
 
@@ -410,21 +507,52 @@ class WebSocketService {
     _errorController.add(errorMsg);
 
     if (!_isConnected) {
+      _isConnecting = false;
+      _completeConnection(false);
+      if (_manualDisconnect) {
+        Logger.info('Manual disconnect requested; skipping reconnect', _tag);
+        return;
+      }
       _attemptReconnect();
+      return;
     }
+
+    if (_manualDisconnect) {
+      Logger.info('Manual disconnect requested; skipping reconnect', _tag);
+      return;
+    }
+
+    _attemptReconnect();
   }
 
   /// Handle WebSocket close
   void _handleClose() {
     Logger.warning('🔌 [SERVER] WebSocket connection closed', _tag);
+    final wasManual = _manualDisconnect;
     _isConnected = false;
+    _isConnecting = false;
     _connectionStateController.add(false);
 
+    if (wasManual) {
+      Logger.info('WebSocket closed manually; reconnect disabled', _tag);
+      _manualDisconnect = false;
+      _completeConnection(false);
+      _connectionCompleter = null;
+      return;
+    }
+
+    _completeConnection(false);
+    _connectionCompleter = null;
     _attemptReconnect();
   }
 
   /// Attempt to reconnect
   void _attemptReconnect() {
+    if (_manualDisconnect) {
+      Logger.info('Reconnect skipped: manual disconnect in effect', _tag);
+      return;
+    }
+
     if (_reconnectAttempts >= _maxReconnectAttempts) {
       Logger.error('Max reconnection attempts reached. Giving up.', _tag);
       _errorController.add(

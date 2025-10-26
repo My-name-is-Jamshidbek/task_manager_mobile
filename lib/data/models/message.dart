@@ -37,22 +37,37 @@ class Message {
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
+    // Handle Laravel backend format with nested sender
+    final sender = json['sender'] as Map<String, dynamic>?;
+    final conversationId = json['conversation_id'] ?? json['chat_id'];
+    final messageBody = json['body'] ?? json['content'];
+    final createdAt = json['created_at'] ?? json['sent_at'];
+
     return Message(
-      id: json['id'] as String,
-      chatId: json['chat_id'] as String,
-      senderId: json['sender_id'] as String,
-      senderName: json['sender_name'] as String?,
-      senderAvatarUrl: json['sender_avatar_url'] as String?,
+      id: (json['id'] as dynamic).toString(),
+      chatId: (conversationId as dynamic).toString(),
+      senderId:
+          (sender?['id'] as dynamic)?.toString() ??
+          (json['sender_id'] as dynamic)?.toString() ??
+          '',
+      senderName: sender?['name'] as String? ?? json['sender_name'] as String?,
+      senderAvatarUrl:
+          sender?['avatar_url'] as String? ??
+          json['sender_avatar_url'] as String?,
       type: MessageType.values.firstWhere(
         (e) => e.value == json['type'],
         orElse: () => MessageType.text,
       ),
-      content: json['content'] as String,
-      sentAt: DateTime.parse(json['sent_at'] as String),
-      status: MessageStatus.values.firstWhere(
-        (e) => e.value == json['status'],
-        orElse: () => MessageStatus.sent,
-      ),
+      content: messageBody as String? ?? '',
+      sentAt: DateTime.parse(createdAt as String),
+      status: (json['is_read'] as bool?) == true
+          ? MessageStatus.read
+          : (json['status'] != null
+                ? MessageStatus.values.firstWhere(
+                    (e) => e.value == json['status'],
+                    orElse: () => MessageStatus.sent,
+                  )
+                : MessageStatus.sent),
       replyToId: json['reply_to_id'] as String?,
       replyToMessage: json['reply_to_message'] != null
           ? Message.fromJson(json['reply_to_message'] as Map<String, dynamic>)

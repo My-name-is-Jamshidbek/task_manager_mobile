@@ -8,6 +8,7 @@ import '../../core/utils/auth_debug_helper.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/services/authentication_manager.dart';
 import '../../core/services/update_service.dart';
+import '../../core/services/websocket_auth_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/projects_provider.dart';
 import '../providers/tasks_api_provider.dart';
@@ -198,6 +199,31 @@ class _AppRootState extends State<AppRoot> {
 
             if (connected) {
               Logger.info('✅ AppRoot: WebSocket connection established');
+
+              final channelName = 'private-user.$userId';
+              final subscribed = await webSocketManager.subscribeToChannel(
+                channelName: channelName,
+                onAuthRequired: (channel) async {
+                  final socketId = webSocketManager.socketId;
+                  if (socketId == null || socketId.isEmpty) {
+                    throw Exception('Socket ID not available for channel auth');
+                  }
+                  return WebSocketAuthService.authorize(
+                    channelName: channel,
+                    socketId: socketId,
+                  );
+                },
+              );
+
+              if (subscribed) {
+                Logger.info(
+                  '✅ AppRoot: Subscribed to default channel $channelName',
+                );
+              } else {
+                Logger.warning(
+                  '⚠️ AppRoot: Failed to subscribe to default channel $channelName',
+                );
+              }
             } else {
               Logger.warning('⚠️ AppRoot: WebSocket connection failed');
             }
@@ -509,6 +535,14 @@ class _AppRootState extends State<AppRoot> {
       // Clear authentication state in app manager
       await _appManager.onLogout();
       Logger.info('✅ AppRoot: AppManager logout completed');
+
+      // Ensure WebSocket connection is closed on logout
+      final webSocketManager = Provider.of<WebSocketManager>(
+        context,
+        listen: false,
+      );
+      await webSocketManager.disconnect();
+      Logger.info('✅ AppRoot: WebSocket disconnected after logout');
 
       // Sync auth provider state
       final authProvider = Provider.of<AuthProvider>(context, listen: false);

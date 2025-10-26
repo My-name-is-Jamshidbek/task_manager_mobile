@@ -9,9 +9,15 @@ abstract class WebSocketEvent {
     final type = json['type'] as String?;
     final data = json['data'] as Map<String, dynamic>?;
 
+    // Check if message comes from Laravel backend (with "message" field directly)
+    if (json.containsKey('message') &&
+        json['message'] is Map<String, dynamic>) {
+      return MessageSentEvent.fromJson(json);
+    }
+
     switch (type) {
       case 'message':
-        return MessageSentEvent.fromJson(data ?? {});
+        return MessageSentEvent.fromJson(data ?? json);
       case 'typing':
         return UserIsTypingEvent.fromJson(data ?? {});
       case 'read':
@@ -31,8 +37,20 @@ class MessageSentEvent extends WebSocketEvent {
   const MessageSentEvent({required this.message, this.tempId});
 
   factory MessageSentEvent.fromJson(Map<String, dynamic> json) {
+    // Handle Laravel backend format: {"message": {...}}
+    if (json.containsKey('message') &&
+        json['message'] is Map<String, dynamic>) {
+      return MessageSentEvent(
+        message: Message.fromJson(json['message'] as Map<String, dynamic>),
+        tempId: json['tempId'] as String?,
+      );
+    }
+
+    // Handle standard format: {"message": {...}, "tempId": "..."}
     return MessageSentEvent(
-      message: Message.fromJson(json['message'] as Map<String, dynamic>? ?? {}),
+      message: Message.fromJson(
+        json['message'] as Map<String, dynamic>? ?? json,
+      ),
       tempId: json['tempId'] as String?,
     );
   }

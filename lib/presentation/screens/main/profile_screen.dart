@@ -8,6 +8,7 @@ import '../../widgets/logout_confirmation_dialog.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
 import '../debug/firebase_notification_debug_screen.dart';
+import '../debug/websocket_debug_screen.dart';
 import '../../providers/dashboard_provider.dart';
 import '../theme_settings_screen.dart';
 
@@ -378,6 +379,19 @@ class ProfileScreen extends StatelessWidget {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => const FirebaseNotificationDebugScreen(),
+                ),
+              );
+            },
+            theme: theme,
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.wifi_tethering,
+            title: 'Debug: WebSocket Console',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const WebSocketDebugScreen(),
                 ),
               );
             },

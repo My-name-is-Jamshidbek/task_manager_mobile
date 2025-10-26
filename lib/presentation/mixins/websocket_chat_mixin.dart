@@ -4,7 +4,7 @@ import 'dart:async';
 import '../../core/managers/websocket_manager.dart';
 import '../../data/models/realtime/websocket_event_models.dart';
 import '../../core/utils/logger.dart';
-import '../../core/api/api_client.dart';
+import '../../core/services/websocket_auth_service.dart';
 import '../widgets/websocket_error_dialog.dart';
 
 /// Mixin to integrate WebSocket functionality into chat screens
@@ -113,72 +113,26 @@ mixin WebSocketChatMixin<T extends StatefulWidget> on State<T> {
   Future<String> _authorizeChannel(String channel, String token) async {
     try {
       Logger.info(
-        '🔐 WebSocketChatMixin: Starting channel authorization for $channel',
+        'WebSocketChatMixin: Starting channel authorization for $channel',
         _tag,
       );
 
-      // Get the socket ID from the WebSocket manager
       final socketId = _webSocketManager.socketId;
-      if (socketId == null) {
-        Logger.error('❌ WebSocketChatMixin: Socket ID not available', _tag);
+      if (socketId == null || socketId.isEmpty) {
+        Logger.error('WebSocketChatMixin: Socket ID not available', _tag);
         throw Exception('Socket ID not available');
       }
 
-      Logger.info('📍 WebSocketChatMixin: Socket ID: $socketId', _tag);
-
-      // Use ApiClient to make authorization request
-      final apiClient = ApiClient();
-      Logger.info(
-        '📤 WebSocketChatMixin: Sending authorization request via ApiClient',
-        _tag,
+      final authToken = await WebSocketAuthService.authorize(
+        channelName: channel,
+        socketId: socketId,
       );
 
-      final response = await apiClient.post<Map<String, dynamic>>(
-        '/broadcasting/auth',
-        body: {'channel_name': channel, 'socket_id': socketId},
-        includeAuth: true,
-        showGlobalError: false,
-        fromJson: (json) => json,
-      );
-
-      Logger.info('📥 WebSocketChatMixin: Auth response received', _tag);
-
-      if (response.isSuccess && response.data != null) {
-        final auth = response.data!['auth'] as String?;
-
-        if (auth != null) {
-          Logger.info(
-            '✅ WebSocketChatMixin: Channel authorization successful',
-            _tag,
-          );
-          return auth;
-        } else {
-          Logger.error('❌ WebSocketChatMixin: No auth token in response', _tag);
-          throw Exception('No auth token in response');
-        }
-      } else if (response.statusCode == 401) {
-        Logger.error(
-          '🔓 WebSocketChatMixin: Unauthorized - Invalid token',
-          _tag,
-        );
-        throw Exception('Unauthorized - Invalid authentication token');
-      } else if (response.statusCode == 403) {
-        Logger.error(
-          '🚫 WebSocketChatMixin: Forbidden - Not allowed to access this channel',
-          _tag,
-        );
-        throw Exception('Forbidden - Not allowed to access this channel');
-      } else {
-        final errorMessage = response.error ?? 'Unknown error';
-        Logger.error(
-          '❌ WebSocketChatMixin: Authorization failed - $errorMessage',
-          _tag,
-        );
-        throw Exception('Authorization failed: $errorMessage');
-      }
+      Logger.info('WebSocketChatMixin: Channel authorization successful', _tag);
+      return authToken;
     } catch (e, stackTrace) {
       Logger.error(
-        '❌ WebSocketChatMixin: Channel authorization exception',
+        'WebSocketChatMixin: Channel authorization exception',
         _tag,
         e,
         stackTrace,
