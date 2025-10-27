@@ -78,9 +78,13 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       if (widget.conversationId != null) {
         context.read<ConversationDetailsProvider>().handleRealtimeMessage(
           event.message,
+          tempId: event.tempId,
         );
       } else {
-        context.read<ChatProvider>().handleRealtimeMessage(event.message);
+        context.read<ChatProvider>().handleRealtimeMessage(
+          event.message,
+          tempId: event.tempId,
+        );
       }
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -168,8 +172,9 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
             );
           }
 
-          final conversationMessages =
-              conversationDetailsProvider.sortedMessages;
+          final conversationMessages = _deduplicateConversationMessages(
+            conversationDetailsProvider.sortedMessages,
+          );
           final currentUserId = context
               .watch<AuthProvider?>()
               ?.currentUser
@@ -222,7 +227,9 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       // Fallback to chat provider for existing functionality
       return Consumer<ChatProvider>(
         builder: (context, chatProvider, child) {
-          final messages = chatProvider.getMessagesForChat(widget.chat.id);
+          final messages = _deduplicateMessages(
+            chatProvider.getMessagesForChat(widget.chat.id),
+          );
           final currentUserId = context
               .watch<AuthProvider?>()
               ?.currentUser
@@ -360,6 +367,42 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           : MessageStatus.delivered,
       attachments: conversationMessage.files.map((file) => file.url).toList(),
     );
+  }
+
+  List<ConversationMessage> _deduplicateConversationMessages(
+    List<ConversationMessage> messages,
+  ) {
+    if (messages.isEmpty) {
+      return messages;
+    }
+
+    final seenIds = <int>{};
+    final deduplicated = <ConversationMessage>[];
+
+    for (final message in messages) {
+      if (seenIds.add(message.id)) {
+        deduplicated.add(message);
+      }
+    }
+
+    return deduplicated;
+  }
+
+  List<Message> _deduplicateMessages(List<Message> messages) {
+    if (messages.isEmpty) {
+      return messages;
+    }
+
+    final seenIds = <String>{};
+    final deduplicated = <Message>[];
+
+    for (final message in messages) {
+      if (seenIds.add(message.id)) {
+        deduplicated.add(message);
+      }
+    }
+
+    return deduplicated;
   }
 
   /// Build error state widget

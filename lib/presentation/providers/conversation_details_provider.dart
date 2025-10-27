@@ -181,7 +181,7 @@ class ConversationDetailsProvider extends ChangeNotifier {
   }
 
   /// Merge an incoming real-time message into the current conversation
-  void handleRealtimeMessage(Message message) {
+  void handleRealtimeMessage(Message message, {String? tempId}) {
     if (_currentConversation == null) {
       return;
     }
@@ -191,16 +191,41 @@ class ConversationDetailsProvider extends ChangeNotifier {
       return;
     }
 
-    final incomingMessageId = int.tryParse(message.id);
-    final alreadyExists = incomingMessageId != null
-        ? _currentConversation!.messages.any(
-            (existing) => existing.id == incomingMessageId,
-          )
-        : false;
+    if (tempId != null && tempId.isNotEmpty) {
+      final matchesTempId = _currentConversation!.messages.any(
+        (existing) => existing.id.toString() == tempId,
+      );
+
+      if (matchesTempId) {
+        Logger.debug(
+          'Realtime message ${message.id} matches pending tempId $tempId - skipping merge',
+        );
+        return;
+      }
+    }
+
+    final alreadyExists = _currentConversation!.messages.any(
+      (existing) => existing.id.toString() == message.id,
+    );
 
     if (alreadyExists) {
       Logger.debug(
-        'Realtime message $incomingMessageId already present - skipping merge',
+        'Realtime message ${message.id} already present - skipping merge',
+      );
+      return;
+    }
+
+    final duplicateByContent = _currentConversation!.messages.any(
+      (existing) =>
+          existing.sender.id.toString() == message.senderId &&
+          existing.body == message.content &&
+          (existing.sentAt.difference(message.sentAt).abs() <=
+              const Duration(seconds: 5)),
+    );
+
+    if (duplicateByContent) {
+      Logger.debug(
+        'Realtime message ${message.id} matches existing content - treating as duplicate',
       );
       return;
     }
@@ -216,7 +241,7 @@ class ConversationDetailsProvider extends ChangeNotifier {
     );
 
     final conversationMessage = ConversationMessage(
-      id: incomingMessageId ?? DateTime.now().millisecondsSinceEpoch,
+      id: int.tryParse(message.id) ?? DateTime.now().millisecondsSinceEpoch,
       body: message.content,
       conversationId: _currentConversation!.id,
       isRead: message.status == MessageStatus.read,

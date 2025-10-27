@@ -222,14 +222,47 @@ class ChatProvider extends ChangeNotifier {
   }
 
   /// Merge a real-time message into chat state
-  void handleRealtimeMessage(Message message) {
+  void handleRealtimeMessage(Message message, {String? tempId}) {
     final chatId = message.chatId;
     final isFromCurrentUser = message.senderId == _currentUserId;
 
     final messages = _chatMessages.putIfAbsent(chatId, () => []);
-    final exists = messages.any((existing) => existing.id == message.id);
-    if (!exists) {
+
+    var existingIndex = messages.indexWhere(
+      (existing) => existing.id == message.id,
+    );
+    var appendedNewMessage = false;
+
+    if (existingIndex != -1) {
+      messages[existingIndex] = message;
+    } else if (isFromCurrentUser) {
+      var replacementIndex = -1;
+
+      if (tempId != null && tempId.isNotEmpty) {
+        replacementIndex = messages.indexWhere(
+          (existing) => existing.id == tempId,
+        );
+      }
+
+      if (replacementIndex == -1) {
+        replacementIndex = messages.lastIndexWhere(
+          (existing) =>
+              existing.senderId == message.senderId &&
+              existing.content == message.content &&
+              (existing.sentAt.difference(message.sentAt).abs() <=
+                  const Duration(seconds: 5)),
+        );
+      }
+
+      if (replacementIndex != -1) {
+        messages[replacementIndex] = message;
+      } else {
+        messages.add(message);
+        appendedNewMessage = true;
+      }
+    } else {
       messages.add(message);
+      appendedNewMessage = true;
     }
 
     final chatIndex = _chats.indexWhere((chat) => chat.id == chatId);
@@ -237,7 +270,7 @@ class ChatProvider extends ChangeNotifier {
       final chat = _chats[chatIndex];
       final updatedUnread = isFromCurrentUser
           ? chat.unreadCount
-          : chat.unreadCount + (exists ? 0 : 1);
+          : chat.unreadCount + (appendedNewMessage ? 1 : 0);
 
       _chats[chatIndex] = chat.copyWith(
         lastMessage: message,
