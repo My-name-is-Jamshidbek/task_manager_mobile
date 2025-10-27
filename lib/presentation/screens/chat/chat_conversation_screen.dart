@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/managers/websocket_manager.dart';
+import '../../../core/utils/logger.dart';
 import '../../../data/models/chat.dart';
 import '../../../data/models/message.dart';
 import '../../../data/models/conversation_details.dart';
 import '../../../data/models/chat_enums.dart';
+import '../../../data/models/realtime/websocket_event_models.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/conversation_details_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -31,18 +36,59 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
   bool _isLoading = true;
+  late final WebSocketManager _webSocketManager;
+  StreamSubscription<WebSocketEvent>? _eventSubscription;
 
   @override
   void initState() {
     super.initState();
+    _webSocketManager = context.read<WebSocketManager>();
+    _attachWebSocketListeners();
     _loadMessages();
   }
 
   @override
   void dispose() {
+    _eventSubscription?.cancel();
     _scrollController.dispose();
     _messageController.dispose();
     super.dispose();
+  }
+
+  void _attachWebSocketListeners() {
+    final conversationKey = widget.conversationId?.toString() ?? widget.chat.id;
+
+    _eventSubscription = _webSocketManager.eventStream.listen((event) {
+      if (!mounted) {
+        return;
+      }
+
+      if (event is! MessageSentEvent) {
+        return;
+      }
+
+      final incomingChatId = event.message.chatId;
+      if (incomingChatId != conversationKey) {
+        Logger.debug(
+          'Realtime event for chat $incomingChatId ignored by conversation $conversationKey',
+        );
+        return;
+      }
+
+      if (widget.conversationId != null) {
+        context.read<ConversationDetailsProvider>().handleRealtimeMessage(
+          event.message,
+        );
+      } else {
+        context.read<ChatProvider>().handleRealtimeMessage(event.message);
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _scrollToBottom();
+        }
+      });
+    });
   }
 
   Future<void> _loadMessages() async {

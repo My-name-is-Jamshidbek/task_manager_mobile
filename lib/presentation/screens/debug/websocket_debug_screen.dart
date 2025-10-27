@@ -40,7 +40,9 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
       _attachStreams();
       final auth = context.read<AuthProvider?>();
       if (auth != null && auth.currentUser != null) {
-        _appendLog('Auth session detected for ${auth.currentUser!.name ?? auth.currentUser!.phone ?? '-'}');
+        _appendLog(
+          'Auth session detected for ${auth.currentUser!.name ?? auth.currentUser!.phone ?? '-'}',
+        );
       } else {
         _appendLog('No active auth session found');
       }
@@ -55,8 +57,12 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
     _errorSubscription = webSocketManager.errorStream.listen((error) {
       _appendLog('Error: $error');
     });
-    _connectionSubscription = webSocketManager.connectionStateStream.listen((isConnected) {
-      _appendLog('Connection state changed: ${isConnected ? 'connected' : 'disconnected'}');
+    _connectionSubscription = webSocketManager.connectionStateStream.listen((
+      isConnected,
+    ) {
+      _appendLog(
+        'Connection state changed: ${isConnected ? 'connected' : 'disconnected'}',
+      );
     });
   }
 
@@ -96,7 +102,9 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
     setState(() => _authInProgress = false);
     if (success && authProvider.currentUser != null) {
       final userId = authProvider.currentUser!.id;
-      _appendLog('Login successful for ${authProvider.currentUser!.name ?? authProvider.currentUser!.phone ?? '-'}');
+      _appendLog(
+        'Login successful for ${authProvider.currentUser!.name ?? authProvider.currentUser!.phone ?? '-'}',
+      );
       if (userId != null) {
         _channelController.text = 'private-user.$userId';
       }
@@ -131,7 +139,9 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
     if (connected) {
       _appendLog('WebSocket connected');
     } else {
-      _appendLog('WebSocket connect failed: ${webSocketManager.lastError ?? 'unknown'}');
+      _appendLog(
+        'WebSocket connect failed: ${webSocketManager.lastError ?? 'unknown'}',
+      );
     }
   }
 
@@ -169,7 +179,9 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
     if (success) {
       _appendLog('Subscribed to $channel');
     } else {
-      _appendLog('Subscription failed: ${webSocketManager.lastError ?? 'unknown'}');
+      _appendLog(
+        'Subscription failed: ${webSocketManager.lastError ?? 'unknown'}',
+      );
     }
   }
 
@@ -200,14 +212,16 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
       event: eventName,
       data: payload,
     );
-    _appendLog('Message sent: event=$eventName channel=$channel payload=$payload');
+    _appendLog(
+      'Message sent: event=$eventName channel=$channel payload=$payload',
+    );
   }
 
   void _copyLogs() {
     Clipboard.setData(ClipboardData(text: _logs.join('\n')));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Logs copied to clipboard')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Logs copied to clipboard')));
   }
 
   @override
@@ -256,10 +270,11 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
   }
 
   Widget _buildAuthCard(AuthProvider authProvider) {
-  final isLoggedIn = authProvider.isLoggedIn && authProvider.currentUser != null;
-  final status = isLoggedIn
-    ? 'Logged in as ${authProvider.currentUser!.name ?? authProvider.currentUser!.phone ?? '-'}'
-    : 'Not authenticated';
+    final isLoggedIn =
+        authProvider.isLoggedIn && authProvider.currentUser != null;
+    final status = isLoggedIn
+        ? 'Logged in as ${authProvider.currentUser!.name ?? authProvider.currentUser!.phone ?? '-'}'
+        : 'Not authenticated';
 
     return Card(
       child: Padding(
@@ -267,12 +282,18 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Authentication', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Authentication',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 12),
             Text(status),
             if (authProvider.error != null) ...[
               const SizedBox(height: 8),
-              Text('Error: ${authProvider.error}', style: const TextStyle(color: Colors.red)),
+              Text(
+                'Error: ${authProvider.error}',
+                style: const TextStyle(color: Colors.red),
+              ),
             ],
             const SizedBox(height: 16),
             TextField(
@@ -308,7 +329,9 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
-                  onPressed: authProvider.isLoggedIn ? authProvider.logout : null,
+                  onPressed: authProvider.isLoggedIn
+                      ? authProvider.logout
+                      : null,
                   icon: const Icon(Icons.logout),
                   label: const Text('Logout'),
                 ),
@@ -322,7 +345,9 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
 
   Widget _buildWebSocketCard(WebSocketManager webSocketManager) {
     final isConnected = webSocketManager.isConnected;
-    final status = isConnected ? 'Connected (socketId: ${webSocketManager.socketId ?? '-'})' : 'Disconnected';
+    final status = isConnected
+        ? 'Connected (socketId: ${webSocketManager.socketId ?? '-'})'
+        : 'Disconnected';
 
     return Card(
       child: Padding(
@@ -335,7 +360,10 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
             Text(status),
             if (webSocketManager.lastError != null) ...[
               const SizedBox(height: 8),
-              Text('Last error: ${webSocketManager.lastError}', style: const TextStyle(color: Colors.red)),
+              Text(
+                'Last error: ${webSocketManager.lastError}',
+                style: const TextStyle(color: Colors.red),
+              ),
             ],
             const SizedBox(height: 16),
             Row(
@@ -362,7 +390,9 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _channelController,
-              decoration: const InputDecoration(labelText: 'Channel (e.g. private-user.1)'),
+              decoration: const InputDecoration(
+                labelText: 'Channel (e.g. private-user.1)',
+              ),
             ),
             const SizedBox(height: 8),
             ElevatedButton.icon(
@@ -387,12 +417,16 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: _eventController,
-              decoration: const InputDecoration(labelText: 'Event name (e.g. message:send)'),
+              decoration: const InputDecoration(
+                labelText: 'Event name (e.g. message:send)',
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _payloadController,
-              decoration: const InputDecoration(labelText: 'Payload (JSON object)'),
+              decoration: const InputDecoration(
+                labelText: 'Payload (JSON object)',
+              ),
               maxLines: 6,
             ),
             const SizedBox(height: 12),
@@ -415,7 +449,10 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Recent Events (${events.length})', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Recent Events (${events.length})',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 12),
             SizedBox(
               height: 200,
@@ -446,7 +483,10 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Console (${_logs.length})', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Console (${_logs.length})',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 12),
             SizedBox(
               height: 220,
@@ -456,10 +496,7 @@ class _WebSocketDebugScreenState extends State<WebSocketDebugScreen> {
                       itemCount: _logs.length,
                       itemBuilder: (context, index) {
                         final log = _logs[index];
-                        return ListTile(
-                          dense: true,
-                          title: Text(log),
-                        );
+                        return ListTile(dense: true, title: Text(log));
                       },
                     ),
             ),

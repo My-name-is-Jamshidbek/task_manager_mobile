@@ -99,6 +99,65 @@ class _AppRootState extends State<AppRoot> {
   bool _updateRequired =
       false; // Flag to pause initialization on required updates
 
+  Future<void> _initializeWebSocketForUser(AuthProvider authProvider) async {
+    final token = authProvider.authToken;
+    final userId = authProvider.currentUser?.id;
+
+    if (token == null || userId == null) {
+      Logger.warning(
+        '⚠️ AppRoot: Skipping WebSocket setup - token or userId missing',
+      );
+      return;
+    }
+
+    try {
+      final webSocketManager = Provider.of<WebSocketManager>(
+        context,
+        listen: false,
+      );
+
+      final alreadyConnected = webSocketManager.isConnected;
+      final connected = alreadyConnected
+          ? true
+          : await webSocketManager.connect(token: token, userId: userId);
+
+      if (!connected) {
+        Logger.warning('⚠️ AppRoot: WebSocket connection failed');
+        return;
+      }
+
+      if (!alreadyConnected) {
+        Logger.info('✅ AppRoot: WebSocket connection established');
+      }
+
+      final channelName = 'private-user.$userId';
+      final subscribed = await webSocketManager.subscribeToChannel(
+        channelName: channelName,
+        onAuthRequired: (channel) async {
+          final socketId = webSocketManager.socketId;
+          if (socketId == null || socketId.isEmpty) {
+            throw Exception('Socket ID not available for channel auth');
+          }
+          return WebSocketAuthService.authorize(
+            channelName: channel,
+            socketId: socketId,
+          );
+        },
+      );
+
+      if (subscribed) {
+        Logger.info('✅ AppRoot: Subscribed to default channel $channelName');
+      } else {
+        Logger.warning(
+          '⚠️ AppRoot: Failed to subscribe to default channel $channelName',
+        );
+      }
+    } catch (e, st) {
+      Logger.warning('⚠️ AppRoot: WebSocket initialization error: $e');
+      Logger.debug(st.toString());
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -180,62 +239,7 @@ class _AppRootState extends State<AppRoot> {
         await authProvider.loadUserProfile();
         Logger.info('✅ AppRoot: User profile data loaded');
 
-        // Initialize WebSocket connection for real-time chat
-        try {
-          final token = authProvider.authToken;
-          final userId = authProvider.currentUser?.id;
-
-          if (token != null && userId != null) {
-            Logger.info('🔌 AppRoot: Initializing WebSocket connection');
-            final webSocketManager = Provider.of<WebSocketManager>(
-              context,
-              listen: false,
-            );
-
-            final connected = await webSocketManager.connect(
-              token: token,
-              userId: userId,
-            );
-
-            if (connected) {
-              Logger.info('✅ AppRoot: WebSocket connection established');
-
-              final channelName = 'private-user.$userId';
-              final subscribed = await webSocketManager.subscribeToChannel(
-                channelName: channelName,
-                onAuthRequired: (channel) async {
-                  final socketId = webSocketManager.socketId;
-                  if (socketId == null || socketId.isEmpty) {
-                    throw Exception('Socket ID not available for channel auth');
-                  }
-                  return WebSocketAuthService.authorize(
-                    channelName: channel,
-                    socketId: socketId,
-                  );
-                },
-              );
-
-              if (subscribed) {
-                Logger.info(
-                  '✅ AppRoot: Subscribed to default channel $channelName',
-                );
-              } else {
-                Logger.warning(
-                  '⚠️ AppRoot: Failed to subscribe to default channel $channelName',
-                );
-              }
-            } else {
-              Logger.warning('⚠️ AppRoot: WebSocket connection failed');
-            }
-          } else {
-            Logger.warning(
-              '⚠️ AppRoot: Cannot initialize WebSocket - missing token or userId',
-            );
-          }
-        } catch (e, st) {
-          Logger.warning('⚠️ AppRoot: WebSocket initialization error: $e');
-          Logger.debug(st.toString());
-        }
+        await _initializeWebSocketForUser(authProvider);
 
         try {
           // Prefetch tasks & projects in parallel so main screen shows ready content
@@ -432,6 +436,8 @@ class _AppRootState extends State<AppRoot> {
       Logger.info('👤 AppRoot: Loading user profile after authentication');
       await authProvider.loadUserProfile();
       Logger.info('✅ AppRoot: User profile loaded after authentication');
+
+  await _initializeWebSocketForUser(authProvider);
 
       // Update UI state to trigger rebuild with main screen
       if (mounted) {

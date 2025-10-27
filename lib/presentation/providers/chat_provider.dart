@@ -221,6 +221,34 @@ class ChatProvider extends ChangeNotifier {
     return _chats.where((chat) => chat.type == type).toList();
   }
 
+  /// Merge a real-time message into chat state
+  void handleRealtimeMessage(Message message) {
+    final chatId = message.chatId;
+    final isFromCurrentUser = message.senderId == _currentUserId;
+
+    final messages = _chatMessages.putIfAbsent(chatId, () => []);
+    final exists = messages.any((existing) => existing.id == message.id);
+    if (!exists) {
+      messages.add(message);
+    }
+
+    final chatIndex = _chats.indexWhere((chat) => chat.id == chatId);
+    if (chatIndex != -1) {
+      final chat = _chats[chatIndex];
+      final updatedUnread = isFromCurrentUser
+          ? chat.unreadCount
+          : chat.unreadCount + (exists ? 0 : 1);
+
+      _chats[chatIndex] = chat.copyWith(
+        lastMessage: message,
+        unreadCount: updatedUnread,
+        updatedAt: message.sentAt,
+      );
+    }
+
+    notifyListeners();
+  }
+
   /// Search chats by name
   List<Chat> searchChats(String query) {
     if (query.isEmpty) return _chats;

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../data/models/conversation_details.dart';
+import '../../data/models/message.dart';
+import '../../data/models/chat_enums.dart';
 import '../../data/services/conversation_details_api_service.dart';
 import '../../core/utils/logger.dart';
 
@@ -176,6 +178,69 @@ class ConversationDetailsProvider extends ChangeNotifier {
     if (_currentConversation != null) {
       await loadConversationDetails(_currentConversation!.id);
     }
+  }
+
+  /// Merge an incoming real-time message into the current conversation
+  void handleRealtimeMessage(Message message) {
+    if (_currentConversation == null) {
+      return;
+    }
+
+    final currentConversationId = _currentConversation!.id.toString();
+    if (message.chatId != currentConversationId) {
+      return;
+    }
+
+    final incomingMessageId = int.tryParse(message.id);
+    final alreadyExists = incomingMessageId != null
+        ? _currentConversation!.messages.any(
+            (existing) => existing.id == incomingMessageId,
+          )
+        : false;
+
+    if (alreadyExists) {
+      Logger.debug(
+        'Realtime message $incomingMessageId already present - skipping merge',
+      );
+      return;
+    }
+
+    final messageSender = MessageSender(
+      id: int.tryParse(message.senderId) ?? 0,
+      name: message.senderName ?? '',
+      phone: '',
+      email: '',
+      roles: const [],
+      createdAt: message.sentAt.toIso8601String(),
+      updatedAt: message.sentAt.toIso8601String(),
+    );
+
+    final conversationMessage = ConversationMessage(
+      id: incomingMessageId ?? DateTime.now().millisecondsSinceEpoch,
+      body: message.content,
+      conversationId: _currentConversation!.id,
+      isRead: message.status == MessageStatus.read,
+      sender: messageSender,
+      createdAt: message.sentAt.toIso8601String(),
+      files: const <MessageFile>[],
+    );
+
+    final updatedMessages = List<ConversationMessage>.from(
+      _currentConversation!.messages,
+    )..add(conversationMessage);
+
+    _currentConversation = ConversationDetails(
+      id: _currentConversation!.id,
+      type: _currentConversation!.type,
+      partner: _currentConversation!.partner,
+      messages: updatedMessages,
+    );
+
+    Logger.info(
+      'Merged realtime message ${conversationMessage.id} into conversation ${_currentConversation!.id}',
+    );
+
+    notifyListeners();
   }
 
   /// Get messages sorted by date (oldest first for chat display)
