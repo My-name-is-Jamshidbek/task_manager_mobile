@@ -172,8 +172,10 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
             );
           }
 
-          final conversationMessages = _deduplicateConversationMessages(
-            conversationDetailsProvider.sortedMessages,
+          final conversationMessages = _sortConversationMessagesById(
+            _deduplicateConversationMessages(
+              conversationDetailsProvider.sortedMessages,
+            ),
           );
           final currentUserId = context
               .watch<AuthProvider?>()
@@ -227,8 +229,10 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       // Fallback to chat provider for existing functionality
       return Consumer<ChatProvider>(
         builder: (context, chatProvider, child) {
-          final messages = _deduplicateMessages(
-            chatProvider.getMessagesForChat(widget.chat.id),
+          final messages = _sortMessagesById(
+            _deduplicateMessages(
+              chatProvider.getMessagesForChat(widget.chat.id),
+            ),
           );
           final currentUserId = context
               .watch<AuthProvider?>()
@@ -403,6 +407,47 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     }
 
     return deduplicated;
+  }
+
+  List<ConversationMessage> _sortConversationMessagesById(
+    List<ConversationMessage> messages,
+  ) {
+    if (messages.length <= 1) {
+      return messages;
+    }
+
+    final sorted = List<ConversationMessage>.from(messages)
+      ..sort((a, b) => a.id.compareTo(b.id));
+    return sorted;
+  }
+
+  List<Message> _sortMessagesById(List<Message> messages) {
+    if (messages.length <= 1) {
+      return messages;
+    }
+
+    final sorted = List<Message>.from(messages)
+      ..sort((a, b) => _compareMessageIds(a.id, b.id));
+    return sorted;
+  }
+
+  int _compareMessageIds(String a, String b) {
+    final aNum = int.tryParse(a);
+    final bNum = int.tryParse(b);
+
+    if (aNum != null && bNum != null) {
+      return aNum.compareTo(bNum);
+    }
+
+    if (aNum != null) {
+      return -1; // Numeric IDs come first for stability.
+    }
+
+    if (bNum != null) {
+      return 1;
+    }
+
+    return a.compareTo(b);
   }
 
   /// Build error state widget
