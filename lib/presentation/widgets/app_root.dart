@@ -437,7 +437,7 @@ class _AppRootState extends State<AppRoot> {
       await authProvider.loadUserProfile();
       Logger.info('✅ AppRoot: User profile loaded after authentication');
 
-  await _initializeWebSocketForUser(authProvider);
+      await _initializeWebSocketForUser(authProvider);
 
       // Update UI state to trigger rebuild with main screen
       if (mounted) {

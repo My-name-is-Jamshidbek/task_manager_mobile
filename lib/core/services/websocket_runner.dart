@@ -42,10 +42,11 @@ class WebSocketRunner {
       lastError.value = error;
     });
 
-    _connectionSubscription =
-        _webSocketManager.connectionStateStream.listen((connected) {
-          isConnected.value = connected;
-        });
+    _connectionSubscription = _webSocketManager.connectionStateStream.listen((
+      connected,
+    ) {
+      isConnected.value = connected;
+    });
   }
 
   /// Clear listeners to avoid leaks.
@@ -71,7 +72,10 @@ class WebSocketRunner {
       return false;
     }
 
-    final connected = await _webSocketManager.connect(token: token, userId: userId);
+    final connected = await _webSocketManager.connect(
+      token: token,
+      userId: userId,
+    );
     if (!connected) {
       Logger.warning(
         'WebSocketRunner: WebSocket connect failed: ${_webSocketManager.lastError}',
