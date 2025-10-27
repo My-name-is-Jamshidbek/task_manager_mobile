@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/managers/app_manager.dart';
@@ -99,6 +101,21 @@ class _AppRootState extends State<AppRoot> {
   bool _updateRequired =
       false; // Flag to pause initialization on required updates
 
+  Future<bool> _waitForSocketReady(WebSocketManager webSocketManager) async {
+    const timeout = Duration(seconds: 5);
+    const pollInterval = Duration(milliseconds: 100);
+    final start = DateTime.now();
+
+    while ((webSocketManager.socketId == null ||
+            webSocketManager.socketId!.isEmpty) &&
+        DateTime.now().difference(start) < timeout) {
+      await Future.delayed(pollInterval);
+    }
+
+    return webSocketManager.socketId != null &&
+        webSocketManager.socketId!.isNotEmpty;
+  }
+
   Future<void> _initializeWebSocketForUser(AuthProvider authProvider) async {
     final token = authProvider.authToken;
     final userId = authProvider.currentUser?.id;
@@ -130,7 +147,23 @@ class _AppRootState extends State<AppRoot> {
         Logger.info('✅ AppRoot: WebSocket connection established');
       }
 
+      final socketReady = await _waitForSocketReady(webSocketManager);
+      if (!socketReady) {
+        Logger.warning(
+          '⚠️ AppRoot: Socket ID not available after waiting - skipping subscription',
+        );
+        return;
+      }
+
       final channelName = 'private-user.$userId';
+
+      if (webSocketManager.isSubscribedTo(channelName)) {
+        Logger.info(
+          'ℹ️ AppRoot: Already subscribed to default channel $channelName',
+        );
+        return;
+      }
+
       final subscribed = await webSocketManager.subscribeToChannel(
         channelName: channelName,
         onAuthRequired: (channel) async {
