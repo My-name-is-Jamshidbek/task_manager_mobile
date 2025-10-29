@@ -177,25 +177,17 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildDirectChatsTab(BuildContext context) {
-    return Consumer2<ChatProvider, ConversationsProvider>(
-      builder: (context, chatProvider, conversationsProvider, child) {
-        // Show loading if either provider is loading
-        if (chatProvider.isLoading || conversationsProvider.isLoadingDirect) {
+    return Consumer<ChatProvider>(
+      builder: (context, chatProvider, child) {
+        if (chatProvider.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        // Show error if either provider has an error
-        final error = chatProvider.error ?? conversationsProvider.directError;
-        if (error != null) {
-          return _buildErrorState(context, error);
+        if (chatProvider.error != null) {
+          return _buildErrorState(context, chatProvider.error!);
         }
 
-        // Use conversations provider for direct chats for better API integration
-        final directConversations = conversationsProvider.directConversations;
-        final directChats = directConversations
-            .map((conv) => conv.toChat())
-            .toList();
-
+        final directChats = chatProvider.getChatsByType(ChatType.oneToOne);
         final filteredChats = _searchQuery.isEmpty
             ? directChats
             : directChats.where((chat) {
@@ -215,28 +207,17 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildGroupChatsTab(BuildContext context) {
-    return Consumer2<ChatProvider, ConversationsProvider>(
-      builder: (context, chatProvider, conversationsProvider, child) {
-        // Show loading if either provider is loading
-        if (chatProvider.isLoading ||
-            conversationsProvider.isLoadingDepartment) {
+    return Consumer<ChatProvider>(
+      builder: (context, chatProvider, child) {
+        if (chatProvider.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        // Show error if either provider has an error
-        final error =
-            chatProvider.error ?? conversationsProvider.departmentError;
-        if (error != null) {
-          return _buildErrorState(context, error);
+        if (chatProvider.error != null) {
+          return _buildErrorState(context, chatProvider.error!);
         }
 
-        // Use conversations provider for department (group) chats
-        final departmentConversations =
-            conversationsProvider.departmentConversations;
-        final groupChats = departmentConversations
-            .map((conv) => conv.toChat())
-            .toList();
-
+        final groupChats = chatProvider.getChatsByType(ChatType.group);
         final filteredChats = _searchQuery.isEmpty
             ? groupChats
             : groupChats.where((chat) {
@@ -573,23 +554,31 @@ class _ChatScreenState extends State<ChatScreen>
 
   IconData _getStatusIcon(MessageStatus status) {
     switch (status) {
+      case MessageStatus.sending:
+        return Icons.schedule;
       case MessageStatus.sent:
         return Icons.check;
       case MessageStatus.delivered:
         return Icons.done_all;
       case MessageStatus.read:
         return Icons.done_all;
+      case MessageStatus.failed:
+        return Icons.error;
     }
   }
 
   Color _getStatusColor(MessageStatus status, ThemeData theme) {
     switch (status) {
+      case MessageStatus.sending:
+        return theme.colorScheme.outline;
       case MessageStatus.sent:
         return theme.colorScheme.onSurfaceVariant;
       case MessageStatus.delivered:
         return theme.colorScheme.onSurfaceVariant;
       case MessageStatus.read:
         return theme.colorScheme.primary;
+      case MessageStatus.failed:
+        return theme.colorScheme.error;
     }
   }
 

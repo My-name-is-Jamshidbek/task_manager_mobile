@@ -17,6 +17,8 @@ class Message {
   final bool isEdited;
   final DateTime? editedAt;
   final bool isDeleted;
+  final bool isSending;
+  final String? sendError;
 
   const Message({
     required this.id,
@@ -34,6 +36,8 @@ class Message {
     this.isEdited = false,
     this.editedAt,
     this.isDeleted = false,
+    this.isSending = false,
+    this.sendError,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -119,6 +123,8 @@ class Message {
     bool? isEdited,
     DateTime? editedAt,
     bool? isDeleted,
+    bool? isSending,
+    String? sendError,
   }) {
     return Message(
       id: id ?? this.id,
@@ -136,6 +142,8 @@ class Message {
       isEdited: isEdited ?? this.isEdited,
       editedAt: editedAt ?? this.editedAt,
       isDeleted: isDeleted ?? this.isDeleted,
+      isSending: isSending ?? this.isSending,
+      sendError: sendError ?? this.sendError,
     );
   }
 

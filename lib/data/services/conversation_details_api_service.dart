@@ -72,21 +72,11 @@ class ConversationDetailsApiService {
 
   /// Mark all messages in conversation as read
   Future<bool> markConversationAsRead(int conversationId) async {
-    // TODO: TEMPORARY - API endpoint is not working, disable for now
-    Logger.info(
-      '📖 [DISABLED] Would mark conversation as read - ID: $conversationId',
-    );
-    Logger.warning(
-      '⚠️ Mark as read API temporarily disabled - endpoint not working',
-    );
-    return true; // Return success to avoid blocking UI
-
-    /* ORIGINAL CODE - RE-ENABLE WHEN API IS FIXED
     try {
       Logger.info('📖 Marking conversation as read - ID: $conversationId');
 
-      final response = await _apiClient.post(
-        '/inbox/conversations/$conversationId/read',
+      final response = await _apiClient.post<dynamic>(
+        '/inbox/conversations/$conversationId/read-all',
       );
 
       if (response.isSuccess) {
@@ -95,15 +85,14 @@ class ConversationDetailsApiService {
       } else {
         final errorMessage = response.error ?? 'Unknown error occurred';
         Logger.error('❌ Mark as read API error: $errorMessage');
-        
-        // Handle specific error cases based on status code
+
         if (response.statusCode == 403) {
           throw ConversationDetailsApiException(
             'You are not authorized to modify this conversation.',
           );
-        } else {
-          throw ConversationDetailsApiException(errorMessage);
         }
+
+        throw ConversationDetailsApiException(errorMessage);
       }
     } catch (e) {
       if (e is ConversationDetailsApiException) {
@@ -119,7 +108,54 @@ class ConversationDetailsApiService {
         'Network error. Please check your connection.',
       );
     }
-    */
+  }
+
+  /// Mark several messages as read
+  Future<bool> markMessagesAsRead(List<int> messageIds) async {
+    if (messageIds.isEmpty) {
+      Logger.info('ℹ️ No message IDs provided for markMessagesAsRead');
+      return true;
+    }
+
+    try {
+      Logger.info(
+        '📖 Marking ${messageIds.length} messages as read (IDs: $messageIds)',
+      );
+
+      final response = await _apiClient.post<dynamic>(
+        '/inbox/messages/read',
+        body: {'message_ids': messageIds},
+      );
+
+      if (response.isSuccess) {
+        Logger.info('✅ Messages marked as read successfully');
+        return true;
+      } else {
+        final errorMessage = response.error ?? 'Unknown error occurred';
+        Logger.error('❌ Messages read API error: $errorMessage');
+
+        if (response.statusCode == 403) {
+          throw ConversationDetailsApiException(
+            'You are not authorized to modify these messages.',
+          );
+        }
+
+        throw ConversationDetailsApiException(errorMessage);
+      }
+    } catch (e) {
+      if (e is ConversationDetailsApiException) {
+        rethrow;
+      }
+
+      Logger.error(
+        '❌ Network error marking messages as read',
+        'ConversationDetailsApiService',
+        e,
+      );
+      throw ConversationDetailsApiException(
+        'Network error. Please check your connection.',
+      );
+    }
   }
 
   /// Send a new message to conversation

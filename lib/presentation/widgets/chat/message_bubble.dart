@@ -67,69 +67,73 @@ class MessageBubble extends StatelessWidget {
                   ),
                 GestureDetector(
                   onLongPress: () => _showMessageActions(context),
-                  child: Container(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.75,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getBubbleColor(theme, isFromCurrentUser),
-                      borderRadius: _getBorderRadius(isFromCurrentUser),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 1,
-                          offset: const Offset(0, 1),
+                  child: Stack(
+                    children: [
+                      Container(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.75,
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (message.replyToMessage != null)
-                          _buildReplyPreview(theme),
-                        _buildMessageContent(theme, isFromCurrentUser),
-                        if (message.isEdited)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              'edited',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: isFromCurrentUser
-                                    ? Colors.white70
-                                    : theme.colorScheme.onSurfaceVariant,
-                                fontStyle: FontStyle.italic,
-                              ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getBubbleColor(theme, isFromCurrentUser),
+                          borderRadius: _getBorderRadius(isFromCurrentUser),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 1,
+                              offset: const Offset(0, 1),
                             ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (message.replyToMessage != null)
+                              _buildReplyPreview(theme),
+                            _buildMessageContent(theme, isFromCurrentUser),
+                            if (message.isEdited)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  'edited',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: isFromCurrentUser
+                                        ? Colors.white70
+                                        : theme.colorScheme.onSurfaceVariant,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            // Add invisible spacer to push status icon to bottom right
+                            if (isFromCurrentUser) const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                      // Status icon positioned at bottom right for current user
+                      if (isFromCurrentUser)
+                        Positioned(
+                          right: 8,
+                          bottom: 4,
+                          child: Icon(
+                            _getStatusIcon(),
+                            size: 14,
+                            color: _getStatusColor(theme),
                           ),
-                      ],
-                    ),
+                        ),
+                    ],
                   ),
                 ),
                 if (showTimestamp)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _getFormattedTime(),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        if (isFromCurrentUser) ...[
-                          const SizedBox(width: 4),
-                          Icon(
-                            _getStatusIcon(),
-                            size: 14,
-                            color: _getStatusColor(theme),
-                          ),
-                        ],
-                      ],
+                    child: Text(
+                      _getFormattedTime(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
               ],
@@ -414,24 +418,48 @@ class MessageBubble extends StatelessWidget {
   }
 
   IconData _getStatusIcon() {
+    if (message.isSending) {
+      return Icons.schedule;
+    }
+
+    if (message.sendError != null) {
+      return Icons.error;
+    }
+
     switch (message.status) {
+      case MessageStatus.sending:
+        return Icons.schedule;
       case MessageStatus.sent:
         return Icons.check;
       case MessageStatus.delivered:
         return Icons.done_all;
       case MessageStatus.read:
         return Icons.done_all;
+      case MessageStatus.failed:
+        return Icons.error;
     }
   }
 
   Color _getStatusColor(ThemeData theme) {
+    if (message.isSending) {
+      return Colors.white70;
+    }
+
+    if (message.sendError != null) {
+      return Colors.red.shade300;
+    }
+
     switch (message.status) {
+      case MessageStatus.sending:
+        return Colors.white70;
       case MessageStatus.sent:
         return Colors.white70;
       case MessageStatus.delivered:
         return Colors.white70;
       case MessageStatus.read:
         return Colors.blue.shade200;
+      case MessageStatus.failed:
+        return Colors.red.shade300;
     }
   }
 

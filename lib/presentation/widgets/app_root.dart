@@ -14,6 +14,7 @@ import '../../core/services/websocket_auth_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/projects_provider.dart';
 import '../providers/tasks_api_provider.dart';
+import '../providers/chat_provider.dart';
 import '../screens/loading/loading_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/main/main_screen.dart';
@@ -132,6 +133,9 @@ class _AppRootState extends State<AppRoot> {
         context,
         listen: false,
       );
+
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      chatProvider.bindWebSocket(webSocketManager);
 
       final alreadyConnected = webSocketManager.isConnected;
       final connected = alreadyConnected

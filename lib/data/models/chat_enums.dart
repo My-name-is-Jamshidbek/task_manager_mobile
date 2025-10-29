@@ -9,9 +9,11 @@ enum ChatType {
 
 /// Message status enumeration
 enum MessageStatus {
+  sending('sending'),
   sent('sent'),
   delivered('delivered'),
-  read('read');
+  read('read'),
+  failed('failed');
 
   const MessageStatus(this.value);
   final String value;

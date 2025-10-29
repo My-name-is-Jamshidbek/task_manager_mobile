@@ -165,6 +165,54 @@ class ConversationsApiService {
     }
   }
 
+  /// Mark specific messages as read
+  Future<bool> markMessagesAsRead(List<int> messageIds) async {
+    if (messageIds.isEmpty) {
+      Logger.info('ℹ️ ConversationsApiService: No message IDs to mark read');
+      return true;
+    }
+
+    try {
+      Logger.info(
+        '📖 ConversationsApiService: Marking ${messageIds.length} messages as read',
+      );
+
+      final response = await _apiClient.post<dynamic>(
+        '/inbox/messages/read',
+        body: {'message_ids': messageIds},
+      );
+
+      if (response.isSuccess) {
+        Logger.info('✅ Messages read API call succeeded');
+        return true;
+      }
+
+      final errorMessage = response.error ?? 'Unknown error occurred';
+      Logger.error('❌ Messages read API error: $errorMessage');
+
+      if (response.statusCode == 403) {
+        throw ConversationsApiException(
+          'You are not authorized to modify these messages.',
+        );
+      }
+
+      throw ConversationsApiException(errorMessage);
+    } catch (e) {
+      if (e is ConversationsApiException) {
+        rethrow;
+      }
+
+      Logger.error(
+        '❌ Network error marking messages as read',
+        'ConversationsApiService',
+        e,
+      );
+      throw ConversationsApiException(
+        'Network error. Please check your connection.',
+      );
+    }
+  }
+
   /// Close the API client
   void dispose() {
     _apiClient.dispose();

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import '../../data/models/chat.dart';
 import '../../data/models/message.dart';
@@ -5,6 +8,8 @@ import '../../data/models/chat_member.dart';
 import '../../data/models/chat_enums.dart';
 import '../../data/services/conversations_api_service.dart';
 import '../../core/utils/logger.dart';
+import '../../core/managers/websocket_manager.dart';
+import '../../data/models/realtime/websocket_event_models.dart';
 
 /// Chat provider for managing chat state and operations
 class ChatProvider extends ChangeNotifier {
@@ -14,6 +19,8 @@ class ChatProvider extends ChangeNotifier {
   String? _error;
   String? _currentUserId;
   ConversationsApiService? _conversationsService;
+  WebSocketManager? _webSocketManager;
+  StreamSubscription<WebSocketEvent>? _webSocketSubscription;
 
   // Getters
   List<Chat> get chats => _chats;
@@ -27,6 +34,32 @@ class ChatProvider extends ChangeNotifier {
     _currentUserId = userId;
     _conversationsService = ConversationsApiService();
     loadChats();
+  }
+
+  /// Bind the provider to a web socket manager so chat list stays in sync.
+  void bindWebSocket(WebSocketManager manager) {
+    if (identical(_webSocketManager, manager) &&
+        _webSocketSubscription != null) {
+      return;
+    }
+
+    _webSocketSubscription?.cancel();
+    _webSocketManager = manager;
+    _webSocketSubscription = manager.eventStream.listen(
+      _handleWebSocketEvent,
+      onError: (error) {
+        Logger.warning('⚠️ ChatProvider websocket stream error: $error');
+      },
+    );
+  }
+
+  void _handleWebSocketEvent(WebSocketEvent event) {
+    if (event is MessageSentEvent) {
+      handleRealtimeMessage(event.message, tempId: event.tempId);
+    } else if (event is MessagesReadEvent) {
+      final chatId = event.conversationId.toString();
+      handleMessagesRead(chatId, event.messageIds, readerId: event.readerId);
+    }
   }
 
   /// Load all chats for the current user
@@ -177,32 +210,90 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  /// Mark messages as read
-  Future<void> markMessagesAsRead(String chatId) async {
-    if (!_chatMessages.containsKey(chatId)) return;
+  /// Mark messages as read (optionally syncing with API)
+  Future<void> markMessagesAsRead(
+    String chatId, {
+    List<String>? messageIds,
+    bool syncWithServer = true,
+  }) async {
+    final messages = _chatMessages[chatId];
+    if (messages == null || messages.isEmpty) {
+      return;
+    }
+
+    final idsToMark =
+        (messageIds ??
+                messages
+                    .where(
+                      (message) =>
+                          message.senderId != _currentUserId &&
+                          message.status != MessageStatus.read,
+                    )
+                    .map((message) => message.id))
+            .toSet();
+
+    if (idsToMark.isEmpty) {
+      Logger.debug('ℹ️ ChatProvider: No messages to mark as read for $chatId');
+      return;
+    }
+
+    int unreadDelta = 0;
+    final updatedMessages = <Message>[];
+    for (final message in messages) {
+      final shouldMark = idsToMark.contains(message.id);
+      if (shouldMark &&
+          message.senderId != _currentUserId &&
+          message.status != MessageStatus.read) {
+        unreadDelta++;
+      }
+
+      updatedMessages.add(
+        shouldMark ? message.copyWith(status: MessageStatus.read) : message,
+      );
+    }
+
+    _chatMessages[chatId] = updatedMessages;
+
+    final chatIndex = _chats.indexWhere((chat) => chat.id == chatId);
+    if (chatIndex != -1) {
+      final chat = _chats[chatIndex];
+      final updatedUnread = math.max(0, chat.unreadCount - unreadDelta);
+      final lastMessage = chat.lastMessage;
+      final updatedLastMessage =
+          lastMessage != null && idsToMark.contains(lastMessage.id)
+          ? lastMessage.copyWith(status: MessageStatus.read)
+          : lastMessage;
+
+      _chats[chatIndex] = chat.copyWith(
+        unreadCount: updatedUnread,
+        lastMessage: updatedLastMessage,
+        updatedAt: chat.updatedAt,
+      );
+    }
+
+    notifyListeners();
+
+    if (!syncWithServer || _conversationsService == null) {
+      return;
+    }
+
+    final numericIds = idsToMark
+        .map((id) => int.tryParse(id))
+        .whereType<int>()
+        .toList();
+
+    if (numericIds.isEmpty) {
+      Logger.warning(
+        '⚠️ ChatProvider: Unable to sync markMessagesAsRead due to non-numeric IDs',
+      );
+      return;
+    }
 
     try {
-      // Update local messages status
-      final messages = _chatMessages[chatId]!;
-      for (int i = 0; i < messages.length; i++) {
-        if (messages[i].senderId != _currentUserId &&
-            messages[i].status != MessageStatus.read) {
-          messages[i] = messages[i].copyWith(status: MessageStatus.read);
-        }
-      }
-
-      // Clear unread count for chat
-      final chatIndex = _chats.indexWhere((chat) => chat.id == chatId);
-      if (chatIndex != -1) {
-        _chats[chatIndex] = _chats[chatIndex].copyWith(unreadCount: 0);
-      }
-
-      notifyListeners();
-
-      // TODO: Send read status to API
-      Logger.info('✅ Marked messages as read for chat $chatId');
+      await _conversationsService!.markMessagesAsRead(numericIds);
+      Logger.info('✅ Synced read status for ${numericIds.length} messages');
     } catch (e) {
-      Logger.error('❌ Failed to mark messages as read', 'ChatProvider', e);
+      Logger.error('❌ Failed to sync read status', 'ChatProvider', e);
     }
   }
 
@@ -266,6 +357,20 @@ class ChatProvider extends ChangeNotifier {
     }
 
     final chatIndex = _chats.indexWhere((chat) => chat.id == chatId);
+
+    if (chatIndex == -1) {
+      Logger.warning(
+        'ℹ️ ChatProvider: Realtime message for unknown chat $chatId, refreshing list',
+      );
+      if (_currentUserId != null &&
+          _conversationsService != null &&
+          !_isLoading) {
+        unawaited(loadChats());
+      }
+      notifyListeners();
+      return;
+    }
+
     if (chatIndex != -1) {
       final chat = _chats[chatIndex];
       final updatedUnread = isFromCurrentUser
@@ -276,6 +381,77 @@ class ChatProvider extends ChangeNotifier {
         lastMessage: message,
         unreadCount: updatedUnread,
         updatedAt: message.sentAt,
+      );
+    }
+
+    notifyListeners();
+  }
+
+  /// Apply message read acknowledgements received via websocket
+  void handleMessagesRead(
+    String chatId,
+    List<String> messageIds, {
+    required int readerId,
+  }) {
+    if (messageIds.isEmpty) {
+      return;
+    }
+
+    final messages = _chatMessages[chatId];
+    if (messages == null || messages.isEmpty) {
+      return;
+    }
+
+    final idsSet = messageIds.toSet();
+    final currentUserIdInt = int.tryParse(_currentUserId ?? '');
+    final isCurrentUserReader =
+        currentUserIdInt != null && currentUserIdInt == readerId;
+
+    bool changed = false;
+    int unreadReduction = 0;
+    final updatedMessages = <Message>[];
+
+    for (final message in messages) {
+      if (idsSet.contains(message.id)) {
+        if (message.status != MessageStatus.read) {
+          changed = true;
+          if (isCurrentUserReader && message.senderId != _currentUserId) {
+            unreadReduction++;
+          }
+        }
+
+        updatedMessages.add(
+          message.status == MessageStatus.read
+              ? message
+              : message.copyWith(status: MessageStatus.read),
+        );
+      } else {
+        updatedMessages.add(message);
+      }
+    }
+
+    if (!changed) {
+      return;
+    }
+
+    _chatMessages[chatId] = updatedMessages;
+
+    final chatIndex = _chats.indexWhere((chat) => chat.id == chatId);
+    if (chatIndex != -1) {
+      final chat = _chats[chatIndex];
+      final updatedUnread = isCurrentUserReader
+          ? math.max(0, chat.unreadCount - unreadReduction)
+          : chat.unreadCount;
+
+      final lastMessage = chat.lastMessage;
+      final updatedLastMessage =
+          lastMessage != null && idsSet.contains(lastMessage.id)
+          ? lastMessage.copyWith(status: MessageStatus.read)
+          : lastMessage;
+
+      _chats[chatIndex] = chat.copyWith(
+        unreadCount: updatedUnread,
+        lastMessage: updatedLastMessage,
       );
     }
 
@@ -354,6 +530,13 @@ class ChatProvider extends ChangeNotifier {
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _webSocketSubscription?.cancel();
+    _conversationsService?.dispose();
+    super.dispose();
   }
 
   /// Generate sample chats for demo
@@ -474,6 +657,53 @@ class ChatProvider extends ChangeNotifier {
         ],
       ),
     ];
+  }
+
+  /// Public method to add a temporary message for sending state feedback
+  void addTemporaryMessage(String chatId, Message message) {
+    if (!_chatMessages.containsKey(chatId)) {
+      _chatMessages[chatId] = [];
+    }
+    _chatMessages[chatId]!.add(message);
+
+    // Update chat's last message
+    final chatIndex = _chats.indexWhere((chat) => chat.id == chatId);
+    if (chatIndex != -1) {
+      _chats[chatIndex] = _chats[chatIndex].copyWith(
+        lastMessage: message,
+        updatedAt: DateTime.now(),
+      );
+    }
+
+    notifyListeners();
+  }
+
+  /// Public method to remove a temporary message by ID
+  void removeTemporaryMessage(String chatId, String messageId) {
+    if (_chatMessages.containsKey(chatId)) {
+      _chatMessages[chatId]!.removeWhere((msg) => msg.id == messageId);
+      notifyListeners();
+    }
+  }
+
+  /// Public method to mark a message as failed
+  void markMessageAsFailed(
+    String chatId,
+    String messageId,
+    String errorMessage,
+  ) {
+    if (_chatMessages.containsKey(chatId)) {
+      final messages = _chatMessages[chatId]!;
+      final index = messages.indexWhere((msg) => msg.id == messageId);
+      if (index != -1) {
+        messages[index] = messages[index].copyWith(
+          isSending: false,
+          sendError: errorMessage,
+          status: MessageStatus.failed,
+        );
+        notifyListeners();
+      }
+    }
   }
 
   /// Generate sample messages for demo

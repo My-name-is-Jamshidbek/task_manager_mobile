@@ -36,6 +36,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
   bool _isLoading = true;
+  bool _showScrollToBottom = false;
   late final WebSocketManager _webSocketManager;
   StreamSubscription<WebSocketEvent>? _eventSubscription;
 
@@ -43,6 +44,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   void initState() {
     super.initState();
     _webSocketManager = context.read<WebSocketManager>();
+    _scrollController.addListener(_handleScroll);
     _attachWebSocketListeners();
     _loadMessages();
   }
@@ -50,6 +52,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   @override
   void dispose() {
     _eventSubscription?.cancel();
+    _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     _messageController.dispose();
     super.dispose();
@@ -63,70 +66,350 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         return;
       }
 
-      if (event is! MessageSentEvent) {
-        return;
-      }
-
-      final incomingChatId = event.message.chatId;
-      if (incomingChatId != conversationKey) {
-        Logger.debug(
-          'Realtime event for chat $incomingChatId ignored by conversation $conversationKey',
-        );
-        return;
-      }
-
-      if (widget.conversationId != null) {
-        context.read<ConversationDetailsProvider>().handleRealtimeMessage(
-          event.message,
-          tempId: event.tempId,
-        );
-      } else {
-        context.read<ChatProvider>().handleRealtimeMessage(
-          event.message,
-          tempId: event.tempId,
-        );
-      }
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _scrollToBottom();
+      if (event is MessageSentEvent) {
+        final incomingChatId = event.message.chatId;
+        if (incomingChatId != conversationKey) {
+          Logger.debug(
+            'Realtime event for chat $incomingChatId ignored by conversation $conversationKey',
+          );
+          return;
         }
-      });
+
+        if (widget.conversationId != null) {
+          context.read<ConversationDetailsProvider>().handleRealtimeMessage(
+            event.message,
+            tempId: event.tempId,
+          );
+        } else {
+          context.read<ChatProvider>().handleRealtimeMessage(
+            event.message,
+            tempId: event.tempId,
+          );
+        }
+
+        final currentUserId = context.read<AuthProvider?>()?.currentUser?.id;
+        if (currentUserId != null &&
+            event.message.senderId != currentUserId.toString()) {
+          unawaited(_markMessagesAsRead([event.message.id]));
+        }
+
+        if (!_showScrollToBottom) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _scrollToBottom();
+            }
+          });
+        }
+        return;
+      }
+
+      if (event is MessagesReadEvent) {
+        final incomingConversationId = event.conversationId.toString();
+        if (incomingConversationId != conversationKey) {
+          return;
+        }
+
+        final messageIds = event.messageIds.map((id) => id.toString()).toList();
+        if (messageIds.isEmpty) {
+          return;
+        }
+
+        if (widget.conversationId != null) {
+          context.read<ConversationDetailsProvider>().handleMessagesRead(
+            messageIds,
+            event.readerId,
+          );
+        }
+
+        context.read<ChatProvider>().handleMessagesRead(
+          conversationKey,
+          messageIds,
+          readerId: event.readerId,
+        );
+      }
     });
   }
 
   Future<void> _loadMessages() async {
-    if (widget.conversationId != null) {
-      // Use conversation details API for real data
-      final conversationDetailsProvider = context
-          .read<ConversationDetailsProvider>();
-      await conversationDetailsProvider.loadConversationDetails(
-        widget.conversationId!,
+    try {
+      if (widget.conversationId != null) {
+        // Use conversation details API for real data
+        final conversationDetailsProvider = context
+            .read<ConversationDetailsProvider>();
+        final authProvider = context.read<AuthProvider>();
+        final currentUserId = authProvider.currentUser?.id;
+
+        Logger.info('📖 Loading conversation ${widget.conversationId}');
+
+        await conversationDetailsProvider.loadConversationDetails(
+          widget.conversationId!,
+        );
+
+        // Mark only OTHER users' unread messages as read
+        if (currentUserId != null) {
+          final unreadFromOthers =
+              conversationDetailsProvider.currentConversation?.messages
+                  .where((msg) => msg.sender.id != currentUserId && !msg.isRead)
+                  .map((msg) => msg.id.toString())
+                  .toList() ??
+              [];
+
+          Logger.info(
+            '📖 Found ${unreadFromOthers.length} unread messages from others',
+          );
+
+          if (unreadFromOthers.isNotEmpty) {
+            await _markMessagesAsRead(unreadFromOthers);
+          }
+        } else {
+          Logger.warning('⚠️ Current user ID is null, skipping read marking');
+        }
+      } else {
+        // Fallback to existing chat provider for sample data
+        final chatProvider = context.read<ChatProvider>();
+        await chatProvider.loadMessages(widget.chat.id);
+        final authProvider = context.read<AuthProvider>();
+        final currentUserId = authProvider.currentUser?.id;
+
+        // Mark only OTHER users' unread messages as read
+        if (currentUserId != null) {
+          final messages = chatProvider.chatMessages[widget.chat.id] ?? [];
+          final unreadFromOthers = messages
+              .where(
+                (msg) =>
+                    msg.senderId != currentUserId.toString() &&
+                    msg.status != MessageStatus.read,
+              )
+              .map((msg) => msg.id)
+              .toList();
+
+          if (unreadFromOthers.isNotEmpty) {
+            await chatProvider.markMessagesAsRead(
+              widget.chat.id,
+              messageIds: unreadFromOthers,
+            );
+          }
+        }
+      }
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ Error loading messages or marking as read',
+        'ChatConversationScreen',
+        e,
+        stackTrace,
       );
-      await conversationDetailsProvider.markAsRead();
-    } else {
-      // Fallback to existing chat provider for sample data
-      final chatProvider = context.read<ChatProvider>();
-      await chatProvider.loadMessages(widget.chat.id);
-      await chatProvider.markMessagesAsRead(widget.chat.id);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Scroll to bottom after layout is complete
+        // Use multiple callbacks to ensure the ListView is fully laid out
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _scrollToBottom();
+          }
+        });
+
+        // Add a slight delay and try again to ensure we reach the actual bottom
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted && _scrollController.hasClients) {
+            _scrollToBottom();
+          }
+        });
+      }
     }
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    // Scroll to bottom after loading messages
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
-    });
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
+    if (!_scrollController.hasClients) {
+      Logger.debug('ScrollController has no clients yet');
+      return;
+    }
+
+    try {
+      final target = _scrollController.position.maxScrollExtent;
+
+      _scrollController
+          .animateTo(
+            target,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          )
+          .catchError((error) {
+            // Fallback to jumpTo if animation fails
+            Logger.debug('Scroll animation failed, jumping to bottom: $error');
+            if (_scrollController.hasClients) {
+              _scrollController.jumpTo(
+                _scrollController.position.maxScrollExtent,
+              );
+            }
+          });
+
+      if (mounted && _showScrollToBottom) {
+        setState(() {
+          _showScrollToBottom = false;
+        });
+      }
+    } catch (e) {
+      Logger.warning('Error scrolling to bottom: $e');
+    }
+  }
+
+  void _handleScroll() {
+    if (!mounted || !_scrollController.hasClients) {
+      return;
+    }
+
+    final position = _scrollController.position;
+    final maxExtent = position.maxScrollExtent;
+    final offset = position.pixels;
+    final distanceFromBottom = maxExtent - offset;
+
+    final shouldShow = offset > 50 && distanceFromBottom > 120;
+
+    if (_showScrollToBottom != shouldShow) {
+      setState(() {
+        _showScrollToBottom = shouldShow;
+      });
+    }
+
+    // Mark visible unread messages as read
+    _markVisibleMessagesAsRead();
+  }
+
+  /// Mark unread messages that are in viewport as read
+  void _markVisibleMessagesAsRead() {
+    if (widget.conversationId == null) {
+      return; // Only for API conversations
+    }
+
+    final conversationDetailsProvider = context
+        .read<ConversationDetailsProvider>();
+    final messages = conversationDetailsProvider.sortedMessages;
+    final currentUserId = context.read<AuthProvider?>()?.currentUser?.id;
+
+    Logger.debug(
+      '🔍 _markVisibleMessagesAsRead: ${messages.length} messages, currentUserId: $currentUserId',
+    );
+
+    if (messages.isEmpty || currentUserId == null) {
+      Logger.debug('⚠️ No messages or currentUserId is null');
+      return;
+    }
+
+    final controller = _scrollController;
+    if (!controller.hasClients) {
+      Logger.debug('⚠️ Scroll controller has no clients');
+      return;
+    }
+
+    final viewportHeight = MediaQuery.of(context).size.height;
+    final scrollOffset = controller.offset;
+    final viewportTop = scrollOffset;
+    final viewportBottom = scrollOffset + viewportHeight;
+
+    Logger.debug(
+      '📏 Viewport: top=$viewportTop, bottom=$viewportBottom, height=$viewportHeight',
+    );
+
+    // Find unread messages from other users that are in the viewport
+    final visibleUnreadMessageIds = <String>[];
+
+    // Estimate item height (approximate)
+    const itemHeight = 80.0;
+
+    for (int i = 0; i < messages.length; i++) {
+      final message = messages[i];
+
+      // Only mark messages from other users as read
+      if (message.sender.id == currentUserId) {
+        Logger.debug('⏭️ Message $i from current user, skipping');
+        continue;
+      }
+
+      // Skip if already read
+      if (message.isRead) {
+        Logger.debug('✅ Message $i already read, skipping');
+        continue;
+      }
+
+      // Calculate approximate position of this item
+      final itemTop = i * itemHeight + 16; // 16 = top padding
+      final itemBottom = itemTop + itemHeight;
+
+      Logger.debug(
+        '📍 Message $i (ID: ${message.id}): top=$itemTop, bottom=$itemBottom',
+      );
+
+      // Check if item is in viewport
+      if (itemBottom > viewportTop && itemTop < viewportBottom) {
+        Logger.info('📖 Message $i (ID: ${message.id}) is VISIBLE and UNREAD');
+        visibleUnreadMessageIds.add(message.id.toString());
+      } else {
+        Logger.debug('❌ Message $i not in viewport');
+      }
+    }
+
+    Logger.info(
+      '📊 Found ${visibleUnreadMessageIds.length} visible unread messages: $visibleUnreadMessageIds',
+    );
+
+    // Mark visible unread messages as read
+    if (visibleUnreadMessageIds.isNotEmpty) {
+      Logger.info(
+        '🚀 Calling _markMessagesAsRead with ${visibleUnreadMessageIds.length} IDs',
+      );
+      unawaited(_markMessagesAsRead(visibleUnreadMessageIds));
+    } else {
+      Logger.debug('ℹ️ No visible unread messages to mark');
+    }
+  }
+
+  Future<void> _markMessagesAsRead(List<String> messageIds) async {
+    if (messageIds.isEmpty) {
+      Logger.debug('⚠️ _markMessagesAsRead called with empty list');
+      return;
+    }
+
+    Logger.info(
+      '📤 _markMessagesAsRead called with ${messageIds.length} messages: $messageIds',
+    );
+
+    try {
+      if (widget.conversationId != null) {
+        Logger.info('📡 Using ConversationDetailsProvider API path');
+        final success = await context
+            .read<ConversationDetailsProvider>()
+            .markMessagesAsRead(messageIds);
+
+        Logger.info('API Response: success=$success');
+
+        if (success) {
+          Logger.info('✅ API succeeded, syncing with ChatProvider');
+          await context.read<ChatProvider>().markMessagesAsRead(
+            widget.chat.id,
+            messageIds: messageIds,
+            syncWithServer: false,
+          );
+          Logger.info('✅ ChatProvider synced');
+        } else {
+          Logger.warning('⚠️ API call failed');
+        }
+      } else {
+        Logger.info('📡 Using ChatProvider direct path');
+        await context.read<ChatProvider>().markMessagesAsRead(
+          widget.chat.id,
+          messageIds: messageIds,
+        );
+      }
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ Error in _markMessagesAsRead: $e',
+        'ChatConversationScreen',
+        e,
+        stackTrace,
       );
     }
   }
@@ -187,41 +470,58 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
             return _buildEmptyState(context);
           }
 
-          return ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-            itemCount: conversationMessages.length,
-            itemBuilder: (context, index) {
-              final conversationMessage = conversationMessages[index];
-              final previousMessage = index > 0
-                  ? conversationMessages[index - 1]
-                  : null;
-              final nextMessage = index < conversationMessages.length - 1
-                  ? conversationMessages[index + 1]
-                  : null;
+          return Stack(
+            children: [
+              ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 16,
+                ),
+                itemCount: conversationMessages.length,
+                itemBuilder: (context, index) {
+                  final conversationMessage = conversationMessages[index];
+                  final previousMessage = index > 0
+                      ? conversationMessages[index - 1]
+                      : null;
+                  final nextMessage = index < conversationMessages.length - 1
+                      ? conversationMessages[index + 1]
+                      : null;
 
-              // Convert ConversationMessage to Message for UI compatibility
-              final message = _convertConversationMessageToMessage(
-                conversationMessage,
-              );
-              final prevMsg = previousMessage != null
-                  ? _convertConversationMessageToMessage(previousMessage)
-                  : null;
-              final nextMsg = nextMessage != null
-                  ? _convertConversationMessageToMessage(nextMessage)
-                  : null;
+                  // Convert ConversationMessage to Message for UI compatibility
+                  final message = _convertConversationMessageToMessage(
+                    conversationMessage,
+                  );
+                  final prevMsg = previousMessage != null
+                      ? _convertConversationMessageToMessage(previousMessage)
+                      : null;
+                  final nextMsg = nextMessage != null
+                      ? _convertConversationMessageToMessage(nextMessage)
+                      : null;
 
-              return MessageBubble(
-                message: message,
-                previousMessage: prevMsg,
-                nextMessage: nextMsg,
-                currentUserId: currentUserId,
-                onReply: () => _replyToMessage(message),
-                onEdit: () => _editMessage(message),
-                onDelete: () => _deleteMessage(message),
-                onCopy: () => _copyMessage(message),
-              );
-            },
+                  return MessageBubble(
+                    message: message,
+                    previousMessage: prevMsg,
+                    nextMessage: nextMsg,
+                    currentUserId: currentUserId,
+                    onReply: () => _replyToMessage(message),
+                    onEdit: () => _editMessage(message),
+                    onDelete: () => _deleteMessage(message),
+                    onCopy: () => _copyMessage(message),
+                  );
+                },
+              ),
+              if (_showScrollToBottom)
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: FloatingActionButton.small(
+                    heroTag: 'scroll_to_bottom_conversation',
+                    onPressed: _scrollToBottom,
+                    child: const Icon(Icons.arrow_downward),
+                  ),
+                ),
+            ],
           );
         },
       );
@@ -244,28 +544,47 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
             return _buildEmptyState(context);
           }
 
-          return ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-            itemCount: messages.length,
-            itemBuilder: (context, index) {
-              final message = messages[index];
-              final previousMessage = index > 0 ? messages[index - 1] : null;
-              final nextMessage = index < messages.length - 1
-                  ? messages[index + 1]
-                  : null;
+          return Stack(
+            children: [
+              ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 16,
+                ),
+                itemCount: messages.length,
+                itemBuilder: (context, index) {
+                  final message = messages[index];
+                  final previousMessage = index > 0
+                      ? messages[index - 1]
+                      : null;
+                  final nextMessage = index < messages.length - 1
+                      ? messages[index + 1]
+                      : null;
 
-              return MessageBubble(
-                message: message,
-                previousMessage: previousMessage,
-                nextMessage: nextMessage,
-                currentUserId: currentUserId,
-                onReply: () => _replyToMessage(message),
-                onEdit: () => _editMessage(message),
-                onDelete: () => _deleteMessage(message),
-                onCopy: () => _copyMessage(message),
-              );
-            },
+                  return MessageBubble(
+                    message: message,
+                    previousMessage: previousMessage,
+                    nextMessage: nextMessage,
+                    currentUserId: currentUserId,
+                    onReply: () => _replyToMessage(message),
+                    onEdit: () => _editMessage(message),
+                    onDelete: () => _deleteMessage(message),
+                    onCopy: () => _copyMessage(message),
+                  );
+                },
+              ),
+              if (_showScrollToBottom)
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: FloatingActionButton.small(
+                    heroTag: 'scroll_to_bottom_chat',
+                    onPressed: _scrollToBottom,
+                    child: const Icon(Icons.arrow_downward),
+                  ),
+                ),
+            ],
           );
         },
       );
@@ -315,23 +634,73 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       // Use conversation details API for real message sending
       final conversationDetailsProvider = context
           .read<ConversationDetailsProvider>();
+      final chatProvider = context.read<ChatProvider>();
 
-      final success = await conversationDetailsProvider.sendMessage(
-        message: content.trim(),
+      // Create a temporary message with sending state
+      final tempMessageId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+      final tempMessage = Message(
+        id: tempMessageId,
+        chatId: widget.chat.id,
+        senderId:
+            context.read<AuthProvider?>()?.currentUser?.id.toString() ?? '',
+        senderName: 'You',
+        type: type,
+        content: content.trim(),
+        sentAt: DateTime.now(),
+        status: MessageStatus.sending,
+        isSending: true,
       );
 
-      if (success) {
-        _messageController.clear();
-      } else {
-        // Show error if message failed to send
+      // Add to chat provider temporarily
+      chatProvider.addTemporaryMessage(widget.chat.id, tempMessage);
+
+      _messageController.clear();
+
+      try {
+        Logger.info('📤 Sending message...');
+
+        final success = await conversationDetailsProvider.sendMessage(
+          message: content.trim(),
+        );
+
+        if (success) {
+          // Remove temp message and refresh will show real message
+          chatProvider.removeTemporaryMessage(widget.chat.id, tempMessageId);
+          Logger.info('✅ Message sent successfully');
+        } else {
+          // Mark message as failed
+          chatProvider.markMessageAsFailed(
+            widget.chat.id,
+            tempMessageId,
+            conversationDetailsProvider.sendMessageError ?? 'Send failed',
+          );
+
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                conversationDetailsProvider.sendMessageError ??
+                    'Failed to send message',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        Logger.error('❌ Error sending message', 'ChatConversationScreen', e);
+        chatProvider.markMessageAsFailed(
+          widget.chat.id,
+          tempMessageId,
+          e.toString(),
+        );
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              conversationDetailsProvider.sendMessageError ??
-                  'Failed to send message',
-            ),
+            content: Text('Error: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 3),
           ),
         );
       }

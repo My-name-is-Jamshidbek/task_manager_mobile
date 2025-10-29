@@ -135,25 +135,11 @@ class ConversationDetailsProvider extends ChangeNotifier {
       );
 
       if (success) {
-        // Update all messages as read in local state
-        final updatedMessages = _currentConversation!.messages.map((message) {
-          return ConversationMessage(
-            id: message.id,
-            body: message.body,
-            conversationId: message.conversationId,
-            isRead: true, // Mark as read
-            sender: message.sender,
-            createdAt: message.createdAt,
-            files: message.files,
-          );
-        }).toList();
+        final updatedMessages = _currentConversation!.messages
+            .map(_markConversationMessageAsRead)
+            .toList();
 
-        _currentConversation = ConversationDetails(
-          id: _currentConversation!.id,
-          type: _currentConversation!.type,
-          partner: _currentConversation!.partner,
-          messages: updatedMessages,
-        );
+        _setConversationMessages(updatedMessages);
 
         Logger.info('✅ Conversation marked as read successfully');
       }
@@ -170,6 +156,53 @@ class ConversationDetailsProvider extends ChangeNotifier {
     } finally {
       _isMarkingAsRead = false;
       notifyListeners();
+    }
+  }
+
+  /// Mark selected messages as read using the API
+  Future<bool> markMessagesAsRead(List<String> messageIds) async {
+    if (_currentConversation == null || messageIds.isEmpty) {
+      return false;
+    }
+
+    final numericIds = messageIds
+        .map((id) => int.tryParse(id))
+        .whereType<int>()
+        .toList();
+
+    if (numericIds.isEmpty) {
+      Logger.warning(
+        '⚠️ ConversationDetailsProvider: markMessagesAsRead - no numeric IDs',
+      );
+      return false;
+    }
+
+    try {
+      Logger.info('📖 Marking ${numericIds.length} messages as read via API');
+
+      final success = await _apiService.markMessagesAsRead(numericIds);
+
+      if (success) {
+        final idsSet = numericIds.toSet();
+        final updatedMessages = _currentConversation!.messages.map((message) {
+          if (idsSet.contains(message.id)) {
+            return _markConversationMessageAsRead(message);
+          }
+          return message;
+        }).toList();
+
+        _setConversationMessages(updatedMessages);
+        notifyListeners();
+      }
+
+      return success;
+    } catch (e) {
+      Logger.error(
+        '❌ Failed to mark specific messages as read',
+        'ConversationDetailsProvider',
+        e,
+      );
+      return false;
     }
   }
 
@@ -254,17 +287,50 @@ class ConversationDetailsProvider extends ChangeNotifier {
       _currentConversation!.messages,
     )..add(conversationMessage);
 
-    _currentConversation = ConversationDetails(
-      id: _currentConversation!.id,
-      type: _currentConversation!.type,
-      partner: _currentConversation!.partner,
-      messages: updatedMessages,
-    );
+    _setConversationMessages(updatedMessages);
 
     Logger.info(
       'Merged realtime message ${conversationMessage.id} into conversation ${_currentConversation!.id}',
     );
 
+    notifyListeners();
+  }
+
+  /// Handle message read websocket events for this conversation
+  void handleMessagesRead(List<String> messageIds, int readerId) {
+    if (_currentConversation == null || messageIds.isEmpty) {
+      return;
+    }
+
+    final numericIds = messageIds
+        .map((id) => int.tryParse(id))
+        .whereType<int>()
+        .toSet();
+
+    if (numericIds.isEmpty) {
+      Logger.warning(
+        '⚠️ ConversationDetailsProvider: handleMessagesRead - no numeric IDs',
+      );
+      return;
+    }
+
+    bool changed = false;
+    final updatedMessages = _currentConversation!.messages.map((message) {
+      if (numericIds.contains(message.id) && !message.isRead) {
+        changed = true;
+        return _markConversationMessageAsRead(message);
+      }
+      return message;
+    }).toList();
+
+    if (!changed) {
+      return;
+    }
+
+    _setConversationMessages(updatedMessages);
+    Logger.info(
+      '✅ Applied message read event for ${numericIds.length} messages',
+    );
     notifyListeners();
   }
 
@@ -331,5 +397,36 @@ class ConversationDetailsProvider extends ChangeNotifier {
   void dispose() {
     _apiService.dispose();
     super.dispose();
+  }
+
+  void _setConversationMessages(List<ConversationMessage> messages) {
+    if (_currentConversation == null) {
+      return;
+    }
+
+    _currentConversation = ConversationDetails(
+      id: _currentConversation!.id,
+      type: _currentConversation!.type,
+      partner: _currentConversation!.partner,
+      messages: messages,
+    );
+  }
+
+  ConversationMessage _markConversationMessageAsRead(
+    ConversationMessage message,
+  ) {
+    if (message.isRead) {
+      return message;
+    }
+
+    return ConversationMessage(
+      id: message.id,
+      body: message.body,
+      conversationId: message.conversationId,
+      isRead: true,
+      sender: message.sender,
+      createdAt: message.createdAt,
+      files: message.files,
+    );
   }
 }
