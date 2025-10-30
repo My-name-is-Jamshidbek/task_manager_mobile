@@ -17,6 +17,8 @@ import '../../widgets/task_list_item.dart';
 import '../../utils/task_action_helper.dart';
 import 'create_task_screen.dart';
 import 'edit_task_screen.dart';
+import 'task_completion_screen.dart';
+import 'task_rejection_screen.dart';
 
 class TaskDetailScreen extends StatefulWidget {
   final int taskId;
@@ -454,7 +456,56 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     TaskActionKind action,
   ) async {
     String? reason;
-    if (action.requiresReason) {
+    int? fileGroupId;
+
+    // Use specialized screen for task completion
+    if (action == TaskActionKind.complete) {
+      final task = provider.task;
+      if (task == null) return;
+
+      // Navigate to completion screen
+      final result = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (context) =>
+              TaskCompletionScreen(task: task, taskProvider: provider),
+        ),
+      );
+
+      // If screen returned true, refresh was successful
+      if (result == true && context.mounted) {
+        final successMessage = TaskActionHelper.buildSuccessMessage(
+          loc,
+          action,
+        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(successMessage)));
+      }
+      return;
+    } else if (action == TaskActionKind.reject) {
+      final task = provider.task;
+      if (task == null) return;
+
+      // Navigate to rejection screen
+      final result = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (context) =>
+              TaskRejectionScreen(task: task, taskProvider: provider),
+        ),
+      );
+
+      // If screen returned true, refresh was successful
+      if (result == true && context.mounted) {
+        final successMessage = TaskActionHelper.buildSuccessMessage(
+          loc,
+          action,
+        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(successMessage)));
+      }
+      return;
+    } else if (action.requiresReason) {
       reason = await TaskActionHelper.promptForReason(context, loc, action);
       if (reason == null) return;
     } else {
@@ -466,7 +517,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       if (!confirmed) return;
     }
 
-    final success = await provider.performAction(action, reason: reason);
+    final success = await provider.performAction(
+      action,
+      reason: reason,
+      fileGroupId: fileGroupId,
+    );
     if (!context.mounted) return;
     if (success) {
       final successMessage = TaskActionHelper.buildSuccessMessage(loc, action);

@@ -151,6 +151,25 @@
       "successMessage": "{action} muvaffaqiyatli bajarildi",
       "genericError": "Amalni bajarib bo'lmadi",
       "noAvailable": "Ushbu vazifa uchun amal mavjud emas"
+    },
+    "completion": {
+      "descriptionLabel": "Tugatish eslatmalari",
+      "descriptionHint": "Nima qilinganini, har qanday eslatmalar yoki yangilanishlarni tavsiflang",
+      "descriptionHelper": "Majburiy - Qanday ish bajarilganini tushuntiring",
+      "descriptionRequired": "Iltimos, tugatish eslatmalarini bering",
+      "filesLabel": "Ilova qilingan fayllar",
+      "filesHint": "Agar kerak bo'lsa, ushbu tugatishga fayllar yoki guruhni biriktiring",
+      "addFiles": "Fayllar yoki ilova qilingan fayllarni qo'shish",
+      "filesSelected": "Ilova qilingan fayl tanlandi",
+      "removeFiles": "Ilova qilingan faylni olib tashlash"
+    },
+    "rejection": {
+      "reasonLabel": "Rad etish sababi",
+      "reasonHint": "Bu vazifa nima uchun rad etilmoqda, tushuntiring",
+      "reasonHelper": "Majburiy - Rad etish haqida tafsilotlarni bering",
+      "reasonRequired": "Iltimos, rad etish sababini ko'rsating",
+      "filesLabel": "Ilova qilingan fayllar",
+      "filesHint": "Agar kerak bo'lsa, ushbu rad etishga fayllar yoki guruhni biriktiring"
     }
   },
   "projects": {

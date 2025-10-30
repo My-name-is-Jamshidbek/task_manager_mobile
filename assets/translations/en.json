@@ -151,6 +151,25 @@
       "successMessage": "{action} successful",
       "genericError": "Couldn't perform the action",
       "noAvailable": "No actions available for this task"
+    },
+    "completion": {
+      "descriptionLabel": "Completion Notes",
+      "descriptionHint": "Describe what was completed, any notes or updates",
+      "descriptionHelper": "Required - Explain what work has been completed",
+      "descriptionRequired": "Please provide completion notes",
+      "filesLabel": "Attachments",
+      "filesHint": "Optionally attach files or group to this completion",
+      "addFiles": "Add Files or Attachments",
+      "filesSelected": "Attachment Selected",
+      "removeFiles": "Remove Attachment"
+    },
+    "rejection": {
+      "reasonLabel": "Rejection Reason",
+      "reasonHint": "Explain why this task is being rejected",
+      "reasonHelper": "Required - Provide details about the rejection",
+      "reasonRequired": "Please provide a rejection reason",
+      "filesLabel": "Attachments",
+      "filesHint": "Optionally attach files or group to this rejection"
     }
   },
   "projects": {

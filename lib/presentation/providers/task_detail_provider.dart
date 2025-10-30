@@ -80,7 +80,11 @@ class TaskDetailProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> performAction(TaskActionKind action, {String? reason}) async {
+  Future<bool> performAction(
+    TaskActionKind action, {
+    String? reason,
+    int? fileGroupId,
+  }) async {
     final currentTask = _task;
     if (currentTask == null || _actionInProgress) return false;
 
@@ -93,6 +97,7 @@ class TaskDetailProvider extends ChangeNotifier {
       taskId: currentTask.id,
       action: action,
       reason: reason,
+      fileGroupId: fileGroupId,
     );
 
     var success = false;

@@ -71,7 +71,12 @@ class TaskListItem extends StatelessWidget {
           color: isCompleted ? theme.colorScheme.onSurfaceVariant : null,
         ),
       ),
-      trailing: trailing,
+      trailing: trailing != null
+          ? SizedBox(
+              width: 120,
+              child: Align(alignment: Alignment.centerRight, child: trailing),
+            )
+          : null,
       subtitle: _buildSubtitle(
         theme: theme,
         description: description,

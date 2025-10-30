@@ -162,14 +162,24 @@ class TasksApiRemoteDataSource {
     required int taskId,
     required TaskActionKind action,
     String? reason,
+    int? fileGroupId,
   }) async {
     final endpoint = '${ApiConstants.tasks}/$taskId/${action.pathSegment}';
-    final body = (reason != null && reason.trim().isNotEmpty)
-        ? {'reason': reason.trim()}
-        : null;
+    final body = <String, dynamic>{};
+
+    if (reason != null && reason.trim().isNotEmpty) {
+      body['reason'] = reason.trim();
+      // Also add as 'description' for API compatibility (description field in payload)
+      body['description'] = reason.trim();
+    }
+
+    if (fileGroupId != null) {
+      body['file_group_id'] = fileGroupId;
+    }
+
     return _apiClient.post<ApiTask>(
       endpoint,
-      body: body,
+      body: body.isEmpty ? null : body,
       fromJson: (obj) {
         final map = (obj['data'] is Map<String, dynamic>)
             ? obj['data'] as Map<String, dynamic>

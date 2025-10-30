@@ -336,22 +336,25 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               ...tasks.map((task) {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: TaskListItem(
-                    task: task,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: TaskListItem(
+                      task: task,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      trailing: _taskTrailing(
+                        theme,
+                        loc,
+                        provider,
+                        task,
+                        currentUserId,
+                      ),
+                      showStatus: false,
+                      isCompleted: task.status?.id == 2,
+                      deadlineLabel: loc.translate('tasks.due'),
                     ),
-                    trailing: _taskTrailing(
-                      theme,
-                      loc,
-                      provider,
-                      task,
-                      currentUserId,
-                    ),
-                    showStatus: false,
-                    isCompleted: task.status?.id == 2,
-                    deadlineLabel: loc.translate('tasks.due'),
                   ),
                 );
               }),
