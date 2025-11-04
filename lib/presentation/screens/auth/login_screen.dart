@@ -10,6 +10,7 @@ import '../../widgets/password_field.dart';
 import '../../widgets/login_submit_button.dart';
 import '../../providers/auth_provider.dart';
 import 'sms_verification_screen.dart';
+import 'oauth_login_screen.dart';
 import '../../widgets/auth_app_bar.dart';
 
 /// Login Screen (Phone based for Uzbekistan) – Rewritten clean structure
@@ -381,6 +382,60 @@ class _LoginForm extends StatelessWidget {
                             await state._submit();
                             HapticFeedback.lightImpact();
                           },
+                  ),
+                  const SizedBox(height: 20),
+                  // Divider
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: theme.colorScheme.outlineVariant.withOpacity(
+                            0.5,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          loc.translate('auth.or'),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: theme.colorScheme.outlineVariant.withOpacity(
+                            0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // OAuth Login Button
+                  FilledButton.icon(
+                    onPressed: state._submitting
+                        ? null
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => OAuthLoginScreen(
+                                  onAuthSuccess: state.widget.onAuthSuccess,
+                                  onBackToTraditional: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                    icon: const Icon(Icons.security_rounded),
+                    label: Text(
+                      'Login with RANCH ID',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),

@@ -353,6 +353,121 @@ class AuthProvider extends ChangeNotifier {
       return ProfileUpdateResult(success: false, message: null, user: null);
     }
   }
+
+  // ============================================================================
+  // OAuth 2.0 Authentication Methods
+  // ============================================================================
+
+  /// Login with OAuth 2.0 (RANCH ID)
+  Future<bool> loginWithOAuth({
+    String? clientId,
+    required String redirectUrl,
+    List<String>? scopes,
+  }) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _authService.loginWithOAuth(
+        clientId: clientId,
+        redirectUrl: redirectUrl,
+        scopes: scopes,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        _currentUser = response.data!.user;
+        _isLoggedIn = true;
+        _setLoading(false);
+        notifyListeners();
+
+        // Register FCM token for new session
+        await FirebaseService().registerTokenWithBackend(
+          authToken: _authService.currentToken,
+        );
+
+        return true;
+      } else {
+        _setError(response.error ?? 'OAuth login failed');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError('OAuth login error: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  /// Handle OAuth callback (for custom flow)
+  Future<bool> handleOAuthCallback({
+    required String code,
+    String? state,
+    String? clientId,
+    String? clientSecret,
+    required String redirectUrl,
+  }) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _authService.handleOAuthCallback(
+        code: code,
+        state: state,
+        clientId: clientId,
+        clientSecret: clientSecret,
+        redirectUrl: redirectUrl,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        _currentUser = response.data!.user;
+        _isLoggedIn = true;
+        _setLoading(false);
+        notifyListeners();
+
+        await FirebaseService().registerTokenWithBackend(
+          authToken: _authService.currentToken,
+        );
+
+        return true;
+      } else {
+        _setError(response.error ?? 'OAuth callback handling failed');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError('OAuth callback error: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  /// Refresh OAuth token
+  Future<bool> refreshOAuthToken() async {
+    try {
+      return await _authService.refreshOAuthToken();
+    } catch (e) {
+      _setError('Failed to refresh OAuth token: $e');
+      return false;
+    }
+  }
+
+  /// Logout from OAuth
+  Future<void> logoutOAuth() async {
+    _setLoading(true);
+    try {
+      await _authService.logoutOAuth();
+      _currentUser = null;
+      _isLoggedIn = false;
+      _setLoading(false);
+      notifyListeners();
+    } catch (e) {
+      _setError('Logout failed: $e');
+      _setLoading(false);
+    }
+  }
+
+  /// Check if using OAuth authentication
+  bool get isOAuthAuthenticated => _authService.isOAuthAuthenticated;
 }
 
 // Helper class to return both success status and localized message

@@ -36,6 +36,29 @@
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+            
+            <!-- Intent filter for OAuth 2.0 callback deep link -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Custom scheme for OAuth callback: uz.amusoft.tms://oauth-callback -->
+                <data
+                    android:scheme="uz.amusoft.tms"
+                    android:host="oauth-callback" />
+            </intent-filter>
+            
+            <!-- Intent filter for https app links (if using web URL) -->
+            <intent-filter
+                android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="tms.amusoft.uz"
+                    android:pathPrefix="/oauth" />
+            </intent-filter>
         </activity>
 
         <!-- Firebase Messaging Service -->

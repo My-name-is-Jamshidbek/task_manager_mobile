@@ -52,5 +52,23 @@
 	</array>
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- OAuth 2.0 Custom Scheme for RANCH ID -->
+				<string>uz.amusoft.tms</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>OAuth2 Callback</string>
+		</dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<!-- Schemes for OAuth providers and browser apps -->
+		<string>https</string>
+		<string>http</string>
+	</array>
 </dict>
 </plist>

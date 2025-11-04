@@ -2,6 +2,14 @@ class ApiConstants {
   // Base URL for the API
   static const String baseUrl = 'https://tms.amusoft.uz/api';
 
+  // OAuth 2.0 Configuration
+  static const String oauthRedirectUrl = 'https://tms.amusoft.uz/auth/redirect';
+  static const String oauthTokenUrl = 'https://tms.amusoft.uz/oauth/token';
+  static const String oauthAuthorizeUrl =
+      'https://tms.amusoft.uz/oauth/authorize';
+  static const String ranchIdClientId =
+      'ranch-id'; // Update with actual client ID
+
   // API Endpoints
   static const String login = '/auth/login';
   static const String verify = '/auth/verify';
@@ -9,6 +17,12 @@ class ApiConstants {
   static const String register = '/auth/register';
   static const String logout = '/auth/logout';
   static const String refreshToken = '/auth/refresh';
+
+  // OAuth 2.0 Endpoints
+  static const String oauthAuthorize = '/oauth/authorize';
+  static const String oauthToken = '/oauth/token';
+  static const String oauthRevoke = '/oauth/revoke';
+  static const String oauthUserInfo = '/oauth/user';
 
   // Task endpoints
   static const String tasks = '/tasks';

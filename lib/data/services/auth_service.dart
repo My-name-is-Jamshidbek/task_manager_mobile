@@ -3,11 +3,13 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/api_constants.dart';
+import '../../core/constants/oauth_constants.dart';
 import '../../core/localization/localization_service.dart';
 import '../../core/services/firebase_service.dart';
 import '../../core/utils/logger.dart';
 import '../../core/utils/multilingual_message.dart';
 import '../models/auth_models.dart';
+import 'oauth2_service.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -794,6 +796,267 @@ class AuthService {
     await _storeSession(mockToken, mockUser);
 
     return ApiResponse.success(data: verifyResponse);
+  }
+
+  // ============================================================================
+  // OAuth 2.0 Authentication Methods (RANCH ID)
+  // ============================================================================
+
+  /// Login with OAuth 2.0 (RANCH ID)
+  Future<ApiResponse<LoginResponse>> loginWithOAuth({
+    String? clientId,
+    required String redirectUrl,
+    List<String>? scopes,
+  }) async {
+    Logger.info('🚀 AuthService: Starting OAuth 2.0 login flow (RANCH ID)');
+
+    try {
+      final oauth2Service = OAuth2Service();
+
+      // Initialize OAuth service
+      await oauth2Service.initialize();
+
+      // Start authorization flow
+      final success = await oauth2Service.startAuthorizationFlow(
+        clientId: clientId,
+        redirectUrl: redirectUrl,
+        scopes: scopes,
+      );
+
+      if (!success) {
+        Logger.warning('⚠️ AuthService: OAuth authorization failed');
+        return ApiResponse.error('OAuth authorization cancelled');
+      }
+
+      Logger.info('✅ AuthService: OAuth authorization successful');
+
+      // Get the session with user info
+      final session = oauth2Service.currentSession;
+      if (session == null) {
+        Logger.error(
+          '❌ AuthService: OAuth session not found',
+          'AuthService',
+          Exception('No OAuth session'),
+        );
+        return ApiResponse.error('OAuth session not found');
+      }
+
+      // Create User object from OAuth user info
+      final user = _createUserFromOAuthUserInfo(session.userInfo);
+
+      // Store session using the OAuth token
+      await _storeSession(session.accessToken, user);
+
+      Logger.info(
+        '✅ AuthService: OAuth login successful for user: ${user.name}',
+      );
+
+      // Create response matching existing LoginResponse format
+      final loginResponse = LoginResponse(
+        success: true,
+        message: const MultilingualMessage(
+          uzbek: 'OAuth orqali kirish muvaffaqiyatli',
+          russian: 'Успешный вход через OAuth',
+          english: 'OAuth login successful',
+        ),
+        token: session.accessToken,
+        user: user,
+      );
+
+      return ApiResponse.success(data: loginResponse);
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ AuthService: OAuth login exception',
+        'AuthService',
+        e,
+        stackTrace,
+      );
+      return ApiResponse.error('OAuth login failed: $e');
+    }
+  }
+
+  /// Handle OAuth authorization code callback (for custom flow)
+  Future<ApiResponse<LoginResponse>> handleOAuthCallback({
+    required String code,
+    String? state,
+    String? clientId,
+    String? clientSecret,
+    required String redirectUrl,
+  }) async {
+    Logger.info('🔄 AuthService: Handling OAuth callback');
+
+    try {
+      final oauth2Service = OAuth2Service();
+
+      // Handle the callback
+      final success = await oauth2Service.handleAuthorizationCodeCallback(
+        code,
+        state: state,
+        clientId: clientId,
+        clientSecret: clientSecret,
+        redirectUrl: redirectUrl,
+      );
+
+      if (!success) {
+        Logger.warning('⚠️ AuthService: OAuth callback handling failed');
+        return ApiResponse.error('OAuth callback handling failed');
+      }
+
+      // Get the session
+      final session = oauth2Service.currentSession;
+      if (session == null) {
+        return ApiResponse.error('OAuth session not found');
+      }
+
+      // Create User from OAuth info
+      final user = _createUserFromOAuthUserInfo(session.userInfo);
+
+      // Store session
+      await _storeSession(session.accessToken, user);
+
+      Logger.info('✅ AuthService: OAuth callback handled successfully');
+
+      final loginResponse = LoginResponse(
+        success: true,
+        message: const MultilingualMessage(
+          uzbek: 'OAuth orqali kirish muvaffaqiyatli',
+          russian: 'Успешный вход через OAuth',
+          english: 'OAuth login successful',
+        ),
+        token: session.accessToken,
+        user: user,
+      );
+
+      return ApiResponse.success(data: loginResponse);
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ AuthService: OAuth callback handling exception',
+        'AuthService',
+        e,
+        stackTrace,
+      );
+      return ApiResponse.error('OAuth callback handling failed: $e');
+    }
+  }
+
+  /// Refresh OAuth token
+  Future<bool> refreshOAuthToken() async {
+    Logger.info('🔄 AuthService: Refreshing OAuth token');
+
+    try {
+      final oauth2Service = OAuth2Service();
+      await oauth2Service.initialize();
+
+      final success = await oauth2Service.refreshToken();
+
+      if (success && oauth2Service.accessToken != null) {
+        // Update stored token
+        _currentToken = oauth2Service.accessToken;
+        _apiClient.setAuthToken(_currentToken!);
+
+        // Store in preferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_tokenKey, _currentToken!);
+
+        Logger.info('✅ AuthService: OAuth token refreshed successfully');
+        return true;
+      }
+
+      Logger.warning('⚠️ AuthService: OAuth token refresh failed');
+      return false;
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ AuthService: OAuth token refresh exception',
+        'AuthService',
+        e,
+        stackTrace,
+      );
+      return false;
+    }
+  }
+
+  /// Logout from OAuth session
+  Future<void> logoutOAuth() async {
+    Logger.info('🚪 AuthService: Logging out from OAuth');
+
+    try {
+      final oauth2Service = OAuth2Service();
+      await oauth2Service.logout();
+      Logger.info('✅ AuthService: OAuth logout successful');
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ AuthService: OAuth logout exception',
+        'AuthService',
+        e,
+        stackTrace,
+      );
+    } finally {
+      await clearSession();
+    }
+  }
+
+  /// Helper: Create User object from OAuth user info
+  User _createUserFromOAuthUserInfo(dynamic userInfo) {
+    Logger.info('👤 AuthService: Creating user from OAuth info');
+
+    try {
+      if (userInfo == null) {
+        Logger.warning(
+          '⚠️ AuthService: OAuth user info is null, creating default user',
+        );
+        return User(
+          id: 0,
+          name: 'OAuth User',
+          phone: '',
+          email: '',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+      }
+
+      // Parse user info from OAuth
+      final name = userInfo.name ?? userInfo.givenName ?? 'OAuth User';
+      final email = userInfo.email ?? '';
+      final avatar = userInfo.picture;
+      final phone = userInfo.sub ?? '';
+
+      Logger.info('👤 AuthService: Created user - Name: $name, Email: $email');
+
+      return User(
+        id: 0, // OAuth users might not have a numeric ID from our system
+        name: name,
+        phone: phone,
+        email: email,
+        avatar: avatar,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ AuthService: Failed to create user from OAuth info',
+        'AuthService',
+        e,
+        stackTrace,
+      );
+      return User(
+        id: 0,
+        name: 'OAuth User',
+        phone: '',
+        email: '',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }
+  }
+
+  /// Check if using OAuth authentication
+  bool get isOAuthAuthenticated {
+    // Check if current token looks like an OAuth token (implementation specific)
+    return _currentToken != null &&
+        (_currentToken!.startsWith(
+              'eyJ',
+            ) || // JWT tokens typically start with eyJ in base64
+            _currentToken!.length > 50); // OAuth tokens are usually long
   }
 }
 
