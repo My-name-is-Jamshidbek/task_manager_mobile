@@ -44,24 +44,15 @@ class DashboardRemoteDataSource {
   }
 
   Future<List<TaskStatusStat>> getTaskStatsByStatus() async {
-    final res = await _api.get<Map<String, dynamic>>(
+    final res = await _api.get<List<TaskStatusStat>>(
       ApiConstants.taskStatsByStatus,
+      fromJsonList: (json) => json
+          .map((e) => TaskStatusStat.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
     if (res.isSuccess && res.data != null) {
-      final data = res.data!['data'];
-      if (data is List) {
-        return data
-            .map((e) => TaskStatusStat.fromJson(e as Map<String, dynamic>))
-            .toList();
-      }
-      if (res.data is List) {
-        final list = (res.data as List)
-            .map((e) => TaskStatusStat.fromJson(e as Map<String, dynamic>))
-            .toList();
-        return list;
-      }
-      return const <TaskStatusStat>[];
+      return res.data!;
     }
     throw Exception(res.error ?? 'Failed to fetch task stats');
   }

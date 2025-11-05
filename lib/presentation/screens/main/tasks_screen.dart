@@ -273,53 +273,59 @@ class _TasksScreenState extends State<TasksScreen> {
                   ),
                 ),
               ),
-              SizedBox(
-                width: 220,
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+              Consumer<DashboardProvider>(
+                builder: (context, dashProvider, _) {
+                  return SizedBox(
+                    width: 220,
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int?>(
+                          value: _statusId,
+                          isDense: true,
+                          borderRadius: BorderRadius.circular(12),
+                          onChanged: (value) {
+                            setState(() => _statusId = value);
+                            final p = context.read<TasksApiProvider>();
+                            p.status = value;
+                            p.refresh();
+                          },
+                          items:
+                              <({int? val, String label})>[
+                                    (
+                                      val: null,
+                                      label: loc.translate(
+                                        'projects.filters.all',
+                                      ),
+                                    ),
+                                    ...dashProvider.taskStats.map(
+                                      (stat) => (
+                                        val: stat.statusId,
+                                        label: stat.label,
+                                      ),
+                                    ),
+                                  ]
+                                  .map(
+                                    (e) => DropdownMenuItem<int?>(
+                                      value: e.val,
+                                      child: Text(e.label),
+                                    ),
+                                  )
+                                  .toList(),
+                        ),
+                      ),
                     ),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<int?>(
-                      value: _statusId,
-                      isDense: true,
-                      borderRadius: BorderRadius.circular(12),
-                      onChanged: (value) {
-                        setState(() => _statusId = value);
-                        final p = context.read<TasksApiProvider>();
-                        p.status = value;
-                        p.refresh();
-                      },
-                      items:
-                          <({int? val, String label})>[
-                                (
-                                  val: null,
-                                  label: loc.translate('projects.filters.all'),
-                                ),
-                                (val: 0, label: 'Accept'),
-                                (val: 1, label: 'In progress'),
-                                (val: 2, label: 'Completed'),
-                                (val: 3, label: 'Checked finished'),
-                                (val: 4, label: 'Rejected'),
-                                (val: 5, label: 'Rejected confirmed'),
-                              ]
-                              .map(
-                                (e) => DropdownMenuItem<int?>(
-                                  value: e.val,
-                                  child: Text(e.label),
-                                ),
-                              )
-                              .toList(),
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
             ],
           );
