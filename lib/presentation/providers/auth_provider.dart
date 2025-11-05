@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../../data/models/auth_models.dart';
 import '../../data/services/auth_service.dart';
 import '../../../core/services/firebase_service.dart';
+import '../../../core/utils/logger.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -357,6 +358,63 @@ class AuthProvider extends ChangeNotifier {
   // ============================================================================
   // OAuth 2.0 Authentication Methods
   // ============================================================================
+
+  /// Login with WebView OAuth Token (RANCH ID SSO)
+  /// Called when user authenticates through WebView and receives a token
+  Future<bool> loginWithToken(String token) async {
+    Logger.info('🔐 AuthProvider: Starting loginWithToken');
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      Logger.info('🔐 AuthProvider: Calling authService.loginWithToken');
+      final response = await _authService.loginWithToken(token);
+
+      Logger.info(
+        '🔐 AuthProvider: Response received: isSuccess=${response.isSuccess}, hasData=${response.data != null}',
+      );
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info('🔐 AuthProvider: Login successful, updating state');
+        _currentUser = response.data!.user;
+        _isLoggedIn = true;
+        _setLoading(false);
+        notifyListeners();
+
+        Logger.info('🔐 AuthProvider: State notified, isLoggedIn=$_isLoggedIn');
+
+        // Register FCM token for new session
+        Logger.info('🔐 AuthProvider: Registering FCM token');
+        await FirebaseService().registerTokenWithBackend(
+          authToken: _authService.currentToken,
+        );
+
+        Logger.info(
+          '🔐 AuthProvider: loginWithToken completed successfully, returning true',
+        );
+        return true;
+      } else {
+        Logger.error(
+          '❌ AuthProvider: Response failed or no data',
+          'AuthProvider',
+          Exception(response.error ?? 'Token authentication failed'),
+        );
+        _setError(response.error ?? 'Token authentication failed');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e, stackTrace) {
+      Logger.error(
+        '❌ AuthProvider: Token authentication error',
+        'AuthProvider',
+        e,
+        stackTrace,
+      );
+      _setError('Token authentication error: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
 
   /// Login with OAuth 2.0 (RANCH ID)
   Future<bool> loginWithOAuth({

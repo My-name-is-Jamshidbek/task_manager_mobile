@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/api_constants.dart';
-import '../../core/constants/oauth_constants.dart';
 import '../../core/localization/localization_service.dart';
 import '../../core/services/firebase_service.dart';
 import '../../core/utils/logger.dart';
@@ -802,80 +801,82 @@ class AuthService {
   // OAuth 2.0 Authentication Methods (RANCH ID)
   // ============================================================================
 
-  /// Login with OAuth 2.0 (RANCH ID)
-  Future<ApiResponse<LoginResponse>> loginWithOAuth({
-    String? clientId,
-    required String redirectUrl,
-    List<String>? scopes,
-  }) async {
-    Logger.info('🚀 AuthService: Starting OAuth 2.0 login flow (RANCH ID)');
+  /// Login with WebView OAuth Token (from SSO redirect)
+  /// Called when user authenticates through WebView and receives a token
+  Future<ApiResponse<LoginResponse>> loginWithToken(String token) async {
+    Logger.info('🔐 AuthService: Starting token-based login (WebView SSO)');
 
     try {
-      final oauth2Service = OAuth2Service();
-
-      // Initialize OAuth service
-      await oauth2Service.initialize();
-
-      // Start authorization flow
-      final success = await oauth2Service.startAuthorizationFlow(
-        clientId: clientId,
-        redirectUrl: redirectUrl,
-        scopes: scopes,
-      );
-
-      if (!success) {
-        Logger.warning('⚠️ AuthService: OAuth authorization failed');
-        return ApiResponse.error('OAuth authorization cancelled');
-      }
-
-      Logger.info('✅ AuthService: OAuth authorization successful');
-
-      // Get the session with user info
-      final session = oauth2Service.currentSession;
-      if (session == null) {
+      if (token.isEmpty) {
         Logger.error(
-          '❌ AuthService: OAuth session not found',
+          '❌ AuthService: Empty token provided',
           'AuthService',
-          Exception('No OAuth session'),
+          Exception('Empty token'),
         );
-        return ApiResponse.error('OAuth session not found');
+        return ApiResponse.error('Invalid authentication token');
       }
 
-      // Create User object from OAuth user info
-      final user = _createUserFromOAuthUserInfo(session.userInfo);
+      Logger.info('✅ AuthService: Token received and API client updated');
 
-      // Store session using the OAuth token
-      await _storeSession(session.accessToken, user);
-
-      Logger.info(
-        '✅ AuthService: OAuth login successful for user: ${user.name}',
+      // Create a basic user object - this will be fetched from the profile endpoint
+      // For now, create a placeholder until the user profile is loaded
+      final user = User(
+        id: 0,
+        name: 'User',
+        email: '',
+        phone: '',
+        avatar: null,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
 
-      // Create response matching existing LoginResponse format
+      // Store session with the token and user
+      await _storeSession(token, user);
+
+      Logger.info('✅ AuthService: Token-based login session created');
+
+      // Create response
       final loginResponse = LoginResponse(
         success: true,
         message: const MultilingualMessage(
-          uzbek: 'OAuth orqali kirish muvaffaqiyatli',
-          russian: 'Успешный вход через OAuth',
-          english: 'OAuth login successful',
+          uzbek: 'SSO orqali kirish muvaffaqiyatli',
+          russian: 'Успешный вход через SSO',
+          english: 'SSO login successful',
         ),
-        token: session.accessToken,
+        token: token,
         user: user,
       );
 
       return ApiResponse.success(data: loginResponse);
     } catch (e, stackTrace) {
       Logger.error(
-        '❌ AuthService: OAuth login exception',
+        '❌ AuthService: Token-based login exception',
         'AuthService',
         e,
         stackTrace,
       );
-      return ApiResponse.error('OAuth login failed: $e');
+      return ApiResponse.error('Token-based login failed: $e');
     }
   }
 
-  /// Handle OAuth authorization code callback (for custom flow)
+  /// Login with OAuth 2.0 (RANCH ID)
+  /// DEPRECATED: Use loginWithToken() instead
+  /// This method is kept for backwards compatibility but should not be used
+  Future<ApiResponse<LoginResponse>> loginWithOAuth({
+    String? clientId,
+    required String redirectUrl,
+    List<String>? scopes,
+  }) async {
+    Logger.warning(
+      '⚠️ AuthService: loginWithOAuth() is DEPRECATED. Use WebViewOAuthLoginScreen with loginWithToken() instead',
+    );
+    return ApiResponse.error(
+      'loginWithOAuth() is deprecated. Use WebView-based OAuth flow instead.',
+    );
+  }
+
+  /// DEPRECATED: Use loginWithToken() instead
+  /// This method is kept for backwards compatibility but should not be used
   Future<ApiResponse<LoginResponse>> handleOAuthCallback({
     required String code,
     String? state,
@@ -883,96 +884,21 @@ class AuthService {
     String? clientSecret,
     required String redirectUrl,
   }) async {
-    Logger.info('🔄 AuthService: Handling OAuth callback');
-
-    try {
-      final oauth2Service = OAuth2Service();
-
-      // Handle the callback
-      final success = await oauth2Service.handleAuthorizationCodeCallback(
-        code,
-        state: state,
-        clientId: clientId,
-        clientSecret: clientSecret,
-        redirectUrl: redirectUrl,
-      );
-
-      if (!success) {
-        Logger.warning('⚠️ AuthService: OAuth callback handling failed');
-        return ApiResponse.error('OAuth callback handling failed');
-      }
-
-      // Get the session
-      final session = oauth2Service.currentSession;
-      if (session == null) {
-        return ApiResponse.error('OAuth session not found');
-      }
-
-      // Create User from OAuth info
-      final user = _createUserFromOAuthUserInfo(session.userInfo);
-
-      // Store session
-      await _storeSession(session.accessToken, user);
-
-      Logger.info('✅ AuthService: OAuth callback handled successfully');
-
-      final loginResponse = LoginResponse(
-        success: true,
-        message: const MultilingualMessage(
-          uzbek: 'OAuth orqali kirish muvaffaqiyatli',
-          russian: 'Успешный вход через OAuth',
-          english: 'OAuth login successful',
-        ),
-        token: session.accessToken,
-        user: user,
-      );
-
-      return ApiResponse.success(data: loginResponse);
-    } catch (e, stackTrace) {
-      Logger.error(
-        '❌ AuthService: OAuth callback handling exception',
-        'AuthService',
-        e,
-        stackTrace,
-      );
-      return ApiResponse.error('OAuth callback handling failed: $e');
-    }
+    Logger.warning(
+      '⚠️ AuthService: handleOAuthCallback() is DEPRECATED. Use WebViewOAuthLoginScreen with loginWithToken() instead',
+    );
+    return ApiResponse.error(
+      'handleOAuthCallback() is deprecated. Use WebView-based OAuth flow instead.',
+    );
   }
 
-  /// Refresh OAuth token
+  /// DEPRECATED: OAuth tokens are now managed by WebViewOAuthService
+  /// This method is kept for backwards compatibility but should not be used
   Future<bool> refreshOAuthToken() async {
-    Logger.info('🔄 AuthService: Refreshing OAuth token');
-
-    try {
-      final oauth2Service = OAuth2Service();
-      await oauth2Service.initialize();
-
-      final success = await oauth2Service.refreshToken();
-
-      if (success && oauth2Service.accessToken != null) {
-        // Update stored token
-        _currentToken = oauth2Service.accessToken;
-        _apiClient.setAuthToken(_currentToken!);
-
-        // Store in preferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_tokenKey, _currentToken!);
-
-        Logger.info('✅ AuthService: OAuth token refreshed successfully');
-        return true;
-      }
-
-      Logger.warning('⚠️ AuthService: OAuth token refresh failed');
-      return false;
-    } catch (e, stackTrace) {
-      Logger.error(
-        '❌ AuthService: OAuth token refresh exception',
-        'AuthService',
-        e,
-        stackTrace,
-      );
-      return false;
-    }
+    Logger.warning(
+      '⚠️ AuthService: refreshOAuthToken() is DEPRECATED. OAuth tokens are managed by WebViewOAuthService',
+    );
+    return false;
   }
 
   /// Logout from OAuth session
@@ -992,60 +918,6 @@ class AuthService {
       );
     } finally {
       await clearSession();
-    }
-  }
-
-  /// Helper: Create User object from OAuth user info
-  User _createUserFromOAuthUserInfo(dynamic userInfo) {
-    Logger.info('👤 AuthService: Creating user from OAuth info');
-
-    try {
-      if (userInfo == null) {
-        Logger.warning(
-          '⚠️ AuthService: OAuth user info is null, creating default user',
-        );
-        return User(
-          id: 0,
-          name: 'OAuth User',
-          phone: '',
-          email: '',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-      }
-
-      // Parse user info from OAuth
-      final name = userInfo.name ?? userInfo.givenName ?? 'OAuth User';
-      final email = userInfo.email ?? '';
-      final avatar = userInfo.picture;
-      final phone = userInfo.sub ?? '';
-
-      Logger.info('👤 AuthService: Created user - Name: $name, Email: $email');
-
-      return User(
-        id: 0, // OAuth users might not have a numeric ID from our system
-        name: name,
-        phone: phone,
-        email: email,
-        avatar: avatar,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-    } catch (e, stackTrace) {
-      Logger.error(
-        '❌ AuthService: Failed to create user from OAuth info',
-        'AuthService',
-        e,
-        stackTrace,
-      );
-      return User(
-        id: 0,
-        name: 'OAuth User',
-        phone: '',
-        email: '',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
     }
   }
 

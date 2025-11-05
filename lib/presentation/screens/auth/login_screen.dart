@@ -10,7 +10,7 @@ import '../../widgets/password_field.dart';
 import '../../widgets/login_submit_button.dart';
 import '../../providers/auth_provider.dart';
 import 'sms_verification_screen.dart';
-import 'oauth_login_screen.dart';
+import 'webview_oauth_login_screen.dart';
 import '../../widgets/auth_app_bar.dart';
 
 /// Login Screen (Phone based for Uzbekistan) – Rewritten clean structure
@@ -420,7 +420,7 @@ class _LoginForm extends StatelessWidget {
                         : () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => OAuthLoginScreen(
+                                builder: (context) => WebViewOAuthLoginScreen(
                                   onAuthSuccess: state.widget.onAuthSuccess,
                                   onBackToTraditional: () {
                                     Navigator.of(context).pop();
