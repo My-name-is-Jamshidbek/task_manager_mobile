@@ -664,7 +664,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     ProjectStatusChip(project: project),
                 ],
               ),
-              if (isOwner) ...[
+              if (isOwner && project.status != 2) ...[
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 12,
