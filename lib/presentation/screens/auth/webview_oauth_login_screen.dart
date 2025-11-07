@@ -294,6 +294,7 @@ class _WebViewOAuthLoginScreenState extends State<WebViewOAuthLoginScreen> {
         appBar: AuthAppBar(
           titleKey: 'auth.login',
           showBackButton: true,
+          showActions: false,
           onBackPressed: () {
             if (widget.onBackToTraditional != null) {
               widget.onBackToTraditional!();
