@@ -9,6 +9,7 @@ class TaskAssigneesCard extends StatelessWidget {
   final bool isLoading;
   final String? error;
   final VoidCallback? onRefresh;
+  final void Function(WorkerUser worker)? onWorkerTap;
   final String? title;
   final bool showHeader;
   final double maxWidth;
@@ -20,6 +21,7 @@ class TaskAssigneesCard extends StatelessWidget {
     this.isLoading = false,
     this.error,
     this.onRefresh,
+    this.onWorkerTap,
     this.title,
     this.showHeader = true,
     this.maxWidth = 130,
@@ -132,121 +134,133 @@ class TaskAssigneesCard extends StatelessWidget {
                             ))
                       : null;
 
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant,
-                        width: 1,
+                  return GestureDetector(
+                    onTap: onWorkerTap != null
+                        ? () => onWorkerTap!(worker)
+                        : null,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        border: Border.all(
+                          color: theme.colorScheme.outlineVariant,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.all(12),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: maxWidth),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Avatar with initials
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  theme.colorScheme.primary.withOpacity(0.8),
-                                  theme.colorScheme.secondary.withOpacity(0.8),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Center(
-                              child: Text(
-                                worker.name.isNotEmpty
-                                    ? worker.name[0].toUpperCase()
-                                    : '?',
-                                style: theme.textTheme.headlineSmall?.copyWith(
-                                  color: theme.colorScheme.onPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          // Name
-                          Text(
-                            worker.name,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          // Status Badge
-                          if (worker.statusLabel != null)
+                      padding: const EdgeInsets.all(12),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: maxWidth),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Avatar with initials
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
+                              width: 56,
+                              height: 56,
                               decoration: BoxDecoration(
-                                color:
-                                    statusColor ??
-                                    theme.colorScheme.secondaryContainer,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    theme.colorScheme.primary.withOpacity(0.8),
+                                    theme.colorScheme.secondary.withOpacity(
+                                      0.8,
+                                    ),
+                                  ],
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text(
-                                worker.statusLabel!,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onSecondaryContainer,
-                                  fontWeight: FontWeight.w600,
+                              child: Center(
+                                child: Text(
+                                  worker.name.isNotEmpty
+                                      ? worker.name[0].toUpperCase()
+                                      : '?',
+                                  style: theme.textTheme.headlineSmall
+                                      ?.copyWith(
+                                        color: theme.colorScheme.onPrimary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
                               ),
                             ),
-                          const SizedBox(height: 6),
-                          // Department/Meta
-                          if (worker.departments.isNotEmpty)
+                            const SizedBox(height: 8),
+                            // Name
                             Text(
-                              worker.departments.map((d) => d.name).join(', '),
+                              worker.name,
                               textAlign: TextAlign.center,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          // Phone
-                          if (worker.phone != null && worker.phone!.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.phone,
-                                    size: 12,
-                                    color: theme.colorScheme.onSurfaceVariant,
+                            const SizedBox(height: 6),
+                            // Status Badge
+                            if (worker.statusLabel != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      statusColor ??
+                                      theme.colorScheme.secondaryContainer,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  worker.statusLabel!,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color:
+                                        theme.colorScheme.onSecondaryContainer,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      worker.phone!,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.labelSmall
-                                          ?.copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
+                                ),
+                              ),
+                            const SizedBox(height: 6),
+                            // Department/Meta
+                            if (worker.departments.isNotEmpty)
+                              Text(
+                                worker.departments
+                                    .map((d) => d.name)
+                                    .join(', '),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            // Phone
+                            if (worker.phone != null &&
+                                worker.phone!.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.phone,
+                                      size: 12,
+                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        worker.phone!,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );

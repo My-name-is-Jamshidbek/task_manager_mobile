@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/utils/logger.dart';
+import '../../core/api/api_client.dart';
 import '../../data/datasources/tasks_api_remote_datasource.dart';
 import '../../data/models/api_task_models.dart';
+import '../../data/models/task_worker_models.dart';
 
 class TasksApiProvider extends ChangeNotifier {
   final TasksApiRemoteDataSource _remote;
@@ -92,5 +94,12 @@ class TasksApiProvider extends ChangeNotifier {
     if (index == -1) return;
     _tasks = List<ApiTask>.from(_tasks)..[index] = task;
     notifyListeners();
+  }
+
+  Future<ApiResponse<TaskWorkerDetail>> getTaskWorkerDetail({
+    required int taskId,
+    required int workerId,
+  }) async {
+    return _remote.getTaskWorkerDetail(taskId: taskId, workerId: workerId);
   }
 }

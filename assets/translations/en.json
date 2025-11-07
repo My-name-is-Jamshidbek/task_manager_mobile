@@ -351,7 +351,8 @@
     "retry": "Retry",
     "close": "Close",
     "more": "More",
-    "details": "Details"
+    "details": "Details",
+    "unknown": "Unknown"
   },
   "errors": {
     "cannotOpenLink": "Could not open link",

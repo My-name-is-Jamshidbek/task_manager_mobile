@@ -46,7 +46,9 @@ class WorkerDepartment {
 }
 
 class WorkerUser {
-  final int id;
+  final int id; // User ID
+  final int?
+  taskWorkerId; // Task worker assignment ID (for detail screen navigation)
   final String name;
   final String? phone;
   final String? avatarUrl;
@@ -61,6 +63,7 @@ class WorkerUser {
 
   const WorkerUser({
     required this.id,
+    this.taskWorkerId,
     required this.name,
     this.phone,
     this.avatarUrl,
@@ -83,6 +86,8 @@ class WorkerUser {
 
     return WorkerUser(
       id: userObj['id'] as int? ?? 0,
+      taskWorkerId:
+          json['id'] as int?, // Top-level id is the task worker assignment id
       name: userObj['name'] as String? ?? '',
       phone: userObj['phone'] as String?,
       avatarUrl: userObj['avatar_url'] as String?,

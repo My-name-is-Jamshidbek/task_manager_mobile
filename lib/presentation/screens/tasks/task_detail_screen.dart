@@ -20,6 +20,7 @@ import 'create_task_screen.dart';
 import 'edit_task_screen.dart';
 import 'task_completion_screen.dart';
 import 'task_rejection_screen.dart';
+import 'task_worker_detail_screen.dart';
 
 class TaskDetailScreen extends StatefulWidget {
   final int taskId;
@@ -938,6 +939,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     TaskDetailProvider provider,
     ApiTask task,
   ) {
+    // Use provider.workers which contains the workers fetched from API with task worker ID
     final workerUsers = provider.workers;
 
     return TaskAssigneesCard(
@@ -945,6 +947,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       isLoading: provider.isWorkersLoading,
       error: provider.workersError,
       onRefresh: provider.reloadWorkers,
+      onWorkerTap: (worker) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => TaskWorkerDetailScreen(
+              taskId: task.id,
+              // Use taskWorkerId if available, otherwise use user id
+              workerId: worker.taskWorkerId ?? worker.id,
+            ),
+          ),
+        );
+      },
       title: loc.translate('tasks.workers'),
       showHeader: true,
       getStatusColor: _getColorForStatus,
