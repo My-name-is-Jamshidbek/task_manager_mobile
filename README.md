@@ -362,15 +362,18 @@ See [pubspec.yaml](pubspec.yaml) for complete dependency list.
 
 ## 📚 Documentation
 
-Comprehensive documentation is available:
+All comprehensive documentation has been organized in the `/docs` folder:
 
-- [**App Flow Diagram**](APP_FLOW_DIAGRAM.md) - Complete application flow and user journey diagrams
-- [**Architecture Overview**](ARCHITECTURE.md) - System design and patterns
-- [**Theme System**](THEME_SYSTEM.md) - Complete theming guide
-- [**Firebase Setup**](FIREBASE_SETUP.md) - Firebase configuration
-- [**Widget Architecture**](WIDGET_ARCHITECTURE.md) - UI component system
-- [**Platform Versions**](PLATFORM_VERSIONS_SUMMARY.md) - Version management
-- [**Project Summary**](SUMMARY.md) - Complete feature overview
+- [**Documentation Rules**](docs/RULES.md) - Important guidelines for maintaining documentation
+- [**App Flow Diagram**](docs/APP_FLOW_DIAGRAM.md) - Complete application flow and user journey diagrams
+- [**Architecture Overview**](docs/ARCHITECTURE.md) - System design and patterns
+- [**Theme System**](docs/THEME_SYSTEM.md) - Complete theming guide
+- [**Firebase Setup**](docs/FIREBASE_SETUP.md) - Firebase configuration
+- [**Widget Architecture**](docs/WIDGET_ARCHITECTURE.md) - UI component system
+- [**Platform Versions**](docs/PLATFORM_VERSIONS_SUMMARY.md) - Version management
+- [**Project Summary**](docs/SUMMARY.md) - Complete feature overview
+
+**See [docs/](docs/) folder for all documentation.**
 
 ## 🤝 Contributing
 

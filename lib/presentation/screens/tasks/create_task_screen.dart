@@ -399,8 +399,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     const perPage = 100;
     var page = 1;
     var hasMore = true;
-    final auth = context.read<AuthProvider>();
-    final currentUserId = auth.currentUser?.id;
 
     while (hasMore && mounted) {
       final response = await _tasksRemote.getTasks(
@@ -418,13 +416,9 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       }
 
       final rawItems = response.data!;
+      // Only filter for parent tasks (no parentTaskId), include all tasks regardless of worker status
       final parentTasks = rawItems
           .where((task) => task.parentTaskId == null)
-          .where(
-            (task) => currentUserId == null
-                ? true
-                : task.workers.any((worker) => worker.id == currentUserId),
-          )
           .toList();
       results.addAll(parentTasks);
       hasMore = rawItems.length == perPage;
