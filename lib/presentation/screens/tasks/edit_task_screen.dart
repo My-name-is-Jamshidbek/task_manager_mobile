@@ -7,6 +7,7 @@ import '../../../data/models/api_task_models.dart';
 import '../../../data/models/worker_models.dart';
 import '../../providers/task_workers_provider.dart';
 import '../../widgets/file_group_attachments_card.dart';
+import '../../widgets/task_assignees_card.dart';
 import 'select_task_workers_screen.dart';
 
 class EditTaskScreen extends StatefulWidget {
@@ -197,120 +198,26 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   }
 
   Widget _buildWorkersSection(ThemeData theme, AppLocalizations loc) {
-    final workerChips = _assignedWorkers.isNotEmpty
-        ? _assignedWorkers.map((user) {
-            final segments = <String>[];
-            final phone = (user.phone ?? '').trim();
-            if (phone.isNotEmpty) {
-              segments.add(phone);
-            }
-            final deptNames = user.departments
-                .map((dept) => dept.name.trim())
-                .where((name) => name.isNotEmpty)
-                .toList();
-            if (deptNames.isNotEmpty) {
-              segments.add(deptNames.join(', '));
-            }
-            final label = user.name.trim().isNotEmpty ? user.name.trim() : '—';
-            final tooltip = segments.isEmpty ? label : segments.join(' • ');
-            return Tooltip(
-              message: tooltip,
-              child: Chip(
-                avatar: const Icon(Icons.person_outline, size: 16),
-                label: Text(label),
-              ),
-            );
-          }).toList()
-        : _taskSnapshot.workers.map((user) {
-            final segments = <String>[];
-            if ((user.phone ?? '').trim().isNotEmpty) {
-              segments.add(user.phone!.trim());
-            }
-            final label = user.name?.trim().isNotEmpty == true
-                ? user.name!.trim()
-                : '—';
-            final tooltip = segments.isEmpty ? label : segments.join(' • ');
-            return Tooltip(
-              message: tooltip,
-              child: Chip(
-                avatar: const Icon(Icons.person_outline, size: 16),
-                label: Text(label),
-              ),
-            );
-          }).toList();
-    final hasWorkers = workerChips.isNotEmpty;
-
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  loc.translate('tasks.workers'),
-                  style: theme.textTheme.titleMedium,
-                ),
-                const Spacer(),
-                IconButton(
-                  tooltip: loc.translate('common.refresh'),
-                  icon: const Icon(Icons.refresh),
-                  onPressed: _loadingWorkers ? null : _loadAssignedWorkers,
-                ),
-                TextButton.icon(
-                  onPressed: _openWorkerManager,
-                  icon: const Icon(Icons.group_outlined),
-                  label: Text(loc.translate('common.edit')),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (_loadingWorkers) ...[
-              const LinearProgressIndicator(minHeight: 2),
-              const SizedBox(height: 12),
-            ],
-            if (_workerError != null && !hasWorkers && !_loadingWorkers)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _workerError!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: _loadAssignedWorkers,
-                    icon: const Icon(Icons.refresh),
-                    label: Text(loc.translate('common.retry')),
-                  ),
-                ],
-              )
-            else if (!hasWorkers)
-              Text(
-                loc.translate('workers.noneAssigned'),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              )
-            else
-              Wrap(spacing: 10, runSpacing: 10, children: workerChips),
-            if (_workerError != null && hasWorkers)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  _workerError!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
-          ],
+    // Create a wrapper to handle the type mismatch and add edit button
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TaskAssigneesCard(
+          workers: _assignedWorkers,
+          isLoading: _loadingWorkers,
+          error: _workerError,
+          onRefresh: _loadAssignedWorkers,
+          title: loc.translate('tasks.workers'),
+          showHeader: true,
+          maxWidth: 150,
         ),
-      ),
+        const SizedBox(height: 12),
+        ElevatedButton.icon(
+          onPressed: _openWorkerManager,
+          icon: const Icon(Icons.group_outlined),
+          label: Text(loc.translate('common.edit')),
+        ),
+      ],
     );
   }
 

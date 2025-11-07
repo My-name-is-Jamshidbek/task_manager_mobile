@@ -13,6 +13,7 @@ import '../../../data/models/task_action.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/task_detail_provider.dart';
 import '../../widgets/file_group_attachments_card.dart';
+import '../../widgets/task_assignees_card.dart';
 import '../../widgets/task_list_item.dart';
 import '../../utils/task_action_helper.dart';
 import 'create_task_screen.dart';
@@ -26,13 +27,6 @@ class TaskDetailScreen extends StatefulWidget {
 
   @override
   State<TaskDetailScreen> createState() => _TaskDetailScreenState();
-}
-
-class _WorkerTileData {
-  final String name;
-  final String? phone;
-  final String? meta;
-  const _WorkerTileData({required this.name, this.phone, this.meta});
 }
 
 class _MetaInfo {
@@ -944,121 +938,16 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     TaskDetailProvider provider,
     ApiTask task,
   ) {
-    final isLoading = provider.isWorkersLoading;
-    final error = provider.workersError;
     final workerUsers = provider.workers;
-    final fallbackRefs = task.workers;
-    final hasAny = workerUsers.isNotEmpty || fallbackRefs.isNotEmpty;
 
-    final displayWorkers = workerUsers.isNotEmpty
-        ? workerUsers.map((w) {
-            final phone = (w.phone ?? '').trim();
-            final deptNames = w.departments
-                .map((d) => d.name.trim())
-                .where((name) => name.isNotEmpty)
-                .toList();
-            final meta = deptNames.isEmpty ? null : deptNames.join(', ');
-            return _WorkerTileData(
-              name: w.name.isNotEmpty ? w.name : '—',
-              phone: phone.isEmpty ? null : phone,
-              meta: meta,
-            );
-          }).toList()
-        : fallbackRefs.map((w) {
-            final name = (w.name ?? '').trim();
-            final contact = (w.phone ?? '').trim();
-            return _WorkerTileData(
-              name: name.isEmpty ? '—' : name,
-              phone: contact.isEmpty ? null : contact,
-            );
-          }).toList();
-
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  loc.translate('tasks.workers'),
-                  style: theme.textTheme.titleMedium,
-                ),
-                const Spacer(),
-                IconButton(
-                  tooltip: loc.translate('common.refresh'),
-                  icon: isLoading
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: theme.colorScheme.primary,
-                          ),
-                        )
-                      : const Icon(Icons.refresh),
-                  onPressed: isLoading ? null : provider.reloadWorkers,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (error != null)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    error,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: provider.reloadWorkers,
-                    icon: const Icon(Icons.refresh),
-                    label: Text(loc.translate('common.retry')),
-                  ),
-                ],
-              )
-            else if (hasAny)
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: displayWorkers.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final worker = displayWorkers[index];
-                  final subtitleLines = <String>[];
-                  if (worker.phone != null && worker.phone!.isNotEmpty) {
-                    subtitleLines.add(worker.phone!);
-                  }
-                  if (worker.meta != null && worker.meta!.isNotEmpty) {
-                    subtitleLines.add(worker.meta!);
-                  }
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(child: Icon(Icons.person)),
-                    title: Text(worker.name),
-                    subtitle: subtitleLines.isEmpty
-                        ? null
-                        : Text(subtitleLines.join('\n')),
-                  );
-                },
-              )
-            else
-              Text(
-                loc.translate('workers.noneAssigned'),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-          ],
-        ),
-      ),
+    return TaskAssigneesCard(
+      workers: workerUsers,
+      isLoading: provider.isWorkersLoading,
+      error: provider.workersError,
+      onRefresh: provider.reloadWorkers,
+      title: loc.translate('tasks.workers'),
+      showHeader: true,
+      getStatusColor: _getColorForStatus,
     );
   }
 
@@ -1067,6 +956,34 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     final currentUserId = auth?.currentUser?.id;
     if (currentUserId == null) return false;
     return task.creator?.id == currentUserId;
+  }
+
+  Color _getColorForStatus(String statusColor) {
+    final theme = Theme.of(context);
+    switch (statusColor.toLowerCase()) {
+      case 'primary':
+        return theme.colorScheme.primaryContainer;
+      case 'secondary':
+        return theme.colorScheme.secondaryContainer;
+      case 'tertiary':
+        return theme.colorScheme.tertiaryContainer;
+      case 'success':
+      case 'green':
+        return Colors.green.withOpacity(0.2);
+      case 'error':
+      case 'danger':
+      case 'red':
+        return Colors.red.withOpacity(0.2);
+      case 'warning':
+      case 'yellow':
+      case 'orange':
+        return Colors.orange.withOpacity(0.2);
+      case 'info':
+      case 'blue':
+        return Colors.blue.withOpacity(0.2);
+      default:
+        return theme.colorScheme.secondaryContainer;
+    }
   }
 
   Widget _subtasksSection(ThemeData theme, AppLocalizations loc, ApiTask task) {

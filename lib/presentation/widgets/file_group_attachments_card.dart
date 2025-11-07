@@ -74,6 +74,7 @@ class _FileGroupAttachmentsCardState extends State<FileGroupAttachmentsCard> {
   }
 
   Future<void> _bootstrap({bool initial = false, bool force = false}) async {
+    if (!mounted) return;
     final id = _currentGroupId;
     if (id != null) {
       await _provider.loadFileGroup(id);
@@ -82,7 +83,9 @@ class _FileGroupAttachmentsCardState extends State<FileGroupAttachmentsCard> {
     if ((initial && widget.autoCreateWhenMissing) || force) {
       await _ensureGroupExists(userRequested: !initial);
     } else {
-      _maybeEmitFiles(widget.initialFiles ?? const <FileAttachment>[]);
+      if (mounted) {
+        _maybeEmitFiles(widget.initialFiles ?? const <FileAttachment>[]);
+      }
     }
   }
 
@@ -193,7 +196,9 @@ class _FileGroupAttachmentsCardState extends State<FileGroupAttachmentsCard> {
                         onFileGroupCreated: (id) {
                           _currentGroupId = id;
                           widget.onFileGroupCreated?.call(id);
-                          _provider.loadFileGroup(id);
+                          if (mounted) {
+                            _provider.loadFileGroup(id);
+                          }
                         },
                         onFilesUpdated: (files) =>
                             _maybeEmitFiles(List<FileAttachment>.from(files)),
@@ -208,6 +213,7 @@ class _FileGroupAttachmentsCardState extends State<FileGroupAttachmentsCard> {
       },
     );
 
+    // Check mounted status before accessing provider after modal closes
     if (mounted && _currentGroupId != null) {
       await _provider.loadFileGroup(_currentGroupId!);
     }

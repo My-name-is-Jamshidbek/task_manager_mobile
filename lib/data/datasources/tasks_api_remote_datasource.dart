@@ -194,7 +194,14 @@ class TasksApiRemoteDataSource {
     final endpoint = '${ApiConstants.tasks}/$taskId/workers';
     return _apiClient.get<List<WorkerUser>>(
       endpoint,
-      fromJson: (obj) => _parseWorkerList(obj),
+      fromJson: (obj) {
+        // Handle new API response: {task_id, total, workers: [...]}
+        final workers = obj['workers'] as List<dynamic>? ?? [];
+        return workers
+            .whereType<Map<String, dynamic>>()
+            .map(WorkerUser.fromJson)
+            .toList();
+      },
       fromJsonList: (list) => _parseWorkerList(list),
     );
   }
