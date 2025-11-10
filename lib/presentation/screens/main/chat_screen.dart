@@ -74,7 +74,6 @@ class _ChatScreenState extends State<ChatScreen>
           ),
         ],
       ),
-      floatingActionButton: _buildFloatingActionButton(context, loc, theme),
     );
   }
 
@@ -116,6 +115,7 @@ class _ChatScreenState extends State<ChatScreen>
       ),
       child: TabBar(
         controller: _tabController,
+        isScrollable: true, // This will fix the overflow issue
         tabs: [
           Tab(
             child: Row(
@@ -533,22 +533,6 @@ class _ChatScreenState extends State<ChatScreen>
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildFloatingActionButton(
-    BuildContext context,
-    AppLocalizations loc,
-    ThemeData theme,
-  ) {
-    return FloatingActionButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CreateChatScreen()),
-        );
-      },
-      child: const Icon(Icons.chat),
     );
   }
 

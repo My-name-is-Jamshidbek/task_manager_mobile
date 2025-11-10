@@ -75,7 +75,8 @@
     "resendCode": "Отправить код повторно",
     "codeSentTo": "Код отправлен на",
     "invalidCode": "Неверный код",
-    "smsVerificationRequired": "Пожалуйста, завершите SMS подтверждение для сохранения входа"
+    "smsVerificationRequired": "Пожалуйста, завершите SMS подтверждение для сохранения входа",
+    "or": "Или"
   },
   "tasks": {
     "title": "Задачи",
@@ -171,6 +172,15 @@
       "filesLabel": "Вложения",
       "filesHint": "При необходимости прикрепите файлы или группу к этому отклонению"
     }
+  },
+  "api_statuses": {
+    "Pending": "В ожидании",
+    "Accept": "Принято",
+    "Rework": "На доработке",
+    "Completed": "Завершено",
+    "Checked finished": "Проверено",
+    "Rejected": "Отклонено",
+    "Rejected confirmed": "Отклонено (подтверждено)"
   },
   "projects": {
     "title": "Проекты",

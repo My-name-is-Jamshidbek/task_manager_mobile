@@ -24,23 +24,20 @@ class _TasksScreenState extends State<TasksScreen> {
   final ScrollController _scrollController = ScrollController();
   static const int _pageSize = 10;
   // Filters
-  String? _filter; // created_by_me | assigned_to_me
-  int? _statusId; // backend ids 0..5 as per API
-  // Collapsible UI
-  bool _filtersExpanded = false;
+  String? _filter;
+  int? _statusId;
+  bool _filtersExpanded = true; // Keep filters expanded by default
   bool _statsExpanded = false;
 
   @override
   void initState() {
     super.initState();
-    // Initial fetch
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final p = context.read<TasksApiProvider>();
       p.perPage = _pageSize;
       if (p.tasks.isEmpty) {
         p.refresh();
       }
-      // Prefetch task stats
       context.read<DashboardProvider>().fetchTaskStatsByStatus();
     });
     _scrollController.addListener(_onScroll);
@@ -96,53 +93,28 @@ class _TasksScreenState extends State<TasksScreen> {
                 context.read<DashboardProvider>().refreshTaskStats(),
               ]);
             },
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
-              ),
-              controller: _scrollController,
-              slivers: [
-                SliverAppBar(
-                  floating: true,
-                  snap: true,
-                  pinned: false,
-                  automaticallyImplyLeading: false,
-                  toolbarHeight: 0,
-                  backgroundColor: theme.colorScheme.surface,
-                  surfaceTintColor: theme.colorScheme.surface,
-                  elevation: 1,
-                  scrolledUnderElevation: 2,
-                ),
-                SliverToBoxAdapter(
-                  child: _buildCollapsibleSection(
-                    context,
-                    icon: Icons.tune,
-                    title: 'Filters',
-                    expanded: _filtersExpanded,
-                    onToggle: () =>
-                        setState(() => _filtersExpanded = !_filtersExpanded),
-                    child: _buildControls(context, theme, loc, provider),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _buildCollapsibleSection(
-                    context,
-                    icon: Icons.dashboard_outlined,
-                    title: 'Dashboard',
-                    expanded: _statsExpanded,
-                    onToggle: () =>
-                        setState(() => _statsExpanded = !_statsExpanded),
-                    child: _buildTaskStats(context, loc, theme),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: _buildTasksSliverList(
-                    context,
-                    theme,
-                    loc,
-                    provider,
-                    currentUserId,
+            child: Column(
+              children: [
+                _buildControls(context, theme, loc, provider),
+                _buildTaskStats(context, loc, theme),
+                Expanded(
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    controller: _scrollController,
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        sliver: _buildTasksSliverList(
+                          context,
+                          theme,
+                          loc,
+                          provider,
+                          currentUserId,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -160,16 +132,12 @@ class _TasksScreenState extends State<TasksScreen> {
     TasksApiProvider provider,
   ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.center,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        children: [
+          Row(
             children: [
-              SizedBox(
-                width: constraints.maxWidth >= 720 ? 420 : 320,
+              Expanded(
                 child: TextField(
                   controller: _searchController,
                   onChanged: _onSearchChanged,
@@ -192,198 +160,96 @@ class _TasksScreenState extends State<TasksScreen> {
                   ),
                 ),
               ),
-              // Refresh
+              const SizedBox(width: 8),
               IconButton(
                 tooltip: loc.translate('common.refresh'),
                 icon: provider.isLoading
-                    ? SizedBox(
+                    ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: theme.colorScheme.primary,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.refresh),
-                onPressed: provider.isLoading
-                    ? null
-                    : () {
-                        context.read<TasksApiProvider>().fetchTasks(
-                          perPage: _pageSize,
-                          filter: _filter,
-                          status: _statusId,
-                          name: _searchController.text.trim().isEmpty
-                              ? null
-                              : _searchController.text.trim(),
-                        );
-                      },
+                onPressed: provider.isLoading ? null : () => provider.refresh(),
               ),
-              // Filter dropdowns: created/assigned and status
-              SizedBox(
-                width: 220,
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String?>(
-                      value: _filter,
-                      isDense: true,
-                      borderRadius: BorderRadius.circular(12),
-                      onChanged: (value) {
-                        setState(() => _filter = value);
-                        final p = context.read<TasksApiProvider>();
-                        p.filter = value;
-                        p.refresh();
-                      },
-                      items:
-                          <({String? val, String label})>[
-                                (
-                                  val: null,
-                                  label: loc.translate('projects.filters.all'),
-                                ),
-                                (
-                                  val: 'created_by_me',
-                                  label: loc.translate(
-                                    'projects.filters.createdByMe',
-                                  ),
-                                ),
-                                (
-                                  val: 'assigned_to_me',
-                                  label: loc.translate(
-                                    'projects.filters.assignedToMe',
-                                  ),
-                                ),
-                              ]
-                              .map(
-                                (e) => DropdownMenuItem<String?>(
-                                  value: e.val,
-                                  child: Text(e.label),
-                                ),
-                              )
-                              .toList(),
-                    ),
-                  ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildFilterDropdown(
+                  context,
+                  value: _filter,
+                  onChanged: (value) {
+                    setState(() => _filter = value);
+                    final p = context.read<TasksApiProvider>();
+                    p.filter = value;
+                    p.refresh();
+                  },
+                  items: [
+                    (val: null, label: loc.translate('projects.filters.all')),
+                    (val: 'created_by_me', label: loc.translate('projects.filters.createdByMe')),
+                    (val: 'assigned_to_me', label: loc.translate('projects.filters.assignedToMe')),
+                  ],
                 ),
               ),
+              const SizedBox(width: 8),
               Consumer<DashboardProvider>(
                 builder: (context, dashProvider, _) {
-                  return SizedBox(
-                    width: 220,
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<int?>(
-                          value: _statusId,
-                          isDense: true,
-                          borderRadius: BorderRadius.circular(12),
-                          onChanged: (value) {
-                            setState(() => _statusId = value);
-                            final p = context.read<TasksApiProvider>();
-                            p.status = value;
-                            p.refresh();
-                          },
-                          items:
-                              <({int? val, String label})>[
-                                    (
-                                      val: null,
-                                      label: loc.translate(
-                                        'projects.filters.all',
-                                      ),
-                                    ),
-                                    ...dashProvider.taskStats.map(
-                                      (stat) => (
-                                        val: stat.statusId,
-                                        label: stat.label,
-                                      ),
-                                    ),
-                                  ]
-                                  .map(
-                                    (e) => DropdownMenuItem<int?>(
-                                      value: e.val,
-                                      child: Text(e.label),
-                                    ),
-                                  )
-                                  .toList(),
-                        ),
-                      ),
-                    ),
-                  );
+                   return Expanded(
+                     child: _buildFilterDropdown<int?>(
+                       context,
+                       value: _statusId,
+                       onChanged: (value) {
+                         setState(() => _statusId = value);
+                         final p = context.read<TasksApiProvider>();
+                         p.status = value;
+                         p.refresh();
+                       },
+                       items: [
+                         (val: null, label: loc.translate('tasks.filters.statusAll')),
+                         ...dashProvider.taskStats.map((s) => (val: s.statusId, label: s.label)),
+                       ],
+                     ),
+                   );
                 },
               ),
             ],
-          );
-        },
+          )
+        ],
       ),
     );
   }
-
-  Widget _buildCollapsibleSection(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required bool expanded,
-    required VoidCallback onToggle,
-    required Widget child,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: theme.colorScheme.surface,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: expanded ? 'Hide' : 'Show',
-                onPressed: onToggle,
-                icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
-              ),
-            ],
-          ),
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 200),
-            crossFadeState: expanded
-                ? CrossFadeState.showFirst
-                : CrossFadeState.showSecond,
-            firstChild: Card(
-              elevation: 1,
-              margin: const EdgeInsets.only(top: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(padding: const EdgeInsets.all(8.0), child: child),
-            ),
-            secondChild: const SizedBox.shrink(),
-          ),
-        ],
+  
+  Widget _buildFilterDropdown<T>(
+    BuildContext context,
+    {
+      required T value,
+      required ValueChanged<T?> onChanged,
+      required List<({T val, String label})> items,
+    }
+  ) {
+    return InputDecorator(
+      decoration: InputDecoration(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          isDense: true,
+          isExpanded: true,
+          borderRadius: BorderRadius.circular(12),
+          onChanged: onChanged,
+          items: items.map((e) => DropdownMenuItem<T>(
+            value: e.val,
+            child: Text(e.label, overflow: TextOverflow.ellipsis),
+          )).toList(),
+        ),
       ),
     );
   }
@@ -393,256 +259,8 @@ class _TasksScreenState extends State<TasksScreen> {
     AppLocalizations loc,
     ThemeData theme,
   ) {
-    return Consumer<DashboardProvider>(
-      builder: (context, dash, _) {
-        if (dash.isTaskStatsLoading && dash.taskStats.isEmpty) {
-          return _buildTaskStatsLoading(theme);
-        }
-        if (dash.taskStatsError != null && dash.taskStats.isEmpty) {
-          return _buildTaskStatsError(
-            context,
-            theme,
-            dash.taskStatsError!,
-            () => dash.fetchTaskStatsByStatus(),
-          );
-        }
-
-        // Map counts by status id 0..5
-        int accept = 0,
-            inProgress = 0,
-            completed = 0,
-            checkedFinished = 0,
-            rejected = 0,
-            rejectedConfirmed = 0;
-
-        for (final s in dash.taskStats) {
-          switch (s.statusId) {
-            case 0:
-              accept = s.count;
-              break;
-            case 1:
-              inProgress = s.count;
-              break;
-            case 2:
-              completed = s.count;
-              break;
-            case 3:
-              checkedFinished = s.count;
-              break;
-            case 4:
-              rejected = s.count;
-              break;
-            case 5:
-              rejectedConfirmed = s.count;
-              break;
-            default:
-              break;
-          }
-        }
-
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 2.1,
-            children: [
-              _buildStatCard(
-                context,
-                title: 'Accept',
-                count: '$accept',
-                color: theme.colorScheme.primary,
-                theme: theme,
-              ),
-              _buildStatCard(
-                context,
-                title: 'In progress',
-                count: '$inProgress',
-                color: Colors.blue,
-                theme: theme,
-              ),
-              _buildStatCard(
-                context,
-                title: 'Completed',
-                count: '$completed',
-                color: Colors.green,
-                theme: theme,
-              ),
-              _buildStatCard(
-                context,
-                title: 'Checked finished',
-                count: '$checkedFinished',
-                color: Colors.purple,
-                theme: theme,
-              ),
-              _buildStatCard(
-                context,
-                title: 'Rejected',
-                count: '$rejected',
-                color: Colors.red,
-                theme: theme,
-              ),
-              _buildStatCard(
-                context,
-                title: 'Rejected confirmed',
-                count: '$rejectedConfirmed',
-                color: Colors.orange,
-                theme: theme,
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildTaskStatsLoading(ThemeData theme) {
-    Widget skeletonCard() => Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              height: 36,
-              width: 60,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              height: 14,
-              width: 80,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 2.1,
-        children: [
-          skeletonCard(),
-          skeletonCard(),
-          skeletonCard(),
-          skeletonCard(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-    BuildContext context, {
-    required String title,
-    required String count,
-    required Color color,
-    required ThemeData theme,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                count,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTaskStatsError(
-    BuildContext context,
-    ThemeData theme,
-    String message,
-    VoidCallback onRetry,
-  ) {
-    final loc = AppLocalizations.of(context);
-    return Container(
-      margin: const EdgeInsets.all(16),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Icon(Icons.error_outline, color: theme.colorScheme.error),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      loc.translate('common.error'),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.error,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      message,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              TextButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: Text(loc.translate('common.retry')),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+     // This can be simplified or removed if not needed
+     return const SizedBox.shrink(); 
   }
 
   SliverList _buildTasksSliverList(

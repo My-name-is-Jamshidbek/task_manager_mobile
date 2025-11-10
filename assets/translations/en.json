@@ -75,7 +75,8 @@
     "resendCode": "Resend Code",
     "codeSentTo": "Code sent to",
     "invalidCode": "Invalid code",
-    "smsVerificationRequired": "Please complete SMS verification to save your login"
+    "smsVerificationRequired": "Please complete SMS verification to save your login",
+    "or": "Or"
   },
   "tasks": {
     "title": "Tasks",
@@ -171,6 +172,15 @@
       "filesLabel": "Attachments",
       "filesHint": "Optionally attach files or group to this rejection"
     }
+  },
+  "api_statuses": {
+    "Pending": "Pending",
+    "Accept": "Accept",
+    "Rework": "Rework",
+    "Completed": "Completed",
+    "Checked finished": "Checked finished",
+    "Rejected": "Rejected",
+    "Rejected confirmed": "Rejected confirmed"
   },
   "projects": {
     "title": "Projects",
@@ -473,34 +483,34 @@
     "copy": "Copy",
     "edit": "Edit",
     "markAsRead": "Mark as read",
-    "markAsUnread": "Mark as unread",
-    "attachment": "Attachment",
-    "camera": "Camera",
-    "gallery": "Gallery",
-    "document": "Document",
-    "audio": "Audio",
-    "video": "Video",
-    "location": "Location",
-    "contact": "Contact",
-    "deliveryStatus": {
-      "sent": "Sent",
-      "delivered": "Delivered",
-      "read": "Read"
+    `markAsUnread`: `Mark as unread`,
+    `attachment`: `Attachment`,
+    `camera`: `Camera`,
+    `gallery`: `Gallery`,
+    `document`: `Document`,
+    `audio`: `Audio`,
+    `video`: `Video`,
+    `location`: `Location`,
+    `contact`: `Contact`,
+    `deliveryStatus`: {
+      `sent`: `Sent`,
+      `delivered`: `Delivered`,
+      `read`: `Read`
     },
-    "messageTypes": {
-      "text": "Text",
-      "image": "Image",
-      "file": "File",
-      "audio": "Audio",
-      "video": "Video"
+    `messageTypes`: {
+      `text`: `Text`,
+      `image`: `Image`,
+      `file`: `File`,
+      `audio`: `Audio`,
+      `video`: `Video`
     },
-    "errors": {
-      "loadChats": "Failed to load chats",
-      "loadMessages": "Failed to load messages",
-      "sendMessage": "Failed to send message",
-      "createChat": "Failed to create chat",
-      "deleteChat": "Failed to delete chat",
-      "networkError": "Network error. Check your connection."
+    `errors`: {
+      `loadChats`: `Failed to load chats`,
+      `loadMessages`: `Failed to load messages`,
+      `sendMessage`: `Failed to send message`,
+      `createChat`: `Failed to create chat`,
+      `deleteChat`: `Failed to delete chat`,
+      `networkError`: `Network error. Check your connection.`
     }
   }
 }

@@ -75,7 +75,8 @@
     "resendCode": "Kodni qayta yuborish",
     "codeSentTo": "Kod yuborildi",
     "invalidCode": "Noto'g'ri kod",
-    "smsVerificationRequired": "Kirishni saqlash uchun SMS tasdiqlashni yakunlang"
+    "smsVerificationRequired": "Kirishni saqlash uchun SMS tasdiqlashni yakunlang",
+    "or": "Yoki"
   },
   "tasks": {
     "title": "Vazifalar",
