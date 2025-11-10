@@ -153,7 +153,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Parent Task (Subtask logic) - hidden if fixed
+              // Parent Task (Subtask logic) - hidden if fixed or optional
               if (widget.fixedParentTaskId == null)
                 Consumer2<TasksApiProvider, AuthProvider>(
                   builder: (context, tasksProv, authProv, _) {
@@ -174,24 +174,18 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                       }
                     }
 
+                    // Hide dropdown if parent task is optional (creator)
+                    if (isCreator) {
+                      return const SizedBox.shrink();
+                    }
+
                     final helperText =
                         _parentTasksError ??
-                        (isCreator
-                            ? AppLocalizations.of(
-                                context,
-                              ).t('tasks.parentTaskOptional')
-                            : AppLocalizations.of(
-                                context,
-                              ).t('tasks.parentTaskRequired'));
+                        AppLocalizations.of(
+                          context,
+                        ).t('tasks.parentTaskRequired');
 
                     final items = <DropdownMenuItem<int?>>[
-                      if (isCreator)
-                        DropdownMenuItem<int?>(
-                          value: null,
-                          child: Text(
-                            AppLocalizations.of(context).t('tasks.noParent'),
-                          ),
-                        ),
                       ...mergedTasks.map(
                         (t) => DropdownMenuItem<int?>(
                           value: t.id,
@@ -213,7 +207,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                       ),
                       items: items,
                       validator: (val) {
-                        if (!isCreator && (val == null)) {
+                        if (val == null) {
                           return AppLocalizations.of(
                             context,
                           ).t('tasks.parentTaskRequiredShort');
@@ -399,8 +393,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     const perPage = 100;
     var page = 1;
     var hasMore = true;
-    final auth = context.read<AuthProvider>();
-    final currentUserId = auth.currentUser?.id;
 
     while (hasMore && mounted) {
       final response = await _tasksRemote.getTasks(
@@ -418,13 +410,9 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       }
 
       final rawItems = response.data!;
+      // Only filter for parent tasks (no parentTaskId), include all tasks regardless of worker status
       final parentTasks = rawItems
           .where((task) => task.parentTaskId == null)
-          .where(
-            (task) => currentUserId == null
-                ? true
-                : task.workers.any((worker) => worker.id == currentUserId),
-          )
           .toList();
       results.addAll(parentTasks);
       hasMore = rawItems.length == perPage;

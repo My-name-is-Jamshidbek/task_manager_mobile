@@ -352,7 +352,8 @@
     "retry": "Qayta urinish",
     "close": "Yopish",
     "more": "Batafsil",
-    "details": "Tafsilotlar"
+    "details": "Tafsilotlar",
+    "unknown": "Noma'lum"
   },
   "validation": {
     "required": "Bu maydon talab qilinadi",

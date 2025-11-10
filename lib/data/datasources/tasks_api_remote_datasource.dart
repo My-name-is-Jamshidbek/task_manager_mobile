@@ -4,6 +4,7 @@ import '../../core/constants/api_constants.dart';
 import '../models/api_task_models.dart';
 import '../models/worker_models.dart';
 import '../models/task_action.dart';
+import '../models/task_worker_models.dart';
 
 class TasksApiRemoteDataSource {
   final ApiClient _apiClient;
@@ -194,7 +195,14 @@ class TasksApiRemoteDataSource {
     final endpoint = '${ApiConstants.tasks}/$taskId/workers';
     return _apiClient.get<List<WorkerUser>>(
       endpoint,
-      fromJson: (obj) => _parseWorkerList(obj),
+      fromJson: (obj) {
+        // Handle new API response: {task_id, total, workers: [...]}
+        final workers = obj['workers'] as List<dynamic>? ?? [];
+        return workers
+            .whereType<Map<String, dynamic>>()
+            .map(WorkerUser.fromJson)
+            .toList();
+      },
       fromJsonList: (list) => _parseWorkerList(list),
     );
   }
@@ -244,6 +252,23 @@ class TasksApiRemoteDataSource {
   }) async {
     final endpoint = '${ApiConstants.tasks}/$taskId/workers/$userId';
     return _apiClient.delete<void>(endpoint, fromJson: (_) {});
+  }
+
+  Future<ApiResponse<TaskWorkerDetail>> getTaskWorkerDetail({
+    required int taskId,
+    required int workerId,
+  }) async {
+    final endpoint = '${ApiConstants.tasks}/$taskId/workers/$workerId';
+    return _apiClient.get<TaskWorkerDetail>(
+      endpoint,
+      fromJson: (obj) {
+        // Handle envelope: { data: {...} } or flat object
+        final map = (obj['data'] is Map<String, dynamic>)
+            ? obj['data'] as Map<String, dynamic>
+            : obj;
+        return TaskWorkerDetail.fromJson(map);
+      },
+    );
   }
 }
 
